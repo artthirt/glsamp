@@ -62,6 +62,8 @@ void MainWindow::on_timeout()
 	ui->label_gamma->setText(QString::number(m_model.gamma()));
 	ui->label_power->setText(QString::number(m_model.power()));
 	ui->label_mg->setText(QString::number(m_model.mg()));
+	ui->label_power_koeff->setText(QString::number(m_model.acceleration()));
+	ui->label_acceleration->setText(QString::number(m_model.acceleration_mg()));
 
 	QString txt;
 	for(int i = 0; i < 4; i++){

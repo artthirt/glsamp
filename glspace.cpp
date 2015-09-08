@@ -4,9 +4,13 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 
+#if (_MSC_VER >= 1500 && _MSC_VER <= 1600)
 #include <Windows.h>
-#include <gl/GL.h>
-#include <gl/GLU.h>
+#else
+#endif
+
+#include <GL/gl.h>
+#include <GL/glu.h>
 
 GLSpace::GLSpace(QWidget *parent) :
 	QGLWidget(parent),
@@ -115,17 +119,17 @@ bool GLSpace::event(QEvent *ev)
 		case QEvent::MouseButtonPress:
 			mev = dynamic_cast<QMouseEvent*>(ev);
 			m_mouse_down = true;
-			m_mouse_move = mev->posF();
+			m_mouse_move = mev->localPos();
 			break;
 		case QEvent::MouseButtonRelease:
 			mev = dynamic_cast<QMouseEvent*>(ev);
 			m_mouse_down = false;
-			m_mouse_move = mev->posF();
+			m_mouse_move = mev->localPos();
 			break;
 		case QEvent::MouseMove:
 			mev = dynamic_cast<QMouseEvent*>(ev);
-			calc_mouse_move(mev->posF());
-			m_mouse_move = mev->posF();
+			calc_mouse_move(mev->localPos());
+			m_mouse_move = mev->localPos();
 			break;
 		case QEvent::Wheel:
 			wev = dynamic_cast< QWheelEvent* >(ev);

@@ -1,7 +1,12 @@
 #include "quadmodel.h"
 
+#if (_MSC_VER >= 1500 && _MSC_VER <= 1600)
 #include <Windows.h>
-#include <gl/GL.h>
+#else
+#include <chrono>
+#endif
+
+#include <GL/gl.h>
 
 const double wd_lv = 0.1;
 
@@ -11,18 +16,27 @@ QuadModel::QuadModel()
 {
 	m_lever = 1;
 	m_mg = 9.8;
-	m_max_power = 20;
+	m_max_power = 80;
+	m_koeff = 0.1;
 
 	m_color = QColor(60, 255, 60, 255);
 
 	for(int i = 0; i < 4; i++) m_engines[i] = 0;
 	m_normal = QVector3D(0, 0, 1);
 
+#if (_MSC_VER >= 1500 && _MSC_VER <= 1600)
 	std::tr1::random_device rd;
 	generator = std::tr1::mt19937(rd);
 
 	distribution = std::tr1::normal_distribution<double>(0.005, 0.005);
 	distribution_time = std::tr1::normal_distribution<double>(15, 15);
+#else
+	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+	generator = std::mt19937(seed);
+#endif
+
+	distribution = std::normal_distribution<double>(0.005, 0.005);
+	distribution_time = std::normal_distribution<double>(15, 15);
 
 	m_delta_time = delta_time;
 	m_time_noise.start();
@@ -82,8 +96,21 @@ double QuadModel::real_power() const
 
 void QuadModel::reset()
 {
+	m_acceleration = 0;
+	m_acceleration_mg = 0;
 	m_alpha = m_betha = m_gamma = 0;
+	m_speed = m_position = QVector3D();
 	for(int i = 0; i < 4; i++) m_engines[i] = 0;
+}
+
+double QuadModel::acceleration() const
+{
+	return m_acceleration;
+}
+
+double QuadModel::acceleration_mg() const
+{
+	return m_acceleration_mg;
 }
 
 void QuadModel::set_max_power(double value)
@@ -99,6 +126,16 @@ double QuadModel::mg() const
 void QuadModel::set_mg(double mg)
 {
 	m_mg = mg;
+}
+
+void QuadModel::set_koeff(double value)
+{
+	m_koeff = value;
+}
+
+double QuadModel::koeff() const
+{
+	return m_koeff;
 }
 
 void QuadModel::add_alpha(double value)
@@ -178,18 +215,26 @@ void QuadModel::tick()
 	for(int i = 0; i < 4; i++){
 		pw += m_engines[i] + m_engines_rnd[i];
 	}
+	pw *= m_koeff;\
+	m_acceleration = pw;
 	pw -= m_mg;
+	m_acceleration_mg = pw;
+
 	if(m_position.z() < 0){
 		pw = 0;
 		m_position.setZ(0);
+		m_speed.setZ(0);
 	}
 	QVector3D dp = pw * m_normal;
 
 
 	QVector3D tmp_pos = m_position;
-	tmp_pos += dp;
+	m_speed += dp;
+	tmp_pos += m_speed;
+	m_speed *=0.8;
 	if(tmp_pos.z() < 0){
 		tmp_pos.setZ(0);
+		m_speed.setZ(0);
 	}
 
 	m_position = tmp_pos;
