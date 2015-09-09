@@ -25,7 +25,6 @@ const QVector3D Z0 = QVector3D();
 
 //*****************************
 
-
 static inline QColor QC(float r, float g, float b)
 {
 	return QColor(r * 255, g * 255, b * 255);
@@ -53,6 +52,38 @@ QQuaternion GQ(double angle, const QVector3D& v)
 	y = v.y() / as;
 	z = v.z() / as;
 	return QQuaternion(ac, x, y, z);
+}
+
+void get_vec_levers(const QVector3D &course, const QVector3D &normal, double lever, QVector3D* vout)
+{
+	QVector3D tang;
+
+	/// tangaj quad
+	tang = QVector3D::crossProduct(normal, course);
+	/// get vectors of levers
+	vout[0] = course + tang;
+	vout[2] = course - tang;
+	vout[0].normalize();
+	vout[0] *= lever;
+
+	vout[2].normalize();
+	vout[2] *= lever;
+
+	vout[1] = -vout[0];
+	vout[3] = -vout[2];
+}
+
+void get_lever_axes(const QVector3D* v, QVector3D *vv)
+{
+	/// lever among 0 and 1	motor
+	vv[0] = v[0] - v[1];
+	/// lever among 2 and 3 motor
+	vv[1] = v[2] - v[3];
+
+//	/// vector from 0 to 1 motor
+//	vv[0] = dn[0] + vv[0];
+//	/// vector from 2 to 3 motor
+//	vv[1] = dn[1] + vv[1];
 }
 
 //******************************************
@@ -261,50 +292,17 @@ void QuadModel::draw()
 
 	glTranslated(m_position.x(), m_position.y(), m_position.z());
 
-	glColor3d(m_color.redF(), m_color.greenF(), m_color.blueF());
+	QVector3D v0[4], v1[4], vv0[2], vv1[2];
 
-	QQuaternion qa, qb;
+	get_vec_levers(course_begin, normal_begin, m_lever, v0);
+	get_vec_levers(m_tmp_course, m_tmp_normal, m_lever, v1);
 
-	double a = QVector3D::dotProduct(course_begin, m_course);
-	bool fa = false;
-	if(qFuzzyCompare(qAbs(a), 1)){
-		fa = true;
-	}else{
-		QVector3D rotV = QVector3D::crossProduct(course_begin, m_course).normalized();
-		a = acos(a) * 180.0 / M_PI;
-		qa = QQuaternion::fromAxisAndAngle(rotV, a);
-		//QQuaternion q = GQ(a, rotV);
-		//glRotated(a, rotV.x(), rotV.y(), rotV.z());
-	}
+	get_lever_axes(v0, vv0);
+	get_lever_axes(v1, vv1);
 
-	QVector3D v0 = QVector3D::crossProduct(normal_begin, course_begin),
-			v1 = QVector3D::crossProduct(m_normal, m_course);
+	QVector3D cv0 = QVector3D::crossProduct(vv1[0], vv0[0]);
+	QVector3D cv1 = QVector3D::crossProduct(vv1[1], vv0[1]);
 
-	double b = QVector3D::dotProduct(v0, v1);
-	bool fb = false;
-	if(qFuzzyCompare(qAbs(b), 1)){
-		fb == true;
-	}else{
-		QVector3D rotV = QVector3D::crossProduct(v0, v1).normalized();
-		b = acos(b) * 180.0 / M_PI;
-		qb = QQuaternion::fromAxisAndAngle(rotV, b);
-//		glRotated(b, rotV.x(), rotV.y(), rotV.z());
-	}
-
-	if(fa){
-		if(fb){
-
-		}else{
-			qa = qb;
-		}
-	}else{
-		if(fb){
-
-		}else{
-			qa *= qb;
-		}
-	}
-	qa = qa * qb;
 	//qa.normalize();
 
 	/*
@@ -313,19 +311,6 @@ void QuadModel::draw()
 	 *	y = qy / sqrt(1-qw*qw)
 	 *	z = qz / sqrt(1-qw*qw)
 	 */
-
-	a = 2 * acos(qa.scalar()) * 180.0 / M_PI;
-	double dd;
-	QVector3D xd;
-	dd = sqrt( 1 - qa.scalar() * qa.scalar());
-	if(!qFuzzyIsNull(dd)){
-		xd = QVector3D( qa.x() / dd,
-						qa.y() / dd,
-						qa.z() / dd);
-		xd.normalize();
-
-		glRotated(a, xd.x(), xd.y(), xd.z());
-	}
 
 //	draw_lever(QVector3D(0, wd_lv, 0), 45,	Qt::yellow);
 //	draw_lever(QVector3D(0, wd_lv, 0), 135,	Qt::green);
@@ -377,25 +362,6 @@ void QuadModel::change_engines_rnd()
 	}
 }
 
-void get_vec_levers(const QVector3D &course, const QVector3D &normal, double lever, QVector3D* vout)
-{
-	QVector3D tang;
-
-	/// tangaj quad
-	tang = QVector3D::crossProduct(normal, course);
-	/// get vectors of levers
-	vout[0] = course + tang;
-	vout[2] = course - tang;
-	vout[0].normalize();
-	vout[0] *= lever;
-
-	vout[2].normalize();
-	vout[2] *= lever;
-
-	vout[1] = -vout[0];
-	vout[3] = -vout[2];
-}
-
 void QuadModel::calc_trajectory()
 {
 	/*	scheme of indexes motors
@@ -417,36 +383,36 @@ void QuadModel::calc_trajectory()
 		val += engines/*_noise*/(i);
 	}
 
-	QVector3D an = m_normal * val;
-	m_speed += 0.1 * an;
-	m_speed -= QVector3D(0, 0, 0.01);
-	m_speed *= 0.98;
+//	QVector3D an = m_normal * val;
+//	m_speed += 0.1 * an;
+//	m_speed -= QVector3D(0, 0, 0.01);
+//	m_speed *= 0.98;
 
-	QVector3D tp = m_position + m_speed;
-	if(tp.z() < 0){
-		tp.setZ(0);
-		tp.setX(m_position.x());
-		tp.setY(m_position.y());
-	}else{
-		if(qFuzzyIsNull(tp.z())){
-			tp.setX(m_position.x());
-			tp.setY(m_position.y());
-		}
-	}
-	m_position = tp;
+//	QVector3D tp = m_position + m_speed;
+//	if(tp.z() < 0){
+//		tp.setZ(0);
+//		tp.setX(m_position.x());
+//		tp.setY(m_position.y());
+//	}else{
+//		if(qFuzzyIsNull(tp.z())){
+//			tp.setX(m_position.x());
+//			tp.setY(m_position.y());
+//		}
+//	}
+//	m_position = tp;
 
-	if(m_trajectory.size()){
-		QVector3D lp = m_trajectory.last();
-		if(lp != m_position){
-			m_trajectory.push_back(m_position);
-		}
-	}else{
-		m_trajectory.push_back(m_position);
-	}
+//	if(m_trajectory.size()){
+//		QVector3D lp = m_trajectory.last();
+//		if(lp != m_position){
+//			m_trajectory.push_back(m_position);
+//		}
+//	}else{
+//		m_trajectory.push_back(m_position);
+//	}
 
-	if(m_trajectory.size() > max_trj_pts){
-		m_trajectory.pop_front();
-	}
+//	if(m_trajectory.size() > max_trj_pts){
+//		m_trajectory.pop_front();
+//	}
 
 	/// delta power from 0 to 1 motor
 	dn[0] = n[0] - n[1];
