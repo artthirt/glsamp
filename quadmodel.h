@@ -101,6 +101,12 @@ private:
 	std::mt19937 generator;
 #endif
 
+	QVector3D m_tmp_vv[2];
+	QVector3D m_tmp_n[4];
+	QVector3D m_tmp_normal, m_tmp_course, m_tmp_vc2;
+
+	void draw_tmp_struct();
+
 	QVector< QVector3D > m_trajectory;
 
 	double m_cur_engines_rnd[4];
@@ -113,7 +119,7 @@ private:
 
 	void calc_trajectory();
 
-	void draw_leter(QVector3D offset, double angleXY);
+	void draw_lever(QVector3D offset, double angleXY, const QColor col = QColor(0, 255, 0));
 };
 
 #endif // QUADMODEL_H

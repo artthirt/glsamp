@@ -159,7 +159,7 @@ void GLSpace::on_timeout()
 
 void GLSpace::initializeGL()
 {
-	glEnable(GL_DEPTH);
+	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
 	foreach (VirtGLObject* obj, m_objects) {
