@@ -29,6 +29,7 @@ public:
 	double power() const;
 	double real_power() const;
 	void reset();
+	void reset_power();
 
 	double acceleration() const;
 	double acceleration_mg() const;
@@ -80,6 +81,8 @@ private:
 	QVector3D m_course;
 	double m_engines[4];
 
+	QVector3D m_delta_speed[2];
+
 	QVector3D m_speed;
 	QVector3D m_position;
 
@@ -98,6 +101,8 @@ private:
 	std::mt19937 generator;
 #endif
 
+	QVector< QVector3D > m_trajectory;
+
 	double m_cur_engines_rnd[4];
 	double m_next_engines_rnd[4];
 	double m_engines_rnd[4];
@@ -105,6 +110,8 @@ private:
 	void generate_engines_rnd();
 	void calc_engines_rnd(double delta);
 	void change_engines_rnd();
+
+	void calc_trajectory();
 
 	void draw_leter(QVector3D offset, double angleXY);
 };

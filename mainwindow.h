@@ -38,6 +38,8 @@ private slots:
 
 	void on_vs_power_valueChanged(int value);
 
+	void on_pb_zero_2_clicked();
+
 private:
 	Ui::MainWindow *ui;
 

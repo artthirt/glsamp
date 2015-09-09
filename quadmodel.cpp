@@ -25,15 +25,11 @@ QuadModel::QuadModel()
 
 	m_color = QColor(60, 255, 60, 255);
 
-	for(int i = 0; i < 4; i++) m_engines[i] = 0;
-	m_normal = QVector3D(0, 0, 1);
-	m_course = QVector3D(0, 1, 0);
-
 #if (_MSC_VER >= 1500 && _MSC_VER <= 1600)
 	std::tr1::random_device rd;
 	generator = std::tr1::mt19937(rd);
 
-	distribution = std::tr1::normal_distribution<double>(0.01, 0.01);
+	distribution = std::tr1::normal_distribution<double>(0.0001, 0.0001);
 	distribution_time = std::tr1::normal_distribution<double>(15, 15);
 #else
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -101,10 +97,20 @@ double QuadModel::real_power() const
 
 void QuadModel::reset()
 {
+	m_normal = QVector3D(0, 0, 1);
+	m_course = QVector3D(0, 1, 0);
+
+	m_delta_speed[0] = m_delta_speed[1] = QVector3D();
+
 	m_acceleration = 0;
 	m_acceleration_mg = 0;
 	m_alpha = m_betha = m_gamma = 0;
 	m_speed = m_position = QVector3D();
+	for(int i = 0; i < 4; i++) m_engines[i] = 0;
+}
+
+void QuadModel::reset_power()
+{
 	for(int i = 0; i < 4; i++) m_engines[i] = 0;
 }
 
@@ -220,7 +226,7 @@ void QuadModel::draw()
 //	draw_leter(QVector3D(0, wd_lv, 0), 135);
 //	draw_leter(QVector3D(0, wd_lv, 0), -45);
 //	draw_leter(QVector3D(0, wd_lv, 0), -135);
-	tick();
+	calc_trajectory();
 
 	glLineWidth(1);
 	glPopMatrix();
@@ -257,107 +263,11 @@ QQuaternion GQ(double angle, const QVector3D& v)
 	return QQuaternion(ac, x, y, z);
 }
 
+const int max_trj_pts = 10000;
+
 void QuadModel::tick()
 {
-	/*	scheme of indexes motors
-	 * 		2		0
-	 *		  \   /
-	 *			-
-	 *		  /   \
-	 *		1		3
-	*/
 
-	QVector3D tang, v[4], v5, n[4], dn[2], vv[2];
-
-	/// tangaj quad
-	tang = QVector3D::crossProduct(m_normal, m_course);
-	/// get vectors of leters
-	v[0] = m_course + tang;
-	v[2] = m_course - tang;
-	v[0].normalize();
-	v[0] *= m_lever;
-
-	v[2].normalize();
-	v[2] *= m_lever;
-
-	v[1] = -v[0];
-	v[3] = -v[2];
-
-	for(int i = 0; i < 4; i++)
-		n[i] = m_normal * engines_noise(i);
-
-	/// delta power from 0 to 1 motor
-	dn[0] = n[0] - n[1];
-	/// delta power from 2 to 3 motor
-	dn[1] = n[2] - n[3];
-
-	/// leter among 0 and 1	motor
-	vv[0] = v[0] - v[1];
-	/// leter among 2 and 3 motor
-	vv[1] = v[2] - v[3];
-
-	/// vector from 0 to 1 motor
-	vv[0] = dn[0] + vv[0];
-	/// vector from 2 to 3 motor
-	vv[1] = dn[1] + vv[1];
-
-	glColor3f(1, 0.3, 1);
-	for(int i = 0; i < 2; i++){
-		draw_vect(vv[i], Z0, QC(1, 0.3, 1));
-	}
-
-//	const int ind[2] = {2, 0};
-////	const ind_axes[2] = {};
-
-//	QQuaternion q[2];
-//	for(int i = 0; i < 2; i++){
-//		if(!qFuzzyIsNull(dn[i].length())){
-//			double a = QVector3D::dotProduct(vv[i], dn[i]) / vv[0].length() / dn[i].length();
-
-////			double ar, ac, as, x, y, z;
-////			ar = asin(a);
-////			ac = cos(ar/2), as = sin(ar/2);
-
-//			QVector3D vc1 = QVector3D::crossProduct(v[ind[i]], vv[i]).normalized();
-//			QVector3D va1 = -v[ind[i]];
-//			QVector3D vc2 = QVector3D::crossProduct(vc1, va1).normalized();
-//			va1.normalize();
-
-////			x = va1.x() / as;
-////			y = va1.y() / as;
-////			z = va1.z() / as;
-
-//			q[i] = GQ(asin(a), va1);
-//			qDebug() << i << a << asin(a) * 180.0 / M_PI;
-//		}else{
-//			q[i] = QQuaternion(1, 0, 0, 1);
-//		}
-//	}
-
-//	QQuaternion qr = q[0] * q[1];
-//	QVector3D rotv = qr.rotatedVector(m_normal);
-//	draw_vect(rotv, Z0, QC(1, 1, 0));
-
-	QVector3D vc1 = QVector3D::crossProduct(vv[1], vv[0]).normalized();
-	QVector3D va1 = vv[0] + vv[1];
-	QVector3D vc2 = QVector3D::crossProduct(vc1, va1).normalized();
-
-	va1.normalize();
-
-	draw_vect(vc1, Z0, QC(0.3, 1, 0.7));
-	draw_vect(vc2, Z0, QC(0.3, 1, 0.7));
-	draw_vect(va1, Z0, QC(0.3, 1, 0.7));
-
-	qDebug() << "---";
-
-	glColor3f(0, 0.3, 1);
-	for(int i = 0; i < 4; i++){
-		draw_vect(n[i], v[i], QC(0, 0.3, 1));
-	}
-
-	for(int i = 0; i < 4; i++){
-		draw_vect(v[i], Z0, QC(0, 1, 0.3));
-	}
 }
 
 void QuadModel::on_timeout_noise()
@@ -385,6 +295,136 @@ void QuadModel::change_engines_rnd()
 	}
 }
 
+void QuadModel::calc_trajectory()
+{
+	/*	scheme of indexes motors
+	 * 		2		0
+	 *		  \   /
+	 *			-
+	 *		  /   \
+	 *		1		3
+	*/
+
+	QVector3D tang, v[4], v5, n[4], dn[2], vv[2];
+
+	/// tangaj quad
+	tang = QVector3D::crossProduct(m_normal, m_course);
+	/// get vectors of leters
+	v[0] = m_course + tang;
+	v[2] = m_course - tang;
+	v[0].normalize();
+	v[0] *= m_lever;
+
+	v[2].normalize();
+	v[2] *= m_lever;
+
+	v[1] = -v[0];
+	v[3] = -v[2];
+
+	double val = 0;
+	for(int i = 0; i < 4; i++){
+		n[i] = m_normal * engines_noise(i);
+		val += engines_noise(i);
+	}
+
+	QVector3D an = m_normal * val;
+	m_speed += 0.1 * an;
+	m_speed -= QVector3D(0, 0, 0.01);
+	m_speed *= 0.98;
+
+	QVector3D tp = m_position + m_speed;
+	if(tp.z() < 0){
+		tp.setZ(0);
+		tp.setX(m_position.x());
+		tp.setY(m_position.y());
+	}else{
+		if(qFuzzyIsNull(tp.z())){
+			tp.setX(m_position.x());
+			tp.setY(m_position.y());
+		}
+	}
+	m_position = tp;
+
+	if(m_trajectory.size()){
+		QVector3D lp = m_trajectory.last();
+		if(lp != m_position){
+			m_trajectory.push_back(m_position);
+		}
+	}else{
+		m_trajectory.push_back(m_position);
+	}
+
+	if(m_trajectory.size() > max_trj_pts){
+		m_trajectory.pop_front();
+	}
+
+	/// delta power from 0 to 1 motor
+	dn[0] = n[0] - n[1];
+	/// delta power from 2 to 3 motor
+	dn[1] = n[2] - n[3];
+
+	m_delta_speed[0] += dn[0];
+	m_delta_speed[1] += dn[1];
+
+	dn[0] = m_delta_speed[0];
+	dn[1] = m_delta_speed[1];
+
+	for(int i = 0; i < 2; i++)
+		m_delta_speed[i] *= 0.95;
+
+	/// leter among 0 and 1	motor
+	vv[0] = v[0] - v[1];
+	/// leter among 2 and 3 motor
+	vv[1] = v[2] - v[3];
+
+	/// vector from 0 to 1 motor
+	vv[0] = dn[0] + vv[0];
+	/// vector from 2 to 3 motor
+	vv[1] = dn[1] + vv[1];
+
+	glColor3f(1, 0.3, 1);
+	for(int i = 0; i < 2; i++){
+		draw_vect(vv[i], Z0, QC(1, 0.3, 1));
+	}
+
+	QVector3D vc1 = QVector3D::crossProduct(vv[1], vv[0]).normalized();
+	QVector3D va1 = vv[0] + vv[1];
+	QVector3D vc2 = QVector3D::crossProduct(vc1, va1).normalized();
+
+	va1.normalize();
+
+	draw_vect(vc1, Z0, QC(0.3, 1, 0.7));
+	draw_vect(vc2, Z0, QC(0.3, 1, 0.7));
+	draw_vect(va1, Z0, QC(0.3, 1, 0.7));
+
+	m_normal = vc1;
+	m_course = va1;
+
+	qDebug() << "---";
+
+	glPushMatrix();
+
+	glTranslated(m_position.x(), m_position.y(), m_position.z());
+
+	glColor3f(0, 0.3, 1);
+	for(int i = 0; i < 4; i++){
+		draw_vect(n[i], v[i], QC(0, 0.3, 1));
+	}
+
+	for(int i = 0; i < 4; i++){
+		draw_vect(v[i], Z0, QC(0, 1, 0.3));
+	}
+	glPopMatrix();
+
+	glPointSize(4);
+	glColor3f(1, 0, 0);
+	glBegin(GL_POINTS);
+	foreach (QVector3D pt, m_trajectory) {
+		glVertex3d(pt.x(), pt.y(), pt.z());
+	}
+	glEnd();
+}
+
 void QuadModel::generate_engines_rnd()
 {
 	for(int i = 0; i < 4; i++){
@@ -400,7 +440,7 @@ void QuadModel::calc_engines_rnd(double delta)
 	bool zero_rp = qFuzzyIsNull(rp);
 
 	for(int i = 0; i < 4; i++){
-		m_engines_rnd[i] = zero_rp? 0 : m_engines[i] * (m_cur_engines_rnd[i] + delta * (m_next_engines_rnd[i] - m_cur_engines_rnd[i]));
+		m_engines_rnd[i] = zero_rp? 0 : (m_cur_engines_rnd[i] + delta * (m_next_engines_rnd[i] - m_cur_engines_rnd[i]));
 	}
 }
 
