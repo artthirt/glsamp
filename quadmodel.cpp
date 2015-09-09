@@ -292,16 +292,14 @@ void QuadModel::draw()
 
 	glTranslated(m_position.x(), m_position.y(), m_position.z());
 
-	QVector3D v0[4], v1[4], vv0[2], vv1[2];
+	draw_vect(normal_begin, Z0, Qt::yellow);
+	draw_vect(course_begin, Z0, Qt::darkCyan);
 
-	get_vec_levers(course_begin, normal_begin, m_lever, v0);
-	get_vec_levers(m_tmp_course, m_tmp_normal, m_lever, v1);
+	QVector3D vn = QVector3D::crossProduct(normal_begin, m_tmp_normal).normalized();
+	QVector3D vn1 = QVector3D::crossProduct(course_begin, m_tmp_course).normalized();
 
-	get_lever_axes(v0, vv0);
-	get_lever_axes(v1, vv1);
-
-	QVector3D cv0 = QVector3D::crossProduct(vv1[0], vv0[0]);
-	QVector3D cv1 = QVector3D::crossProduct(vv1[1], vv0[1]);
+	draw_vect(vn, Z0, Qt::cyan);
+	draw_vect(vn1, Z0, Qt::cyan);
 
 	//qa.normalize();
 
