@@ -187,24 +187,10 @@
      </item>
      <item row="0" column="2">
       <layout class="QGridLayout" name="gridLayout">
-       <item row="0" column="1">
-        <widget class="QPushButton" name="pb_left_front">
+       <item row="3" column="1">
+        <widget class="QPushButton" name="pb_left_back">
          <property name="text">
-          <string>left front</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="2">
-        <widget class="QPushButton" name="pb_zero">
-         <property name="text">
-          <string>zero</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="4">
-        <widget class="QPushButton" name="pb_up">
-         <property name="text">
-          <string>power up</string>
+          <string>left back</string>
          </property>
         </widget>
        </item>
@@ -222,6 +208,28 @@
          </property>
         </widget>
        </item>
+       <item row="2" column="2">
+        <widget class="QPushButton" name="pb_zero_2">
+         <property name="text">
+          <string>reset 
+ engines</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="QPushButton" name="pb_zero">
+         <property name="text">
+          <string>zero</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="4">
+        <widget class="QPushButton" name="pb_up">
+         <property name="text">
+          <string>power up</string>
+         </property>
+        </widget>
+       </item>
        <item row="1" column="4">
         <widget class="QPushButton" name="pb_down">
          <property name="text">
@@ -229,18 +237,10 @@
          </property>
         </widget>
        </item>
-       <item row="3" column="1">
-        <widget class="QPushButton" name="pb_left_back">
+       <item row="0" column="1">
+        <widget class="QPushButton" name="pb_left_front">
          <property name="text">
-          <string>left back</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="2">
-        <widget class="QPushButton" name="pb_zero_2">
-         <property name="text">
-          <string>reset 
- engines</string>
+          <string>left front</string>
          </property>
         </widget>
        </item>

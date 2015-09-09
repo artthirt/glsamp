@@ -399,11 +399,11 @@ void get_vec_levers(const QVector3D &course, const QVector3D &normal, double lev
 void QuadModel::calc_trajectory()
 {
 	/*	scheme of indexes motors
-	 * 		2		0
+	 * 		0		2
 	 *		  \   /
 	 *			-
 	 *		  /   \
-	 *		1		3
+	 *		3		1
 	*/
 
 	QVector3D v[4], n[4], dn[2], vv[2];
