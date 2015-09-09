@@ -22,15 +22,41 @@ class GLSpace : public QGLWidget
 public:
 	explicit GLSpace(QWidget *parent = 0);
 	~GLSpace();
-
+	/**
+	 * @brief add_object
+	 * @param obj
+	 */
 	void add_object(VirtGLObject* obj);
+	/**
+	 * @brief object
+	 * @param index
+	 * @return
+	 */
 	VirtGLObject* object(int index);
+	/**
+	 * @brief count_objects
+	 * @return
+	 */
 	int count_objects() const;
-
+	/**
+	 * @brief setTimeout
+	 * @param timeout
+	 */
 	void setTimeout(int timeout);
+	/**
+	 * @brief timeout
+	 * @return
+	 */
 	int timeout() const;
-
+	/**
+	 * @brief background
+	 * @return
+	 */
 	QColor background() const;
+	/**
+	 * @brief setBackground
+	 * @param color
+	 */
 	void setBackground(const QColor& color);
 private:
 	Ui::GLSpace *ui;

@@ -6,6 +6,7 @@
 #include <chrono>
 #endif
 
+#include <QMatrix4x4>
 #include <QDebug>
 
 #include <GL/gl.h>
@@ -107,7 +108,7 @@ QuadModel::QuadModel()
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 	generator = std::mt19937(seed);
 
-	distribution = std::normal_distribution<double>(0.005, 0.005);
+	distribution = std::normal_distribution<double>(0.0001, 0.0001);
 	distribution_time = std::normal_distribution<double>(15, 15);
 #endif
 
@@ -295,11 +296,30 @@ void QuadModel::draw()
 	draw_vect(normal_begin, Z0, Qt::yellow);
 	draw_vect(course_begin, Z0, Qt::darkCyan);
 
-	QVector3D vn = QVector3D::crossProduct(normal_begin, m_tmp_normal).normalized();
-	QVector3D vn1 = QVector3D::crossProduct(course_begin, m_tmp_course).normalized();
+	float vals[] = {
+		m_tmp_vc2.x(), m_tmp_vc2.y(), m_tmp_vc2.z(), 0,
+		m_tmp_course.x(), m_tmp_course.y(), m_tmp_course.z(), 0,
+		m_tmp_normal.x(), m_tmp_normal.y(), m_tmp_normal.z(), 0,
+		0, 0, 0, 1
+	};
 
-	draw_vect(vn, Z0, Qt::cyan);
-	draw_vect(vn1, Z0, Qt::cyan);
+	QMatrix4x4 m = QMatrix4x4(vals), mt;
+
+	mt = m.transposed();
+
+	QVector3D vt[4] = {
+		QVector3D(0.5, 0.5, 0.5),
+		QVector3D(-0.5, 0.5, 0.5),
+		QVector3D(-0.5, -0.5, 0.5),
+		QVector3D(0.5, -0.5, 0.5),
+	};
+
+	for(int i = 0; i < 4; i++){
+		QVector3D vr = mt * vt[i];
+
+		draw_vect(vr, Z0, Qt::white);
+	}
+
 
 	//qa.normalize();
 
@@ -310,10 +330,13 @@ void QuadModel::draw()
 	 *	z = qz / sqrt(1-qw*qw)
 	 */
 
-//	draw_lever(QVector3D(0, wd_lv, 0), 45,	Qt::yellow);
-//	draw_lever(QVector3D(0, wd_lv, 0), 135,	Qt::green);
-//	draw_lever(QVector3D(0, wd_lv, 0), -45,	Qt::yellow);
-//	draw_lever(QVector3D(0, wd_lv, 0), -135,Qt::green);
+
+	glMultMatrixf(mt.data());
+
+	draw_lever(QVector3D(0, wd_lv, 0), 45,	Qt::yellow);
+	draw_lever(QVector3D(0, wd_lv, 0), 135,	Qt::green);
+	draw_lever(QVector3D(0, wd_lv, 0), -45,	Qt::yellow);
+	draw_lever(QVector3D(0, wd_lv, 0), -135,Qt::green);
 
 	glLineWidth(1);
 
@@ -333,6 +356,11 @@ void QuadModel::draw()
 void QuadModel::tick()
 {
 	calc_trajectory();
+}
+
+QVector3D QuadModel::position() const
+{
+	return m_position;
 }
 
 void QuadModel::on_timeout_noise()
@@ -377,40 +405,40 @@ void QuadModel::calc_trajectory()
 
 	double val = 0;
 	for(int i = 0; i < 4; i++){
-		n[i] = m_normal * engines/*_noise*/(i);
-		val += engines/*_noise*/(i);
+		n[i] = m_normal * engines_noise(i);
+		val += engines_noise(i);
 	}
 
-//	QVector3D an = m_normal * val;
-//	m_speed += 0.1 * an;
-//	m_speed -= QVector3D(0, 0, 0.01);
-//	m_speed *= 0.98;
+	QVector3D an = m_normal * val;
+	m_speed += 0.1 * an;
+	m_speed -= QVector3D(0, 0, 0.01);
+	m_speed *= 0.98;
 
-//	QVector3D tp = m_position + m_speed;
-//	if(tp.z() < 0){
-//		tp.setZ(0);
-//		tp.setX(m_position.x());
-//		tp.setY(m_position.y());
-//	}else{
-//		if(qFuzzyIsNull(tp.z())){
-//			tp.setX(m_position.x());
-//			tp.setY(m_position.y());
-//		}
-//	}
-//	m_position = tp;
+	QVector3D tp = m_position + m_speed;
+	if(tp.z() < 0){
+		tp.setZ(0);
+		tp.setX(m_position.x());
+		tp.setY(m_position.y());
+	}else{
+		if(qFuzzyIsNull(tp.z())){
+			tp.setX(m_position.x());
+			tp.setY(m_position.y());
+		}
+	}
+	m_position = tp;
 
-//	if(m_trajectory.size()){
-//		QVector3D lp = m_trajectory.last();
-//		if(lp != m_position){
-//			m_trajectory.push_back(m_position);
-//		}
-//	}else{
-//		m_trajectory.push_back(m_position);
-//	}
+	if(m_trajectory.size()){
+		QVector3D lp = m_trajectory.last();
+		if(lp != m_position){
+			m_trajectory.push_back(m_position);
+		}
+	}else{
+		m_trajectory.push_back(m_position);
+	}
 
-//	if(m_trajectory.size() > max_trj_pts){
-//		m_trajectory.pop_front();
-//	}
+	if(m_trajectory.size() > max_trj_pts){
+		m_trajectory.pop_front();
+	}
 
 	/// delta power from 0 to 1 motor
 	dn[0] = n[0] - n[1];
@@ -490,8 +518,8 @@ void QuadModel::draw_tmp_struct()
 	}
 	glLineWidth(1);
 
-	m_normal = normal_begin;
-	m_course = course_begin;
+//	m_normal = normal_begin;
+//	m_course = course_begin;
 
 }
 

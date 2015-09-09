@@ -40,6 +40,10 @@ private slots:
 
 	void on_pb_zero_2_clicked();
 
+	void on_cb_watch_clicked(bool checked);
+
+	void on_cb_watch_gl_clicked(bool checked);
+
 private:
 	Ui::MainWindow *ui;
 

@@ -60,6 +60,7 @@ public:
 	virtual void init();
 	virtual void draw();
 	virtual void tick();
+	virtual QVector3D position() const;
 
 public slots:
 	void on_timeout_noise();

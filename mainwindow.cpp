@@ -91,3 +91,13 @@ void MainWindow::on_pb_zero_2_clicked()
 {
 	m_model.reset_power();
 }
+
+void MainWindow::on_cb_watch_clicked(bool checked)
+{
+	m_model.set_is_watchXY(checked);
+}
+
+void MainWindow::on_cb_watch_gl_clicked(bool checked)
+{
+	m_model.set_is_watch(checked);
+}

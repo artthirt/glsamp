@@ -30,7 +30,7 @@
      <x>0</x>
      <y>0</y>
      <width>996</width>
-     <height>21</height>
+     <height>23</height>
     </rect>
    </property>
   </widget>
@@ -46,8 +46,8 @@
   <widget class="QDockWidget" name="dockWidget">
    <property name="minimumSize">
     <size>
-     <width>414</width>
-     <height>342</height>
+     <width>504</width>
+     <height>434</height>
     </size>
    </property>
    <attribute name="dockWidgetArea">
@@ -55,7 +55,7 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents">
     <layout class="QGridLayout" name="gridLayout_2">
-     <item row="1" column="2">
+     <item row="3" column="2">
       <layout class="QGridLayout" name="gridLayout_3">
        <item row="7" column="0">
         <widget class="QLabel" name="label_">
@@ -223,10 +223,10 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="4">
-        <widget class="QPushButton" name="pb_up">
+       <item row="0" column="1">
+        <widget class="QPushButton" name="pb_left_front">
          <property name="text">
-          <string>power up</string>
+          <string>left front</string>
          </property>
         </widget>
        </item>
@@ -237,16 +237,16 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="1">
-        <widget class="QPushButton" name="pb_left_front">
+       <item row="0" column="4">
+        <widget class="QPushButton" name="pb_up">
          <property name="text">
-          <string>left front</string>
+          <string>power up</string>
          </property>
         </widget>
        </item>
       </layout>
      </item>
-     <item row="2" column="2">
+     <item row="4" column="2">
       <spacer name="verticalSpacer">
        <property name="orientation">
         <enum>Qt::Vertical</enum>
@@ -269,6 +269,20 @@
        </property>
        <property name="orientation">
         <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <widget class="QCheckBox" name="cb_watch">
+       <property name="text">
+        <string>watch for object in XY plane</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="2">
+      <widget class="QCheckBox" name="cb_watch_gl">
+       <property name="text">
+        <string>watch for object</string>
        </property>
       </widget>
      </item>

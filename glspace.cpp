@@ -189,6 +189,18 @@ void GLSpace::paintGL()
 	glRotated(m_rotate.x(), 0, 1, 0);
 	glRotated(m_rotate.y(), 1, 0, 0);
 
+	/// watch for select object
+	foreach (VirtGLObject* obj, m_objects) {
+		if(obj->is_watchXY()){
+			glTranslated(-obj->position().x(), -obj->position().y(), 0);
+			break;
+		}
+		if(obj->is_watch()){
+			glTranslated(-obj->position().x(), -obj->position().y(), -obj->position().z());
+			break;
+		}
+	}
+
 	draw_plane();
 
 	foreach (VirtGLObject* obj, m_objects) {
