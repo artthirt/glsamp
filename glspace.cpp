@@ -119,17 +119,17 @@ bool GLSpace::event(QEvent *ev)
 		case QEvent::MouseButtonPress:
 			mev = dynamic_cast<QMouseEvent*>(ev);
 			m_mouse_down = true;
-			m_mouse_move = mev->localPos();
+			m_mouse_move = mev->globalPos();
 			break;
 		case QEvent::MouseButtonRelease:
 			mev = dynamic_cast<QMouseEvent*>(ev);
 			m_mouse_down = false;
-			m_mouse_move = mev->localPos();
+			m_mouse_move = mev->globalPos();
 			break;
 		case QEvent::MouseMove:
 			mev = dynamic_cast<QMouseEvent*>(ev);
-			calc_mouse_move(mev->localPos());
-			m_mouse_move = mev->localPos();
+			calc_mouse_move(mev->globalPos());
+			m_mouse_move = mev->globalPos();
 			break;
 		case QEvent::Wheel:
 			wev = dynamic_cast< QWheelEvent* >(ev);

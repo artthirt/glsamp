@@ -49,6 +49,7 @@ public:
 	void add_betha(double value);
 	void add_gamma(double value);
 	void add_power(double value);
+	void add_power(int index, double value);
 	void set_power(double value);
 	// VirtGLObject interface
 	void setColor(const QColor &color);
@@ -76,6 +77,7 @@ private:
 
 	QColor m_color;
 	QVector3D m_normal;
+	QVector3D m_course;
 	double m_engines[4];
 
 	QVector3D m_speed;

@@ -22,22 +22,22 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_pb_left_front_clicked()
 {
-
+	m_model.add_power(2, 0.1);
 }
 
 void MainWindow::on_pb_zero_clicked()
 {
-
+	m_model.reset();
 }
 
 void MainWindow::on_pb_right_front_clicked()
 {
-
+	m_model.add_power(0, 0.1);
 }
 
 void MainWindow::on_pb_left_back_clicked()
 {
-
+	m_model.add_power(1, 0.1);
 }
 
 void MainWindow::on_pb_down_clicked()
@@ -52,7 +52,7 @@ void MainWindow::on_pb_up_clicked()
 
 void MainWindow::on_pb_right_back_clicked()
 {
-
+	m_model.add_power(3, 0.1);
 }
 
 void MainWindow::on_timeout()

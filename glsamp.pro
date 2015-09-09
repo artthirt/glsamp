@@ -13,6 +13,8 @@ TEMPLATE = app
 
 CONFIG += c++11
 
+DEFINES += _USE_MATH_DEFINES
+
 SOURCES += main.cpp\
         mainwindow.cpp \
     glspace.cpp \
