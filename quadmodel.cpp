@@ -296,7 +296,13 @@ void QuadModel::draw()
 	draw_vect(normal_begin, Z0, Qt::yellow);
 	draw_vect(course_begin, Z0, Qt::darkCyan);
 
-	float vals[] = {
+#if (QT_VERSION <= QT_VERSION_CHECK(5, 0, 0))
+	typedef qreal mat_type;
+#else
+	typedef float mat_type;
+#endif
+
+	mat_type vals[] = {
 		m_tmp_vc2.x(), m_tmp_vc2.y(), m_tmp_vc2.z(), 0,
 		m_tmp_course.x(), m_tmp_course.y(), m_tmp_course.z(), 0,
 		m_tmp_normal.x(), m_tmp_normal.y(), m_tmp_normal.z(), 0,
@@ -331,7 +337,7 @@ void QuadModel::draw()
 	 */
 
 
-	glMultMatrixf(mt.data());
+	glMultMatrixf(reinterpret_cast<GLfloat*>(mt.data()));
 
 	draw_lever(QVector3D(0, wd_lv, 0), 45,	Qt::yellow);
 	draw_lever(QVector3D(0, wd_lv, 0), 135,	Qt::green);
