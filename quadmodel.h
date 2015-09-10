@@ -117,6 +117,7 @@ private:
 
 	void draw_tmp_struct();
 	void draw_telemetry();
+	void draw_transp_plane(const QMatrix4x4& matrix, const QColor& c);
 
 	QVector< QVector3D > m_trajectory;
 

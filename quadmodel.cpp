@@ -339,7 +339,7 @@ void QuadModel::draw()
 
 #ifdef QT4
 	glMultMatrixd((mt.data()));
-#elif QT5
+#elif defined(QT5)
 	glMultMatrixf((mt.data()));
 #endif
 
@@ -364,6 +364,9 @@ void QuadModel::draw()
 
 	if(m_is_draw_telemetry)
 		draw_telemetry();
+
+	draw_transp_plane(mt, QColor(30, 255, 30, 60));
+	draw_transp_plane(QMatrix4x4(), QColor(30, 30, 255, 60));
 }
 
 void QuadModel::tick()
@@ -506,7 +509,7 @@ void QuadModel::draw_tmp_struct()
 {
 	glLineWidth(5);
 
-	draw_vect(m_tmp_normal, Z0, QC(0.3f, 1.f, 0.3f));
+	draw_vect(m_tmp_normal, Z0, QC(0.7f, 1.f, 0.3f));
 	draw_vect(m_tmp_vc2, Z0, QC(1.f, 0.3f, 0.3f));
 	draw_vect(m_tmp_course, Z0, QC(0.3f, 0.3f, 1.f));
 
@@ -536,16 +539,27 @@ void QuadModel::draw_tmp_struct()
 
 }
 
+double detv3(const QVector3D& v1, const QVector3D& v2, const QVector3D& v3)
+{
+	const mat_type vals[] = {
+		v1.x(), v1.y(), v1.z(), 0,
+		v2.x(), v2.y(), v2.z(), 0,
+		v3.x(), v3.y(), v3.z(), 0,
+		0,		0,		0,		1
+	};
+	return QMatrix4x4(vals).determinant();
+}
+
 void QuadModel::draw_telemetry()
 {
 	glPushMatrix();
 
 	glLoadIdentity();
 
-	glTranslatef(0, 0, -1.01f);
+	glTranslatef(0.4, 0.35, -1.01f);
 
 	const int cnt_circle = 50;
-	const float R = 0.5;
+	const float R = 0.1;
 
 	glLineWidth(2);
 	glColor3f(1, 1, 1);
@@ -561,40 +575,105 @@ void QuadModel::draw_telemetry()
 	}
 	glEnd();
 
-	QVector3D vn = m_tmp_normal;
-	vn.setZ(0);
-	double l = vn.length();
-//	double a = QVector3D::dotProduct(m_tmp_vc2, vn);
-	double b = -asin(m_tmp_vc2.z());
+	double b = 0;
 
+	QVector3D tmp_vc2_z0 = m_tmp_vc2;
+	tmp_vc2_z0.setZ(0);
+
+	QVector3D n = m_tmp_normal;
+	n.setZ(0);
+
+	QVector3D v1 = QVector3D::crossProduct(normal_begin, m_tmp_course);
+
+	double d = QVector3D::dotProduct(m_tmp_vc2, v1);
+	double d1 = 0;
+
+	QVector3D dv = QVector3D::crossProduct(tmp_vc2_z0, m_tmp_vc2);
+
+//	if(m_tmp_normal.z() < 0){
+//		b = M_PI + b;
+//	}
 	if(m_tmp_vc2.z() < 0){
 		b = -b;
 	}
-//	float k = 1.f;
-	if(m_tmp_normal.z() < 0){
-		b = M_PI - b;
-//		k = -1.f;
-	}
-//	if(c < 0){
-//		b = - b;
-//	}
 
 	QGLWidget *w = dynamic_cast< QGLWidget* >(parent());
 	if(w){
 		glColor3f(1, 1, 1);
-		w->renderText(0.8, 0.8, -1.0, QString::number(l, 'f', 3));
+		w->renderText(-1.4, 0.6, -1.0, QString::number(d, 'f', 3) + " " + QString::number(d1, 'f', 3), QFont("Arial", 14));
 	}
 
+	glLineWidth(3);
+
+	float l = -tmp_vc2_z0.length();
+	if(d < 0)
+		l = -l;
+
+	QVector3D vl = QVector3D(l, m_tmp_vc2.z(), 0).normalized() * R;
+
+	glColor3f(1, 0, 0);
 	glBegin(GL_LINES);
 	glVertex3f(0, 0, 0);
-	glVertex3f(R * cos(b), R * sin(b), 0);
-
-//	glVertex3f(0, 0, 0);
-//	glVertex3f(-R * cos(b), -R * sin(b), 0);
+	glVertex3f(vl.x(),vl.y(), vl.z());
+	glVertex3f(0, 0, 0);
+	glVertex3f(-vl.x(),-vl.y(), vl.z());
 	glEnd();
+
+	glLineWidth(2);
+	QVector3D vp = QVector3D(vl.y(), -vl.x(), 0).normalized();
+	vl.normalize();
+	for(int i = 0; i < 3; i++){
+		QVector3D v0 = vp * i/3 * R, v1, v2;
+		double l = v0.length();
+		l = sqrt(R * R - l * l)/3;
+		v1 = v0 - l * vl, v2 = v0 + l * vl;
+
+		glColor3f(1, 0, 0);
+		glBegin(GL_LINES);
+		glVertex3f(v1.x(), v1.y(), v1.z());
+		glVertex3f(v2.x(), v2.y(), v2.z());
+		glEnd();
+
+		glColor3f(1, 0.7, 0);
+		glBegin(GL_LINES);
+		glVertex3f(-v1.x(), -v1.y(), -v1.z());
+		glVertex3f(-v2.x(), -v2.y(), -v2.z());
+		glEnd();
+	}
 
 	glLineWidth(1);
 	glPopMatrix();
+
+	draw_vect(tmp_vc2_z0, Z0);
+	draw_vect(QVector3D(0, 0, m_tmp_vc2.z()), tmp_vc2_z0);
+}
+
+void QuadModel::draw_transp_plane(const QMatrix4x4 &matrix, const QColor &c)
+{
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendEquation(GL_FUNC_ADD);
+
+	glPushMatrix();
+
+#ifdef QT4
+	glMultMatrixd((matrix.data()));
+#elif defined(QT5)
+	glMultMatrixf((matrix.data()));
+#endif
+
+	glColor4f(c.redF(), c.greenF(), c.blueF(), c.alphaF());
+
+	glBegin(GL_QUADS);
+	glVertex3f(1, 1, 0);
+	glVertex3f(-1, 1, 0);
+	glVertex3f(-1, -1, 0);
+	glVertex3f(1, -1, 0);
+	glEnd();
+
+	glPopMatrix();
+
+	glDisable(GL_BLEND);
 }
 
 void QuadModel::generate_engines_rnd()
