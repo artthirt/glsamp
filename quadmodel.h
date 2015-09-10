@@ -11,6 +11,14 @@
 
 #include <random>
 
+#if (QT_VERSION <= QT_VERSION_CHECK(5, 0, 0))
+#	define QT4
+typedef qreal mat_type;
+#else
+#	define QT5
+typedef float mat_type;
+#endif
+
 class QuadModel : public VirtGLObject
 {
 	Q_OBJECT
