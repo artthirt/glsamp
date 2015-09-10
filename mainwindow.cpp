@@ -20,39 +20,53 @@ MainWindow::~MainWindow()
 	delete ui;
 }
 
-void MainWindow::on_pb_left_front_clicked()
-{
-	m_model.add_power(0, 0.01);
-}
-
 void MainWindow::on_pb_zero_clicked()
 {
 	m_model.reset();
 }
 
-void MainWindow::on_pb_right_front_clicked()
-{
-	m_model.add_power(2, 0.01);
-}
+/*	scheme of engines
+ *		0	 2
+ *		 \	/
+ *		  --
+ *		 /  \
+ *		3    1
+*/
 
-void MainWindow::on_pb_left_back_clicked()
+void MainWindow::on_pb_left_front_clicked()
 {
-	m_model.add_power(3, 0.01);
-}
-
-void MainWindow::on_pb_down_clicked()
-{
-	m_model.add_power(-0.005);
-}
-
-void MainWindow::on_pb_up_clicked()
-{
-	m_model.add_power(0.005);
+	double val = ui->dsb_power->value();
+	m_model.add_power(0, val);
 }
 
 void MainWindow::on_pb_right_back_clicked()
 {
-	m_model.add_power(1, 0.01);
+	double val = ui->dsb_power->value();
+	m_model.add_power(1, val);
+}
+
+void MainWindow::on_pb_right_front_clicked()
+{
+	double val = ui->dsb_power->value();
+	m_model.add_power(2, val);
+}
+
+void MainWindow::on_pb_left_back_clicked()
+{
+	double val = ui->dsb_power->value();
+	m_model.add_power(3, val);
+}
+
+void MainWindow::on_pb_down_clicked()
+{
+	double val = ui->dsb_power->value();
+	m_model.add_power(-val);
+}
+
+void MainWindow::on_pb_up_clicked()
+{
+	double val = ui->dsb_power->value();
+	m_model.add_power(val);
 }
 
 void MainWindow::on_timeout()
@@ -61,9 +75,6 @@ void MainWindow::on_timeout()
 	ui->label_betha->setText(QString::number(m_model.betha()));
 	ui->label_gamma->setText(QString::number(m_model.gamma()));
 	ui->label_power->setText(QString::number(m_model.power()));
-	ui->label_mg->setText(QString::number(m_model.mg()));
-	ui->label_power_koeff->setText(QString::number(m_model.acceleration()));
-	ui->label_acceleration->setText(QString::number(m_model.acceleration_mg()));
 
 	QString txt;
 	for(int i = 0; i < 4; i++){
@@ -100,4 +111,52 @@ void MainWindow::on_cb_watch_clicked(bool checked)
 void MainWindow::on_cb_watch_gl_clicked(bool checked)
 {
 	m_model.set_is_watch(checked);
+}
+
+void MainWindow::on_pushButton_2_clicked()
+{
+	double val = ui->dsb_power->value();
+
+	m_model.add_power(1, val);
+	m_model.add_power(3, val);
+}
+
+void MainWindow::on_pushButton_clicked()
+{
+	double val = ui->dsb_power->value();
+
+	m_model.add_power(0, val);
+	m_model.add_power(2, val);
+}
+
+void MainWindow::on_pushButton_3_clicked()
+{
+	double val = ui->dsb_power->value();
+
+	m_model.add_power(2, val);
+	m_model.add_power(1, val);
+}
+
+void MainWindow::on_pushButton_4_clicked()
+{
+	double val = ui->dsb_power->value();
+
+	m_model.add_power(0, val);
+	m_model.add_power(3, val);
+}
+
+void MainWindow::on_dsb_mean_valueChanged(double arg1)
+{
+	double v1 = ui->dsb_mean->value();
+	double v2 = ui->dsb_sigma->value();
+
+	m_model.set_distribution_parameters(v1, v2);
+}
+
+void MainWindow::on_dsb_sigma_valueChanged(double arg1)
+{
+	double v1 = ui->dsb_mean->value();
+	double v2 = ui->dsb_sigma->value();
+
+	m_model.set_distribution_parameters(v1, v2);
 }

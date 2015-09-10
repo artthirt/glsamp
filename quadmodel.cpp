@@ -102,7 +102,7 @@ QuadModel::QuadModel()
 	std::tr1::random_device rd;
 	generator = std::tr1::mt19937(rd);
 
-	distribution = std::tr1::normal_distribution<double>(0.0005, 0.0005);
+	distribution = std::tr1::normal_distribution<double>(0.0001, 0.0001);
 	distribution_time = std::tr1::normal_distribution<double>(15, 15);
 #else
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -175,8 +175,6 @@ void QuadModel::reset()
 
 	m_delta_speed[0] = m_delta_speed[1] = QVector3D();
 
-	m_acceleration = 0;
-	m_acceleration_mg = 0;
 	m_alpha = m_betha = m_gamma = 0;
 	m_speed = m_position = QVector3D();
 	for(int i = 0; i < 4; i++) m_engines[i] = 0;
@@ -187,14 +185,14 @@ void QuadModel::reset_power()
 	for(int i = 0; i < 4; i++) m_engines[i] = 0;
 }
 
-double QuadModel::acceleration() const
+void QuadModel::set_distribution_parameters(double mean, double sigma)
 {
-	return m_acceleration;
-}
+#if (_MSC_VER >= 1500 && _MSC_VER <= 1600)
+	distribution = std::tr1::normal_distribution<double>(mean, sigma);
+#else
+	distribution = std::normal_distribution<double>(mean, sigma);
+#endif
 
-double QuadModel::acceleration_mg() const
-{
-	return m_acceleration_mg;
 }
 
 void QuadModel::set_max_power(double value)

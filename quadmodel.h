@@ -39,8 +39,7 @@ public:
 	void reset();
 	void reset_power();
 
-	double acceleration() const;
-	double acceleration_mg() const;
+	void set_distribution_parameters(double mean, double sigma);
 
 	void set_max_power(double value);
 	double max_power() { return m_max_power; }
@@ -81,9 +80,6 @@ private:
 	double m_mg;
 	double m_max_power;
 	double m_koeff;
-
-	double m_acceleration;
-	double m_acceleration_mg;
 
 	QColor m_color;
 	QVector3D m_normal;

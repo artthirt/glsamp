@@ -44,6 +44,18 @@ private slots:
 
 	void on_cb_watch_gl_clicked(bool checked);
 
+	void on_pushButton_2_clicked();
+
+	void on_pushButton_clicked();
+
+	void on_pushButton_3_clicked();
+
+	void on_pushButton_4_clicked();
+
+	void on_dsb_mean_valueChanged(double arg1);
+
+	void on_dsb_sigma_valueChanged(double arg1);
+
 private:
 	Ui::MainWindow *ui;
 
