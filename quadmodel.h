@@ -23,7 +23,7 @@ class QuadModel : public VirtGLObject
 {
 	Q_OBJECT
 public:
-	QuadModel();
+	QuadModel(QObject *parent = NULL);
 
 	double lever() const;
 	void setLever(double value);
@@ -49,6 +49,9 @@ public:
 
 	void set_koeff(double value);
 	double koeff() const;
+
+	bool is_draw_telemetry() const { return m_is_draw_telemetry; }
+	void set_draw_telemetry(bool value);
 
 	double engines(int index) const {return m_engines[index]; }
 	double engines_noise(int index) { return m_engines[index] + m_engines_rnd[index]; }
@@ -96,6 +99,8 @@ private:
 	int m_time_noise_start;
 	int m_delta_time;
 
+	bool m_is_draw_telemetry;
+
 #if (_MSC_VER >= 1500 && _MSC_VER <= 1600)
 	std::tr1::normal_distribution<double> distribution;
 	std::tr1::normal_distribution<double> distribution_time;
@@ -111,6 +116,7 @@ private:
 	QVector3D m_tmp_normal, m_tmp_course, m_tmp_vc2;
 
 	void draw_tmp_struct();
+	void draw_telemetry();
 
 	QVector< QVector3D > m_trajectory;
 

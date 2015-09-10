@@ -8,6 +8,7 @@
 
 #include <QMatrix4x4>
 #include <QDebug>
+#include <QGLWidget>
 
 #include <GL/gl.h>
 
@@ -89,12 +90,15 @@ void get_lever_axes(const QVector3D* v, QVector3D *vv)
 
 //******************************************
 
-QuadModel::QuadModel()
+QuadModel::QuadModel(QObject *parent):
+	VirtGLObject(parent)
 {
 	m_lever = 1;
 	m_mg = 9.8;
 	m_max_power = 80;
 	m_koeff = 1;
+
+	m_is_draw_telemetry = true;
 
 	m_color = QColor(60, 255, 60, 255);
 
@@ -102,13 +106,13 @@ QuadModel::QuadModel()
 	std::tr1::random_device rd;
 	generator = std::tr1::mt19937(rd);
 
-	distribution = std::tr1::normal_distribution<double>(0.0001, 0.0001);
+	distribution = std::tr1::normal_distribution<double>(0.0, 0.0001);
 	distribution_time = std::tr1::normal_distribution<double>(15, 15);
 #else
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 	generator = std::mt19937(seed);
 
-	distribution = std::normal_distribution<double>(0.0001, 0.0001);
+	distribution = std::normal_distribution<double>(0.0, 0.0001);
 	distribution_time = std::normal_distribution<double>(15, 15);
 #endif
 
@@ -116,7 +120,7 @@ QuadModel::QuadModel()
 	m_time_noise.start();
 	m_time_noise_start = m_time_noise.elapsed();
 
-	bool res = connect(&m_timer_noise, SIGNAL(timeout()), this, SLOT(on_timeout_noise()));
+	connect(&m_timer_noise, SIGNAL(timeout()), this, SLOT(on_timeout_noise()));
 	m_timer_noise.start(10);
 
 	generate_engines_rnd();
@@ -220,6 +224,11 @@ double QuadModel::koeff() const
 	return m_koeff;
 }
 
+void QuadModel::set_draw_telemetry(bool value)
+{
+	m_is_draw_telemetry = value;
+}
+
 void QuadModel::add_alpha(double value)
 {
 	m_alpha += value;
@@ -306,10 +315,10 @@ void QuadModel::draw()
 	mt = m.transposed();
 
 	QVector3D vt[4] = {
-		QVector3D(0.5, 0.5, 0.5),
-		QVector3D(-0.5, 0.5, 0.5),
-		QVector3D(-0.5, -0.5, 0.5),
-		QVector3D(0.5, -0.5, 0.5),
+		QVector3D(0.2, 0.2, 0.2),
+		QVector3D(-0.2, 0.2, 0.2),
+		QVector3D(-0.2, -0.2, 0.2),
+		QVector3D(0.2, -0.2, 0.2),
 	};
 
 	for(int i = 0; i < 4; i++){
@@ -352,6 +361,9 @@ void QuadModel::draw()
 	glEnd();
 
 	draw_tmp_struct();
+
+	if(m_is_draw_telemetry)
+		draw_telemetry();
 }
 
 void QuadModel::tick()
@@ -494,9 +506,9 @@ void QuadModel::draw_tmp_struct()
 {
 	glLineWidth(5);
 
-	draw_vect(m_tmp_normal, Z0, QC(0.3, 1, 0.3));
-	draw_vect(m_tmp_vc2, Z0, QC(1, 0.3, 0.3));
-	draw_vect(m_tmp_course, Z0, QC(0.3, 0.3, 1));
+	draw_vect(m_tmp_normal, Z0, QC(0.3f, 1.f, 0.3f));
+	draw_vect(m_tmp_vc2, Z0, QC(1.f, 0.3f, 0.3f));
+	draw_vect(m_tmp_course, Z0, QC(0.3f, 0.3f, 1.f));
 
 	glLineWidth(3);
 
@@ -508,20 +520,81 @@ void QuadModel::draw_tmp_struct()
 	QVector3D v[4];
 	get_vec_levers(m_tmp_course, m_tmp_normal, m_lever, v);
 
-	glColor3f(0, 0.3, 1);
+	glColor3f(0.f, 0.3f, 1.f);
 	for(int i = 0; i < 4; i++){
-		draw_vect(m_tmp_n[i], v[i], QC(0, 0.3, 1));
+		draw_vect(m_tmp_n[i], v[i], QC(0.f, 0.3f, 1.f));
 	}
 
 
 	for(int i = 0; i < 4; i++){
-		draw_vect(v[i], Z0, QC(0, 1, 0.3));
+		draw_vect(v[i], Z0, QC(0.f, 1.f, 0.3f));
 	}
 	glLineWidth(1);
 
 //	m_normal = normal_begin;
 //	m_course = course_begin;
 
+}
+
+void QuadModel::draw_telemetry()
+{
+	glPushMatrix();
+
+	glLoadIdentity();
+
+	glTranslatef(0, 0, -1.01f);
+
+	const int cnt_circle = 50;
+	const float R = 0.5;
+
+	glLineWidth(2);
+	glColor3f(1, 1, 1);
+
+	glBegin(GL_LINE_STRIP);
+	for(int i = 0; i <= cnt_circle; i++){
+		float x, y;
+
+		x = R * sin(2.0 * M_PI * i/cnt_circle);
+		y = R * cos(2.0 * M_PI * i/cnt_circle);
+
+		glVertex3f(x, y, 0);
+	}
+	glEnd();
+
+	QVector3D vn = m_tmp_normal;
+	vn.setZ(0);
+	double l = vn.length();
+//	double a = QVector3D::dotProduct(m_tmp_vc2, vn);
+	double b = -asin(m_tmp_vc2.z());
+
+	if(m_tmp_vc2.z() < 0){
+		b = -b;
+	}
+//	float k = 1.f;
+	if(m_tmp_normal.z() < 0){
+		b = M_PI - b;
+//		k = -1.f;
+	}
+//	if(c < 0){
+//		b = - b;
+//	}
+
+	QGLWidget *w = dynamic_cast< QGLWidget* >(parent());
+	if(w){
+		glColor3f(1, 1, 1);
+		w->renderText(0.8, 0.8, -1.0, QString::number(l, 'f', 3));
+	}
+
+	glBegin(GL_LINES);
+	glVertex3f(0, 0, 0);
+	glVertex3f(R * cos(b), R * sin(b), 0);
+
+//	glVertex3f(0, 0, 0);
+//	glVertex3f(-R * cos(b), -R * sin(b), 0);
+	glEnd();
+
+	glLineWidth(1);
+	glPopMatrix();
 }
 
 void QuadModel::generate_engines_rnd()

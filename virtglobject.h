@@ -6,7 +6,11 @@
 
 class VirtGLObject: public QObject{
 public:
-	VirtGLObject(): m_is_watchXY(false), m_is_watch(false){
+	VirtGLObject(QObject *parent = NULL):
+		QObject(parent),
+		m_is_watchXY(false),
+		m_is_watch(false)
+	{
 
 	}
 
