@@ -569,8 +569,22 @@ void QuadModel::draw_telemetry()
 	glLineWidth(2);
 	glColor3f(1, 1, 1);
 
-	glBegin(GL_LINE_STRIP);
+	glBegin(GL_TRIANGLE_STRIP);
 	for(int i = 0; i <= cnt_circle; i++){
+		float x, y;
+
+		x = R * sin(2.0 * M_PI * i/cnt_circle);
+		y = R * cos(2.0 * M_PI * i/cnt_circle);
+
+		glVertex3f(0, 0, -0.001);
+		glVertex3f(x, y, -0.001);
+	}
+	glEnd();
+
+	glColor3f(1, 1, 1);
+	glLineWidth(2);
+	glBegin(GL_LINE_LOOP);
+	for(int i = 0; i < cnt_circle; i++){
 		float x, y;
 
 		x = R * sin(2.0 * M_PI * i/cnt_circle);
@@ -579,8 +593,6 @@ void QuadModel::draw_telemetry()
 		glVertex3f(x, y, 0);
 	}
 	glEnd();
-
-	double b = 0;
 
 	QVector3D tmp_vc2_z0 = m_tmp_vc2;
 	tmp_vc2_z0.setZ(0);
@@ -603,8 +615,6 @@ void QuadModel::draw_telemetry()
 		w->renderText(-1.4, 0.6, -1.0, QString::number(d, 'f', 3) + " " + QString::number(d1, 'f', 3), QFont("Arial", 14));
 	}
 
-	glLineWidth(3);
-
 	float l = -tmp_vc2_z0.length();
 	float lc = -nc.length();
 	if(d < 0){
@@ -622,8 +632,8 @@ void QuadModel::draw_telemetry()
 		vc.setX(0);
 		double l = vc.y();
 		offset_course = l;
-		glColor3f(1, 1, 1);
-
+		glColor3f(0.7, 0.7, 0.7);
+		glLineWidth(4);
 		QVector3D v0 = vp * l, v1, v2;
 		l = v0.length();
 		if(l < R){
@@ -635,6 +645,25 @@ void QuadModel::draw_telemetry()
 			glVertex3f(v2.x(), v2.y(), v2.z());
 			glEnd();
 		}
+
+		glColor3f(1, 0, 0);
+		/// down tangaj arc
+		glBegin(GL_TRIANGLE_STRIP);
+		QVector3D vl0 = vl.normalized();
+		for(int i = 0; i <= 60; i++){
+			QVector3D vz = vp * (offset_course - i/60.0 * R * 2), v3, v4;
+
+			l = vz.length();
+			if(l <= R){
+				l = sqrt(R * R - l * l);
+				v3 = vz - l * vl0, v4 = vz + l * vl0;
+				glVertex3f(v3.x(), v3.y(), -0.0005);
+				glVertex3f(v4.x(), v4.y(), -0.0005);
+			}else{
+				glVertex3f(vz.x(), vz.y(), -0.0005);
+			}
+		}
+		glEnd();
 	}
 //	glColor3f(0, 0.3, 1);
 //	glBegin(GL_LINES);
@@ -651,8 +680,8 @@ void QuadModel::draw_telemetry()
 		if(l < R){
 			l = sqrt(R * R - l * l)/3;
 			v1 = v0 - l * vl, v2 = v0 + l * vl;
-
-			glColor3f(1, 1, 1);
+			/// scale of up tangaj
+			glColor3f(1, 0, 0);
 			glBegin(GL_LINES);
 			glVertex3f(v1.x(), v1.y(), v1.z());
 			glVertex3f(v2.x(), v2.y(), v2.z());
@@ -665,7 +694,7 @@ void QuadModel::draw_telemetry()
 		if(l < R){
 			l = sqrt(R * R - l * l)/3;
 			v3 = vz - l * vl, v4 = vz + l * vl;
-
+			/// scale of down tangaj
 			glColor3f(1, 0.7, 0);
 			glBegin(GL_LINES);
 			glVertex3f(v3.x(), v3.y(), v3.z());
