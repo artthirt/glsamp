@@ -106,7 +106,7 @@ QuadModel::QuadModel(QObject *parent):
 	std::tr1::random_device rd;
 	generator = std::tr1::mt19937(rd);
 
-	distribution = std::tr1::normal_distribution<double>(0.0, 0.0001);
+	distribution = std::tr1::normal_distribution<double>(0.0, 0.00001);
 	distribution_time = std::tr1::normal_distribution<double>(15, 15);
 #else
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -227,6 +227,11 @@ double QuadModel::koeff() const
 void QuadModel::set_draw_telemetry(bool value)
 {
 	m_is_draw_telemetry = value;
+}
+
+double QuadModel::engines_noise(int index)
+{
+	return qMax(0.0, m_engines[index] + m_engines_rnd[index]);
 }
 
 void QuadModel::add_alpha(double value)
@@ -580,22 +585,17 @@ void QuadModel::draw_telemetry()
 	QVector3D tmp_vc2_z0 = m_tmp_vc2;
 	tmp_vc2_z0.setZ(0);
 
-	QVector3D n = m_tmp_normal;
-	n.setZ(0);
+	QVector3D nc = m_tmp_course;
+	nc.setZ(0);
 
 	QVector3D v1 = QVector3D::crossProduct(normal_begin, m_tmp_course);
 
 	double d = QVector3D::dotProduct(m_tmp_vc2, v1);
 	double d1 = 0;
 
-	QVector3D dv = QVector3D::crossProduct(tmp_vc2_z0, m_tmp_vc2);
-
 //	if(m_tmp_normal.z() < 0){
 //		b = M_PI + b;
 //	}
-	if(m_tmp_vc2.z() < 0){
-		b = -b;
-	}
 
 	QGLWidget *w = dynamic_cast< QGLWidget* >(parent());
 	if(w){
@@ -606,39 +606,72 @@ void QuadModel::draw_telemetry()
 	glLineWidth(3);
 
 	float l = -tmp_vc2_z0.length();
-	if(d < 0)
+	float lc = -nc.length();
+	if(d < 0){
 		l = -l;
+		lc = -lc;
+	}
 
 	QVector3D vl = QVector3D(l, m_tmp_vc2.z(), 0).normalized() * R;
 
-	glColor3f(1, 0, 0);
-	glBegin(GL_LINES);
-	glVertex3f(0, 0, 0);
-	glVertex3f(vl.x(),vl.y(), vl.z());
-	glVertex3f(0, 0, 0);
-	glVertex3f(-vl.x(),-vl.y(), vl.z());
-	glEnd();
+	QVector3D vp = QVector3D(vl.y(), -vl.x(), 0).normalized();
+
+	double offset_course = 0;
+	{
+		QVector3D vc = QVector3D(lc, m_tmp_course.z(), 0).normalized() * R;
+		vc.setX(0);
+		double l = vc.y();
+		offset_course = l;
+		glColor3f(1, 1, 1);
+
+		QVector3D v0 = vp * l, v1, v2;
+		l = v0.length();
+		if(l < R){
+			l = sqrt(R * R - l * l)/R;
+			v1 = v0 - l * vl, v2 = v0 + l * vl;
+
+			glBegin(GL_LINES);
+			glVertex3f(v1.x(), v1.y(), v1.z());
+			glVertex3f(v2.x(), v2.y(), v2.z());
+			glEnd();
+		}
+	}
+//	glColor3f(0, 0.3, 1);
+//	glBegin(GL_LINES);
+//	glVertex3f(0, 0, 0);
+//	glVertex3f(vc.x(),vc.y(), vc.z());
+//	glEnd();
+
 
 	glLineWidth(2);
-	QVector3D vp = QVector3D(vl.y(), -vl.x(), 0).normalized();
 	vl.normalize();
-	for(int i = 0; i < 3; i++){
-		QVector3D v0 = vp * i/3 * R, v1, v2;
+	for(int i = 0; i < 7; i++){
+		QVector3D v0 = vp * (offset_course + i/3.0 * R), v1, v2, v3, v4;
 		double l = v0.length();
-		l = sqrt(R * R - l * l)/3;
-		v1 = v0 - l * vl, v2 = v0 + l * vl;
+		if(l < R){
+			l = sqrt(R * R - l * l)/3;
+			v1 = v0 - l * vl, v2 = v0 + l * vl;
 
-		glColor3f(1, 0, 0);
-		glBegin(GL_LINES);
-		glVertex3f(v1.x(), v1.y(), v1.z());
-		glVertex3f(v2.x(), v2.y(), v2.z());
-		glEnd();
+			glColor3f(1, 1, 1);
+			glBegin(GL_LINES);
+			glVertex3f(v1.x(), v1.y(), v1.z());
+			glVertex3f(v2.x(), v2.y(), v2.z());
+			glEnd();
+		}
 
-		glColor3f(1, 0.7, 0);
-		glBegin(GL_LINES);
-		glVertex3f(-v1.x(), -v1.y(), -v1.z());
-		glVertex3f(-v2.x(), -v2.y(), -v2.z());
-		glEnd();
+		QVector3D vz = vp * (offset_course - i/3.0 * R);
+
+		l = vz.length();
+		if(l < R){
+			l = sqrt(R * R - l * l)/3;
+			v3 = vz - l * vl, v4 = vz + l * vl;
+
+			glColor3f(1, 0.7, 0);
+			glBegin(GL_LINES);
+			glVertex3f(v3.x(), v3.y(), v3.z());
+			glVertex3f(v4.x(), v4.y(), v4.z());
+			glEnd();
+		}
 	}
 
 	glLineWidth(1);
@@ -652,7 +685,7 @@ void QuadModel::draw_transp_plane(const QMatrix4x4 &matrix, const QColor &c)
 {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glBlendEquation(GL_FUNC_ADD);
+//	glBlendEquation(GL_FUNC_ADD);
 
 	glPushMatrix();
 

@@ -54,7 +54,7 @@ public:
 	void set_draw_telemetry(bool value);
 
 	double engines(int index) const {return m_engines[index]; }
-	double engines_noise(int index) { return m_engines[index] + m_engines_rnd[index]; }
+	double engines_noise(int index);
 
 	void add_alpha(double value);
 	void add_betha(double value);
