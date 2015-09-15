@@ -11,6 +11,8 @@
 
 #include <random>
 
+#include "struct_controls.h"
+
 #if (QT_VERSION <= QT_VERSION_CHECK(5, 0, 0))
 #	define QT4
 typedef qreal mat_type;
@@ -24,41 +26,135 @@ class QuadModel : public VirtGLObject
 	Q_OBJECT
 public:
 	QuadModel(QObject *parent = NULL);
-
+	/**
+	 * @brief lever - lever of quadrocopter model
+	 * @return
+	 */
 	double lever() const;
+	/**
+	 * @brief setLever
+	 * @param value - lever length quadrocopter
+	 */
 	void setLever(double value);
-
+	/**
+	 * @brief power - total power of engine with noise
+	 * @return
+	 */
 	double power() const;
+	/**
+	 * @brief real_power - total power of engines without noise
+	 * @return
+	 */
 	double real_power() const;
+	/**
+	 * @brief reset
+	 * reset all values. set model in zero position
+	 */
 	void reset();
+	/**
+	 * @brief reset_power
+	 * reset only power of engines
+	 */
 	void reset_power();
-
+	/**
+	 * @brief set_distribution_parameters
+	 * set noise for engines
+	 * @param mean
+	 * @param sigma
+	 */
 	void set_distribution_parameters(double mean, double sigma);
-
+	/**
+	 * @brief set_max_power
+	 * set maximum power
+	 * @param value
+	 */
 	void set_max_power(double value);
+	/**
+	 * @brief max_power
+	 * @return
+	 */
 	double max_power() { return m_max_power; }
-
-	double mg() const;
-	void set_mg(double mg);
-
-	void set_koeff(double value);
-	double koeff() const;
-
+	/**
+	 * @brief is_draw_telemetry
+	 * @return
+	 */
 	bool is_draw_telemetry() const { return m_is_draw_telemetry; }
+	/**
+	 * @brief set_draw_telemetry
+	 * set draw telemetry
+	 * @param value
+	 */
 	void set_draw_telemetry(bool value);
-
+	/**
+	 * @brief engines
+	 * return power of engines without noise
+	 * @param index
+	 * @return
+	 */
 	double engines(int index) const {return m_engines[index]; }
+	/**
+	 * @brief engines_noise
+	 * return power of engines with noise
+	 * @param index
+	 * @return
+	 */
 	double engines_noise(int index);
-
+	/**
+	 * @brief add_power
+	 * add power for each engine
+	 * @param value
+	 */
 	void add_power(double value);
+	/**
+	 * @brief add_power
+	 * add power for engine[index]
+	 * @param index
+	 * @param value
+	 */
 	void add_power(int index, double value);
+	/**
+	 * @brief set_power
+	 * set current power for each engine
+	 * @param value
+	 */
 	void set_power(double value);
 	// VirtGLObject interface
+	/**
+	 * @brief setColor
+	 * @param color
+	 */
 	void setColor(const QColor &color);
+	//
+	/**
+	 * @brief color
+	 * @return
+	 */
 	QColor color() const;
-
+	/**
+	 * @brief set_koeff_fade
+	 * koefficient of fade
+	 * @param value
+	 */
 	void set_koeff_fade(double value);
+	/**
+	 * @brief koeff_fade
+	 * koefficient of fade
+	 * @return
+	 */
 	double koeff_fade() const;
+
+	/**
+	 * @brief setControl
+	 * for control model
+	 * @param control
+	 */
+	void setControl(const StructControls& control);
+	/**
+	 * @brief telemetry
+	 * return current telemetry
+	 * @return
+	 */
+	StructTelemetry telemetry() const;
 
 public:
 	virtual void init();
@@ -91,6 +187,9 @@ private:
 	QTime m_time_noise;
 	int m_time_noise_start;
 	int m_delta_time;
+
+	StructControls m_controls;
+	StructTelemetry m_telemetry;
 
 	bool m_is_draw_telemetry;
 

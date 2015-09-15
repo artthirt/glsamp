@@ -96,7 +96,6 @@ QuadModel::QuadModel(QObject *parent):
 	m_lever = 1;
 	m_mg = 9.8;
 	m_max_power = 80;
-	m_koeff = 1;
 	m_koeff_fade = 0.98;
 
 	m_is_draw_telemetry = true;
@@ -190,26 +189,6 @@ void QuadModel::set_max_power(double value)
 	m_max_power = value;
 }
 
-double QuadModel::mg() const
-{
-	return m_mg;
-}
-
-void QuadModel::set_mg(double mg)
-{
-	m_mg = mg;
-}
-
-void QuadModel::set_koeff(double value)
-{
-	m_koeff = value;
-}
-
-double QuadModel::koeff() const
-{
-	return m_koeff;
-}
-
 void QuadModel::set_draw_telemetry(bool value)
 {
 	m_is_draw_telemetry = value;
@@ -271,6 +250,16 @@ void QuadModel::set_koeff_fade(double value)
 double QuadModel::koeff_fade() const
 {
 	return m_koeff_fade;
+}
+
+void QuadModel::setControl(const StructControls &control)
+{
+	m_controls = control;
+}
+
+StructTelemetry QuadModel::telemetry() const
+{
+	return m_telemetry;
 }
 
 
@@ -351,8 +340,8 @@ void QuadModel::draw()
 	if(m_is_draw_telemetry)
 		draw_telemetry();
 
-	draw_transp_plane(mt, QColor(30, 255, 30, 60));
-	draw_transp_plane(QMatrix4x4(), QColor(30, 30, 255, 60));
+	//draw_transp_plane(mt, QColor(30, 255, 30, 60));
+	//draw_transp_plane(QMatrix4x4(), QColor(30, 30, 255, 60));
 }
 
 void QuadModel::tick()
