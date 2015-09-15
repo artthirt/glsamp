@@ -97,6 +97,7 @@ QuadModel::QuadModel(QObject *parent):
 	m_mg = 9.8;
 	m_max_power = 80;
 	m_koeff = 1;
+	m_koeff_fade = 0.98;
 
 	m_is_draw_telemetry = true;
 
@@ -138,21 +139,6 @@ void QuadModel::setLever(double value)
 	m_lever = value;
 }
 
-void QuadModel::setAlpha(double value)
-{
-	m_alpha = value;
-}
-
-void QuadModel::setBetha(double value)
-{
-	m_betha = value;
-}
-
-void QuadModel::setGamma(double value)
-{
-	m_gamma = value;
-}
-
 double QuadModel::power() const
 {
 	double pw = 0;
@@ -176,10 +162,10 @@ void QuadModel::reset()
 {
 	m_normal = normal_begin;
 	m_course = course_begin;
+	m_rot_speed = 0;
 
 	m_delta_speed[0] = m_delta_speed[1] = QVector3D();
 
-	m_alpha = m_betha = m_gamma = 0;
 	m_speed = m_position = QVector3D();
 	for(int i = 0; i < 4; i++) m_engines[i] = 0;
 }
@@ -234,21 +220,6 @@ double QuadModel::engines_noise(int index)
 	return qMax(0.0, m_engines[index] + m_engines_rnd[index]);
 }
 
-void QuadModel::add_alpha(double value)
-{
-	m_alpha += value;
-}
-
-void QuadModel::add_betha(double value)
-{
-	m_betha += value;
-}
-
-void QuadModel::add_gamma(double value)
-{
-	m_gamma += value;
-}
-
 void QuadModel::add_power(double value)
 {
 	for(int i = 0; i < 4; i++){
@@ -290,6 +261,16 @@ void QuadModel::setColor(const QColor &color)
 QColor QuadModel::color() const
 {
 	return m_color;
+}
+
+void QuadModel::set_koeff_fade(double value)
+{
+	m_koeff_fade = value;
+}
+
+double QuadModel::koeff_fade() const
+{
+	return m_koeff_fade;
 }
 
 
@@ -409,6 +390,29 @@ void QuadModel::change_engines_rnd()
 	}
 }
 
+/**
+ * @brief rotate_lever
+ * @param normal			- current normal
+ * @param lever				- lever
+ * @param diff_pow_engine	- ([0] + [1]) - ([2] + [3]) difference between power
+ * @param course			- current course in -> new course out
+ * @param vec				- current lever vectors in -> new lever vectors out
+ */
+void rotate_lever(const QVector3D& normal, double lever, double diff_pow_engine,
+				   QVector3D &course, QVector3D* vec)
+{
+	QVector3D n[4], vn[4];
+	for(int i = 0; i < 4; i++){
+		n[i] = QVector3D::crossProduct(normal, vec[i]).normalized();
+		n[i] *= diff_pow_engine;
+		vn[i] = vec[i].normalized();
+		vn[i] += n[i];
+		vec[i] = lever * vn[i].normalized();
+	}
+	course = vec[0] + vec[2];
+	course.normalize();
+}
+
 void QuadModel::calc_trajectory()
 {
 	/*	scheme of indexes motors
@@ -421,8 +425,13 @@ void QuadModel::calc_trajectory()
 
 	QVector3D v[4], n[4], dn[2], vv[2];
 
-
 	get_vec_levers(m_course, m_normal, m_lever, v);
+
+	double diff_pow_engine = engines_noise(0) + engines_noise(1);
+	diff_pow_engine -= (engines_noise(2) + engines_noise(3));
+	m_rot_speed += diff_pow_engine;
+	m_rot_speed *= m_koeff_fade;
+	rotate_lever(m_normal, m_lever, diff_pow_engine, m_course, v);
 
 	double val = 0;
 	for(int i = 0; i < 4; i++){
@@ -433,7 +442,7 @@ void QuadModel::calc_trajectory()
 	QVector3D an = m_normal * val;
 	m_speed += 0.1 * an;
 	m_speed -= QVector3D(0, 0, 0.01);
-	m_speed *= 0.98;
+	m_speed *= m_koeff_fade;
 
 	QVector3D tp = m_position + m_speed;
 	if(tp.z() < 0){

@@ -71,9 +71,6 @@ void MainWindow::on_pb_up_clicked()
 
 void MainWindow::on_timeout()
 {
-	ui->label_alpha->setText(QString::number(m_model.alpha()));
-	ui->label_betha->setText(QString::number(m_model.betha()));
-	ui->label_gamma->setText(QString::number(m_model.gamma()));
 	ui->label_power->setText(QString::number(m_model.power()));
 
 	QString txt;

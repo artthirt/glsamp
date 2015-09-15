@@ -15,6 +15,9 @@
 GLSpace::GLSpace(QWidget *parent) :
 	QGLWidget(parent),
 	ui(new Ui::GLSpace)
+  , m_is_draw_plane(true)
+  , m_count_plane_line(200)
+  , m_plane_width(500)
 {
 	ui->setupUi(this);
 
@@ -69,6 +72,36 @@ void GLSpace::setBackground(const QColor &color)
 	m_backround = color;
 }
 
+bool GLSpace::is_draw_plane() const
+{
+	return m_is_draw_plane;
+}
+
+void GLSpace::set_is_draw_plane(bool value)
+{
+	m_is_draw_plane = value;
+}
+
+void GLSpace::set_count_lines_plane(int value)
+{
+	m_count_plane_line = value;
+}
+
+int GLSpace::count_lines_plane() const
+{
+	return m_count_plane_line;
+}
+
+void GLSpace::set_width_plane(double value)
+{
+	m_plane_width = value;
+}
+
+double GLSpace::width_plane() const
+{
+	return m_plane_width;
+}
+
 void GLSpace::calc_mouse_move(const QPointF &pos)
 {
 	if(!m_mouse_down)
@@ -79,11 +112,10 @@ void GLSpace::calc_mouse_move(const QPointF &pos)
 
 void GLSpace::draw_plane()
 {
-
 	glColor3f(1, 1, 1);
 
-	const int count = 30;
-	const double width = 100;
+	const int count = m_count_plane_line;
+	const double width = m_plane_width;
 
 	glBegin(GL_LINES);
 
@@ -106,6 +138,18 @@ void GLSpace::draw_plane()
 				   -width/2.0 + width,
 				   0);
 	}
+
+	glLineWidth(5);
+
+	glBegin(GL_LINES);
+	glVertex3f(-width, 0, 0);
+	glVertex3f(width, 0, 0);
+
+	glVertex3f(0, -width, 0);
+	glVertex3f(0, width, 0);
+	glEnd();
+
+	glLineWidth(1);
 
 	glEnd();
 }
@@ -202,7 +246,8 @@ void GLSpace::paintGL()
 		}
 	}
 
-	draw_plane();
+	if(m_is_draw_plane)
+		draw_plane();
 
 	foreach (VirtGLObject* obj, m_objects) {
 		obj->draw();

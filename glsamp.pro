@@ -18,12 +18,15 @@ DEFINES += _USE_MATH_DEFINES
 SOURCES += main.cpp\
         mainwindow.cpp \
     glspace.cpp \
-    quadmodel.cpp
+    quadmodel.cpp \
+    controlmodel.cpp
 
 HEADERS  += mainwindow.h \
     virtglobject.h \
     glspace.h \
-    quadmodel.h
+    quadmodel.h \
+    controlmodel.h \
+    struct_controls.h
 
 FORMS    += mainwindow.ui \
     glspace.ui

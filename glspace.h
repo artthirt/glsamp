@@ -58,9 +58,44 @@ public:
 	 * @param color
 	 */
 	void setBackground(const QColor& color);
+
+	/**
+	 * @brief is_draw_plane
+	 * @return
+	 */
+	bool is_draw_plane() const;
+	/**
+	 * @brief set_is_draw_plane
+	 * @param value
+	 */
+	void set_is_draw_plane(bool value);
+	/**
+	 * @brief set_count_lines_plane
+	 * @param value
+	 */
+	void set_count_lines_plane(int value);
+	/**
+	 * @brief count_lines_plane
+	 * @return
+	 */
+	int count_lines_plane() const;
+	/**
+	 * @brief set_width_plane
+	 * @param value
+	 */
+	void set_width_plane(double value);
+	/**
+	 * @brief width_plane
+	 * @return
+	 */
+	double width_plane() const;
+
 private:
 	Ui::GLSpace *ui;
 	QTimer m_timer;
+	bool m_is_draw_plane;
+	int m_count_plane_line;
+	double m_plane_width;
 
 	QColor m_backround;
 	QVector< VirtGLObject* > m_objects;

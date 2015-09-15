@@ -28,12 +28,6 @@ public:
 	double lever() const;
 	void setLever(double value);
 
-	double alpha() const { return m_alpha; }
-	void setAlpha(double value);
-	double betha() const { return m_betha; }
-	void setBetha(double value);
-	double gamma() const { return m_gamma; }
-	void setGamma( double value);
 	double power() const;
 	double real_power() const;
 	void reset();
@@ -56,15 +50,15 @@ public:
 	double engines(int index) const {return m_engines[index]; }
 	double engines_noise(int index);
 
-	void add_alpha(double value);
-	void add_betha(double value);
-	void add_gamma(double value);
 	void add_power(double value);
 	void add_power(int index, double value);
 	void set_power(double value);
 	// VirtGLObject interface
 	void setColor(const QColor &color);
 	QColor color() const;
+
+	void set_koeff_fade(double value);
+	double koeff_fade() const;
 
 public:
 	virtual void init();
@@ -76,9 +70,6 @@ public slots:
 	void on_timeout_noise();
 
 private:
-	double m_alpha;
-	double m_betha;
-	double m_gamma;
 	double m_lever;
 	double m_mg;
 	double m_max_power;
@@ -93,6 +84,8 @@ private:
 
 	QVector3D m_speed;
 	QVector3D m_position;
+	double m_rot_speed;
+	double m_koeff_fade;
 
 	QTimer m_timer_noise;
 	QTime m_time_noise;
