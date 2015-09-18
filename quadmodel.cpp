@@ -93,6 +93,8 @@ void get_lever_axes(const QVector3D* v, QVector3D *vv)
 QuadModel::QuadModel(QObject *parent):
 	VirtGLObject(parent)
 {
+	setType(QUADMODEL);
+
 	m_lever = 1;
 	m_mg = 9.8;
 	m_max_power = 80;

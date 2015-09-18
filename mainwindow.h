@@ -5,10 +5,13 @@
 #include <QTimer>
 
 #include "quadmodel.h"
+#include "gyrodata.h"
 
 namespace Ui {
 class MainWindow;
 }
+
+class QListWidgetItem;
 
 class MainWindow : public QMainWindow
 {
@@ -56,6 +59,15 @@ private slots:
 
 	void on_dsb_sigma_valueChanged(double arg1);
 
+	void on_lw_objects_itemChanged(QListWidgetItem *item);
+
+	void on_pushButton_5_clicked();
+
+	void on_pushButton_6_clicked();
+
+protected:
+	void init_list_objects();
+
 private:
 	Ui::MainWindow *ui;
 
@@ -63,6 +75,7 @@ private:
 	QTimer m_timer_cfg;
 
 	QuadModel m_model;
+	GyroData m_gyroData;
 };
 
 #endif // MAINWINDOW_H

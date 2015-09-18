@@ -1,6 +1,9 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QFileDialog>
+#include "QListWidgetItem"
+
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::MainWindow)
@@ -8,11 +11,18 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->setupUi(this);
 
 	ui->widget->add_object(&m_model);
+	ui->widget->add_object(&m_gyroData);
 
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(on_timeout()));
 	m_timer.start(100);
 	connect(&m_timer_cfg, SIGNAL(timeout()), this, SLOT(on_timeout_cfg()));
 	m_timer_cfg.start(300);
+
+	init_list_objects();
+
+	ui->lb_filename->setText(m_gyroData.fileName());
+
+	setWindowState( Qt::WindowMaximized );
 }
 
 MainWindow::~MainWindow()
@@ -156,4 +166,53 @@ void MainWindow::on_dsb_sigma_valueChanged(double arg1)
 	double v2 = ui->dsb_sigma->value();
 
 	m_model.set_distribution_parameters(v1, v2);
+}
+
+void MainWindow::init_list_objects()
+{
+	QListWidgetItem *it;
+
+	it = new QListWidgetItem("quadmodel", ui->lw_objects);
+	it->setFlags(Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
+	it->setCheckState(m_model.is_enable()? Qt::Checked : Qt::Unchecked);
+	it->setData(Qt::UserRole, m_model.type());
+
+	it = new QListWidgetItem("gyro data", ui->lw_objects);
+	it->setFlags(Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
+	it->setCheckState(m_gyroData.is_enable()? Qt::Checked : Qt::Unchecked);
+	it->setData(Qt::UserRole, m_gyroData.type());
+
+}
+
+void MainWindow::on_lw_objects_itemChanged(QListWidgetItem *item)
+{
+	QVariant vr = item->data(Qt::UserRole);
+	switch (vr.toInt()) {
+		case QuadModel::QUADMODEL:
+			m_model.set_is_enable(item->checkState() == Qt::Checked? true : false);
+			break;
+		case GyroData::GYRODATA:
+			m_gyroData.set_is_enable(item->checkState() == Qt::Checked? true : false);
+			break;
+		default:
+			break;
+	}
+}
+
+void MainWindow::on_pushButton_5_clicked()
+{
+	QFileDialog dlg;
+
+	dlg.setNameFilter("*.csv");
+
+	if(dlg.exec()){
+		m_gyroData.openFile(dlg.selectedFiles()[0]);
+
+		ui->lb_filename->setText(m_gyroData.fileName());
+	}
+}
+
+void MainWindow::on_pushButton_6_clicked()
+{
+	m_gyroData.recalc_accel(ui->dsb_threshold->value());
 }

@@ -19,14 +19,16 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     glspace.cpp \
     quadmodel.cpp \
-    controlmodel.cpp
+    controlmodel.cpp \
+    gyrodata.cpp
 
 HEADERS  += mainwindow.h \
     virtglobject.h \
     glspace.h \
     quadmodel.h \
     controlmodel.h \
-    struct_controls.h
+    struct_controls.h \
+    gyrodata.h
 
 FORMS    += mainwindow.ui \
     glspace.ui

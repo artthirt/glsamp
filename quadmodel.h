@@ -25,6 +25,10 @@ class QuadModel : public VirtGLObject
 {
 	Q_OBJECT
 public:
+	enum {
+		QUADMODEL = TYPE_VGL + 1
+	};
+
 	QuadModel(QObject *parent = NULL);
 	/**
 	 * @brief lever - lever of quadrocopter model

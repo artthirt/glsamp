@@ -236,6 +236,9 @@ void GLSpace::paintGL()
 
 	/// watch for select object
 	foreach (VirtGLObject* obj, m_objects) {
+		if(!obj->is_enable())
+			continue;
+
 		if(obj->is_watchXY()){
 			glTranslated(-obj->position().x(), -obj->position().y(), 0);
 			break;
@@ -250,6 +253,8 @@ void GLSpace::paintGL()
 		draw_plane();
 
 	foreach (VirtGLObject* obj, m_objects) {
+		if(!obj->is_enable())
+			continue;
 		obj->draw();
 	}
 }
