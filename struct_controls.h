@@ -1,11 +1,37 @@
 #ifndef STRUCT_CONTROLS_H
 #define STRUCT_CONTROLS_H
 
-#include <QVector3D>
-
 #define FOREACH(index, cnt, expression) for(int index = 0; index < cnt; index++){ \
-	expression \
+	expression; \
 	}
+
+struct Vector3f{
+	Vector3f(){
+		FOREACH(i, 3, data[i] = 0);
+	}
+	Vector3f(float x, float y, float z){
+		data[0] = x;
+		data[1] = y;
+		data[2] = z;
+	}
+	Vector3f(const Vector3f& v){
+		FOREACH(i, 3, data[i] = v.data[i];);
+	}
+
+	float x() const { return data[0]; }
+	float y() const { return data[1]; }
+	float z() const { return data[2]; }
+	void setX(float value) { data[0] = value; }
+	void setY(float value) { data[1] = value; }
+	void setZ(float value) { data[2] = value; }
+
+	Vector3f& operator* (float value){
+		FOREACH(i, 3, data[i] *= value);
+		return *this;
+	}
+
+	float data[3];
+};
 
 struct StructControls
 {
@@ -24,6 +50,7 @@ struct StructTelemetry
 		FOREACH(i, cnt_engines, power[i] = 0;);
 		power_on = false;
 		height = 0;
+		temp = 0;
 		course = tangaj = bank = 0;
 	}
 	StructTelemetry(const StructTelemetry& st){
@@ -35,6 +62,7 @@ struct StructTelemetry
 		gyro = st.gyro;
 		accel = st.accel;
 		height = st.height;
+		temp = st.temp;
 	}
 
 	bool power_on;
@@ -44,11 +72,12 @@ struct StructTelemetry
 	float tangaj;
 	float bank;
 	float course;
-
-	QVector3D gyro;
-
-	QVector3D accel;
+	float temp;
 	float height;
+
+	Vector3f gyro;
+
+	Vector3f accel;
 };
 
 #endif // STRUCT_CONTROLS_H
