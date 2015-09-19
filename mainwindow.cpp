@@ -7,6 +7,7 @@
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::MainWindow)
+  , m_available_telemetry(0)
 {
 	ui->setupUi(this);
 
@@ -21,6 +22,9 @@ MainWindow::MainWindow(QWidget *parent) :
 	init_list_objects();
 
 	ui->lb_filename->setText(m_gyroData.fileName());
+
+	m_available_telemetry = new QLabel(this);
+	ui->statusBar->addWidget(m_available_telemetry);
 
 	setWindowState( Qt::WindowMaximized );
 }
@@ -98,6 +102,13 @@ void MainWindow::on_timeout()
 
 void MainWindow::on_timeout_cfg()
 {
+	if(m_available_telemetry){
+		if(m_gyroData.is_available_telemetry()){
+			m_available_telemetry->setText("telemetry received");
+		}else{
+			m_available_telemetry->setText("telemetry not received");
+		}
+	}
 }
 
 void MainWindow::on_vs_power_valueChanged(int value)
@@ -215,4 +226,14 @@ void MainWindow::on_pushButton_5_clicked()
 void MainWindow::on_pushButton_6_clicked()
 {
 	m_gyroData.recalc_accel(ui->dsb_threshold->value());
+}
+
+void MainWindow::on_pushButton_7_clicked()
+{
+	m_gyroData.send_start_to_net(QHostAddress(ui->le_ip_gyro_data->text()), ui->sb_gyro_data->value());
+}
+
+void MainWindow::on_pushButton_8_clicked()
+{
+	m_gyroData.send_stop_to_net(QHostAddress(ui->le_ip_gyro_data->text()), ui->sb_gyro_data->value());
 }

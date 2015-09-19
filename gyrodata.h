@@ -4,6 +4,16 @@
 #include "virtglobject.h"
 
 #include <QVector>
+#include <QTimer>
+#include <QHostAddress>
+#include <QTime>
+
+#include "struct_controls.h"
+
+class QUdpSocket;
+
+const int max_count_telemetry = 1000;
+const int max_delay_for_data = 200;
 
 class GyroData : public VirtGLObject
 {
@@ -14,6 +24,7 @@ public:
 	};
 
 	explicit GyroData(QObject *parent = 0);
+	virtual ~GyroData();
 
 	/**
 	 * @brief fileName
@@ -31,10 +42,15 @@ public:
 	 */
 	void recalc_accel(double threshold, double threshold_deriv = 0.01);
 
+	void send_start_to_net(const QHostAddress& host, ushort port);
+	void send_stop_to_net(const QHostAddress& host, ushort port);
+	bool is_available_telemetry() const;
+
 signals:
 
 public slots:
-
+	void on_timeout();
+	void on_readyRead();
 
 	// VirtGLObject interface
 public:
@@ -48,8 +64,16 @@ private:
 	QVector< QVector3D > m_gyro_data;
 	QVector< QVector3D > m_accel_data;
 	QVector< double > m_temp_data;
+	QUdpSocket *m_socket;
+
+	QTimer m_timer;
+
+	QVector< StructTelemetry > m_telemtries;
+	QTime m_time_waiting_telemetry;
 
 	QVector3D m_center_accel;
+
+	void tryParseData(const QByteArray& data);
 };
 
 #endif // GYRODATA_H

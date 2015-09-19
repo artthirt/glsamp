@@ -7,6 +7,9 @@
 #include <QColor>
 #include <QDebug>
 
+#include <QUdpSocket>
+#include <QDataStream>
+
 #if (_MSC_VER >= 1500 && _MSC_VER <= 1600)
 #include <Windows.h>
 #else
@@ -34,8 +37,22 @@ void draw_line(const QVector3D& v1, const QVector3D& v2, const QColor& col = Qt:
 ///
 GyroData::GyroData(QObject *parent) :
 	VirtGLObject(parent)
+  , m_socket(0)
 {
 	setType(GYRODATA);
+
+	connect(&m_timer, SIGNAL(timeout()), this, SLOT(on_timeout()));
+	m_timer.start(100);
+
+	m_time_waiting_telemetry.start();
+}
+
+GyroData::~GyroData()
+{
+	if(m_socket){
+		m_socket->abort();
+	}
+	delete m_socket;
 }
 
 QString GyroData::fileName() const
@@ -214,7 +231,54 @@ void GyroData::recalc_accel(double threshold, double threshold_deriv)
 //		m_center_accel = newc;
 //		m_accel_data = out;
 //		mean_radius = new_mean;
-//	}while(loop);
+	//	}while(loop);
+}
+
+void GyroData::send_start_to_net(const QHostAddress &host, ushort port)
+{
+	if(!m_socket){
+		m_socket = new QUdpSocket;
+		connect(m_socket, SIGNAL(readyRead()), this, SLOT(on_readyRead()));
+	}
+	QByteArray data("START");
+	m_socket->writeDatagram(data, host, port);
+}
+
+void GyroData::send_stop_to_net(const QHostAddress &host, ushort port)
+{
+	if(!m_socket){
+		m_socket = new QUdpSocket;
+		connect(m_socket, SIGNAL(readyRead()), this, SLOT(on_readyRead()));
+	}
+	QByteArray data("STOP");
+	m_socket->writeDatagram(data, host, port);
+}
+
+bool GyroData::is_available_telemetry() const
+{
+	return m_time_waiting_telemetry.elapsed() < max_delay_for_data;
+}
+
+void GyroData::on_timeout()
+{
+	if(m_telemtries.size() > 3){
+		m_telemtries.pop_back();
+	}
+}
+
+void GyroData::on_readyRead()
+{
+	if(!m_socket)
+		return;
+
+	QByteArray data;
+	while(m_socket->hasPendingDatagrams()){
+		qint64 size = m_socket->pendingDatagramSize();
+		data.resize(size);
+		m_socket->readDatagram(data.data(), size);
+
+		tryParseData(data);
+	}
 }
 
 
@@ -279,6 +343,39 @@ void GyroData::draw()
 
 	glLineWidth(1);
 
+
+	glPointSize(4);
+
+	if(m_telemtries.size()){
+
+		glColor3f(1, 0.5, 0);
+		glBegin(GL_POINTS);
+			glVertex3fv(m_telemtries[0].gyro.data);
+		glEnd();
+
+		glBegin(GL_LINE_STRIP);
+		for (int i = 0; i < m_telemtries.size(); i++){
+			StructTelemetry& st = m_telemtries[i];
+			float dd = (float)(m_telemtries.size() - i) / m_telemtries.size();
+			glColor3f(1 * dd, 0.5 * dd, 0);
+			glVertex3fv(st.gyro.data);
+		}
+		glEnd();
+
+		glColor3f(0.5, 1, 0);
+		glBegin(GL_POINTS);
+			glVertex3fv(m_telemtries[0].accel.data);
+		glEnd();
+
+		glBegin(GL_LINE_STRIP);
+		for (int i = 0; i < m_telemtries.size(); i++){
+			StructTelemetry& st = m_telemtries[i];
+			float dd = (float)(m_telemtries.size() - i) / m_telemtries.size();
+			glColor3f(0.5 * dd, 1 * dd, 0);
+			glVertex3fv(st.accel.data);
+		}
+		glEnd();
+	}
 //	draw_line(p1, cp1m);
 //	draw_line(p2, cp1m);
 //	draw_line(p3, cp1m);
@@ -291,4 +388,37 @@ void GyroData::tick()
 QVector3D GyroData::position() const
 {
 	return QVector3D();
+}
+
+void GyroData::tryParseData(const QByteArray &data)
+{
+	while(m_telemtries.size() >= max_count_telemetry){
+		m_telemtries.pop_back();
+	}
+
+	QDataStream stream(data);
+	stream.setByteOrder(QDataStream::BigEndian);
+	stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+	stream.setVersion(QDataStream::Qt_5_3);
+
+	StructTelemetry st;
+
+	stream >> st.power_on;
+	FOREACH(i, cnt_engines, stream >> st.power[i]);
+	stream >> st.tangaj;
+	stream >> st.bank;
+	stream >> st.course;
+	stream >> st.temp;
+	stream >> st.height;
+	stream >> st.gyro.data[0];
+	stream >> st.gyro.data[1];
+	stream >> st.gyro.data[2];
+	stream >> st.accel.data[0];
+	stream >> st.accel.data[1];
+	stream >> st.accel.data[2];
+
+
+	m_telemtries.push_front(st);
+
+	m_time_waiting_telemetry.restart();
 }

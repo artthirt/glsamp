@@ -12,6 +12,7 @@ class MainWindow;
 }
 
 class QListWidgetItem;
+class QLabel;
 
 class MainWindow : public QMainWindow
 {
@@ -65,6 +66,10 @@ private slots:
 
 	void on_pushButton_6_clicked();
 
+	void on_pushButton_7_clicked();
+
+	void on_pushButton_8_clicked();
+
 protected:
 	void init_list_objects();
 
@@ -73,6 +78,8 @@ private:
 
 	QTimer m_timer;
 	QTimer m_timer_cfg;
+
+	QLabel *m_available_telemetry;
 
 	QuadModel m_model;
 	GyroData m_gyroData;
