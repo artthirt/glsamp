@@ -46,6 +46,16 @@ public:
 	void send_stop_to_net(const QHostAddress& host, ushort port);
 	bool is_available_telemetry() const;
 
+	double divider_gyro() const;
+	void set_divider_gyro(double val);
+	double divider_accel() const;
+	void set_divider_accel(double val);
+
+	int shift_gyro() const;
+	void set_shift_gyro(int val);
+	int shift_accel() const;
+	void set_shift_accel(int val);
+
 signals:
 
 public slots:
@@ -65,6 +75,10 @@ private:
 	QVector< QVector3D > m_accel_data;
 	QVector< double > m_temp_data;
 	QUdpSocket *m_socket;
+	double m_divider_gyro;
+	double m_divider_accel;
+	int m_shift_gyro;
+	int m_shift_accel;
 
 	QTimer m_timer;
 

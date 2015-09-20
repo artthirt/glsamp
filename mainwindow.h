@@ -70,6 +70,14 @@ private slots:
 
 	void on_pushButton_8_clicked();
 
+	void on_dsb_div_gyro_valueChanged(double arg1);
+
+	void on_dsb_accel_data_valueChanged(double arg1);
+
+	void on_sb_rshift_gyro_valueChanged(int arg1);
+
+	void on_sb_rshift_accel_valueChanged(int arg1);
+
 protected:
 	void init_list_objects();
 

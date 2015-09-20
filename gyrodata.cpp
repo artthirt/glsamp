@@ -30,6 +30,13 @@ void draw_line(const QVector3D& v1, const QVector3D& v2, const QColor& col = Qt:
 	glEnd();
 }
 
+inline Vertex3i rshift(const Vertex3i& val, int shift)
+{
+	Vertex3i res;
+	FOREACH(i, 3, res.data[i] = val.data[i] >> shift);
+	return res;
+}
+
 ///////////////////////////////
 /// \brief GyroData::GyroData
 /// \param parent
@@ -38,11 +45,15 @@ void draw_line(const QVector3D& v1, const QVector3D& v2, const QColor& col = Qt:
 GyroData::GyroData(QObject *parent) :
 	VirtGLObject(parent)
   , m_socket(0)
+  , m_divider_accel(100)
+  , m_divider_gyro(10)
+  , m_shift_accel(5)
+  , m_shift_gyro(3)
 {
 	setType(GYRODATA);
 
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(on_timeout()));
-	m_timer.start(100);
+	m_timer.start(300);
 
 	m_time_waiting_telemetry.start();
 }
@@ -259,6 +270,46 @@ bool GyroData::is_available_telemetry() const
 	return m_time_waiting_telemetry.elapsed() < max_delay_for_data;
 }
 
+double GyroData::divider_gyro() const
+{
+	return m_divider_gyro;
+}
+
+void GyroData::set_divider_gyro(double val)
+{
+	m_divider_gyro = val;
+}
+
+double GyroData::divider_accel() const
+{
+	return m_divider_accel;
+}
+
+void GyroData::set_divider_accel(double val)
+{
+	m_divider_accel = val;
+}
+
+int GyroData::shift_gyro() const
+{
+	return m_shift_gyro;
+}
+
+void GyroData::set_shift_gyro(int val)
+{
+	m_shift_gyro = val;
+}
+
+int GyroData::shift_accel() const
+{
+	return m_shift_accel;
+}
+
+void GyroData::set_shift_accel(int val)
+{
+	m_shift_accel = val;
+}
+
 void GyroData::on_timeout()
 {
 	if(m_telemtries.size() > 3){
@@ -295,6 +346,11 @@ QVector3D get_pt_on_line(const QVector3D& p0, const QVector3D& n, double t)
 inline double sign(double v1)
 {
 	return v1 >= 0? 1.0 : -1.0;
+}
+
+static inline Vertex3f _V(const Vertex3i& v)
+{
+	return Vertex3f(v);
 }
 
 void GyroData::draw()
@@ -348,9 +404,14 @@ void GyroData::draw()
 
 	if(m_telemtries.size()){
 
+		double div_gyro = 1.0 / m_divider_gyro;
+		double div_accel = 1.0 / m_divider_accel;
+
+		Vertex3f tmp(_V(rshift(m_telemtries[0].gyro, m_shift_gyro)) * div_gyro);
+
 		glColor3f(1, 0.5, 0);
 		glBegin(GL_POINTS);
-			glVertex3fv(m_telemtries[0].gyro.data);
+			glVertex3fv(tmp.data);
 		glEnd();
 
 		glBegin(GL_LINE_STRIP);
@@ -358,13 +419,17 @@ void GyroData::draw()
 			StructTelemetry& st = m_telemtries[i];
 			float dd = (float)(m_telemtries.size() - i) / m_telemtries.size();
 			glColor3f(1 * dd, 0.5 * dd, 0);
-			glVertex3fv(st.gyro.data);
+
+			tmp = _V(rshift(st.gyro, m_shift_gyro)) * div_gyro;
+
+			glVertex3fv(tmp.data);
 		}
 		glEnd();
 
 		glColor3f(0.5, 1, 0);
 		glBegin(GL_POINTS);
-			glVertex3fv(m_telemtries[0].accel.data);
+			tmp = _V(rshift(m_telemtries[0].accel, m_shift_accel)) * div_accel;
+			glVertex3fv(tmp.data);
 		glEnd();
 
 		glBegin(GL_LINE_STRIP);
@@ -372,7 +437,10 @@ void GyroData::draw()
 			StructTelemetry& st = m_telemtries[i];
 			float dd = (float)(m_telemtries.size() - i) / m_telemtries.size();
 			glColor3f(0.5 * dd, 1 * dd, 0);
-			glVertex3fv(st.accel.data);
+
+			tmp = _V(rshift(st.accel, m_shift_accel)) * div_accel;
+
+			glVertex3fv(tmp.data);
 		}
 		glEnd();
 	}

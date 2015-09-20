@@ -5,33 +5,42 @@
 	expression; \
 	}
 
-struct Vector3f{
-	Vector3f(){
+template< typename T >
+struct Vertex3_{
+	Vertex3_(){
 		FOREACH(i, 3, data[i] = 0);
 	}
-	Vector3f(float x, float y, float z){
+	Vertex3_(T x, T y, T z){
 		data[0] = x;
 		data[1] = y;
 		data[2] = z;
 	}
-	Vector3f(const Vector3f& v){
+	Vertex3_(const Vertex3_& v){
 		FOREACH(i, 3, data[i] = v.data[i];);
 	}
+	template< typename P >
+	Vertex3_(const Vertex3_<P> &v)
+	{
+		FOREACH(i, 3, data[i] = static_cast< T > (v.data[i]));
+	}
 
-	float x() const { return data[0]; }
-	float y() const { return data[1]; }
-	float z() const { return data[2]; }
-	void setX(float value) { data[0] = value; }
-	void setY(float value) { data[1] = value; }
-	void setZ(float value) { data[2] = value; }
+	T x() const { return data[0]; }
+	T y() const { return data[1]; }
+	T z() const { return data[2]; }
+	void setX(T value) { data[0] = value; }
+	void setY(T value) { data[1] = value; }
+	void setZ(T value) { data[2] = value; }
 
-	Vector3f& operator* (float value){
+	Vertex3_& operator* (T value){
 		FOREACH(i, 3, data[i] *= value);
 		return *this;
 	}
 
-	float data[3];
+	T data[3];
 };
+
+typedef Vertex3_< float > Vertex3f;
+typedef Vertex3_< int > Vertex3i;
 
 struct StructControls
 {
@@ -75,9 +84,9 @@ struct StructTelemetry
 	float temp;
 	float height;
 
-	Vector3f gyro;
+	Vertex3i gyro;
 
-	Vector3f accel;
+	Vertex3i accel;
 };
 
 #endif // STRUCT_CONTROLS_H

@@ -22,6 +22,10 @@ MainWindow::MainWindow(QWidget *parent) :
 	init_list_objects();
 
 	ui->lb_filename->setText(m_gyroData.fileName());
+	ui->dsb_accel_data->setValue(m_gyroData.divider_accel());
+	ui->dsb_div_gyro->setValue(m_gyroData.divider_gyro());
+	ui->sb_rshift_accel->setValue(m_gyroData.shift_accel());
+	ui->sb_rshift_gyro->setValue(m_gyroData.shift_gyro());
 
 	m_available_telemetry = new QLabel(this);
 	ui->statusBar->addWidget(m_available_telemetry);
@@ -236,4 +240,24 @@ void MainWindow::on_pushButton_7_clicked()
 void MainWindow::on_pushButton_8_clicked()
 {
 	m_gyroData.send_stop_to_net(QHostAddress(ui->le_ip_gyro_data->text()), ui->sb_gyro_data->value());
+}
+
+void MainWindow::on_dsb_div_gyro_valueChanged(double arg1)
+{
+	m_gyroData.set_divider_gyro(arg1);
+}
+
+void MainWindow::on_dsb_accel_data_valueChanged(double arg1)
+{
+	m_gyroData.set_divider_accel(arg1);
+}
+
+void MainWindow::on_sb_rshift_gyro_valueChanged(int arg1)
+{
+	m_gyroData.set_shift_gyro(arg1);
+}
+
+void MainWindow::on_sb_rshift_accel_valueChanged(int arg1)
+{
+	m_gyroData.set_shift_accel(arg1);
 }
