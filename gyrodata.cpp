@@ -19,11 +19,12 @@
 
 #include <GL/gl.h>
 
+#include <global.h>
 #include <simple_xml.hpp>
 
 ///////////////////////////////
+Q_DECLARE_METATYPE(Vertex3i)
 
-const QString config_dir("/.glsamp/");
 const QString xml_config("gyro.xml");
 
 ///////////////////////////////
@@ -412,6 +413,9 @@ void GyroData::on_timeout_playing()
 		st.gyro = m_gyro_data[cpg];
 		st.accel = m_accel_data[cpa];
 
+		emit get_data("gyro", st.gyro);
+		emit get_data("accel", st.accel);
+
 		m_telemtries.push_front(st);
 
 		while(m_telemtries.size() >= max_count_telemetry){
@@ -608,6 +612,8 @@ void GyroData::tryParseData(const QByteArray &data)
 	stream >> st.accel.data[1];
 	stream >> st.accel.data[2];
 
+	emit get_data("gyro", st.gyro);
+	emit get_data("accel", st.accel);
 
 	m_telemtries.push_front(st);
 

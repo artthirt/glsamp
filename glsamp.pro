@@ -21,7 +21,8 @@ SOURCES += main.cpp\
     quadmodel.cpp \
     controlmodel.cpp \
     gyrodata.cpp \
-    simple_xml.cpp
+    simple_xml.cpp \
+    datachart.cpp
 
 HEADERS  += mainwindow.h \
     virtglobject.h \
@@ -30,7 +31,9 @@ HEADERS  += mainwindow.h \
     controlmodel.h \
     struct_controls.h \
     gyrodata.h \
-    simple_xml.hpp
+    simple_xml.hpp \
+    datachart.h \
+    global.h
 
 FORMS    += mainwindow.ui \
     glspace.ui

@@ -4,6 +4,15 @@
 #include <QFileDialog>
 #include "QListWidgetItem"
 
+#include <global.h>
+#include <simple_xml.hpp>
+
+//////////////////////////////////
+
+const QString xml_config("main.xml");
+
+//////////////////////////////////
+
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::MainWindow)
@@ -13,6 +22,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	ui->widget->add_object(&m_model);
 	ui->widget->add_object(&m_gyroData);
+
+	load_from_xml();
 
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(on_timeout()));
 	m_timer.start(100);
@@ -31,11 +42,17 @@ MainWindow::MainWindow(QWidget *parent) :
 	m_available_telemetry = new QLabel(this);
 	ui->statusBar->addWidget(m_available_telemetry);
 
+	bool res = connect(&m_gyroData, SIGNAL(get_data(QString,Vertex3i)), ui->widget_graph, SLOT(on_put_data(QString,Vertex3i)));
+
+	ui->widget_graph->add_nowatch("gyro");
+
 	setWindowState( Qt::WindowMaximized );
 }
 
 MainWindow::~MainWindow()
 {
+	save_to_xml();
+
 	delete ui;
 }
 
@@ -201,6 +218,44 @@ void MainWindow::init_list_objects()
 	it->setFlags(Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
 	it->setCheckState(m_gyroData.is_enable()? Qt::Checked : Qt::Unchecked);
 	it->setData(Qt::UserRole, m_gyroData.type());
+}
+
+void MainWindow::load_from_xml()
+{
+	QString config_file = QDir::homePath() + config_dir + xml_config;
+
+	SimpleXML sxml(config_file);
+
+	if(!sxml.load())
+		return;
+
+	QString str = sxml.get_xml_string("state");
+	QByteArray state = QByteArray::fromBase64(str.toLatin1());
+	restoreState(state);
+
+	m_model.set_is_enable(sxml.get_xml_int("quadmodel"));
+	m_gyroData.set_is_enable(sxml.get_xml_int("gyrodata"));
+}
+
+void MainWindow::save_to_xml()
+{
+	QString config_file = QDir::homePath() + config_dir;
+
+	QDir dir(QDir::homePath());
+
+	if(!dir.exists(config_file))
+		dir.mkdir(config_file);
+
+	config_file += xml_config;
+
+	SimpleXML sxml(config_file, true);
+
+	QByteArray state = saveState();
+	sxml.set_dom_value_s("state", state.toBase64());
+	sxml.set_dom_value_num("quadmodel", m_model.is_enable());
+	sxml.set_dom_value_num("gyrodata", m_gyroData.is_enable());
+
+	sxml.save();
 
 }
 

@@ -16,11 +16,35 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="horizontalLayout_2">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <widget class="GLSpace" name="widget" native="true"/>
-      </item>
-     </layout>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>GL</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <widget class="GLSpace" name="widget" native="true"/>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="Graph">
+       <attribute name="title">
+        <string>Graph</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_5">
+        <item>
+         <widget class="DataChart" name="widget_graph" native="true"/>
+        </item>
+       </layout>
+      </widget>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -775,6 +799,12 @@ for accel data</string>
    <class>GLSpace</class>
    <extends>QWidget</extends>
    <header>glspace.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>DataChart</class>
+   <extends>QWidget</extends>
+   <header>datachart.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

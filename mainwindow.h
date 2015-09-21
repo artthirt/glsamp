@@ -99,6 +99,9 @@ private:
 
 	QuadModel m_model;
 	GyroData m_gyroData;
+
+	void load_from_xml();
+	void save_to_xml();
 };
 
 #endif // MAINWINDOW_H

@@ -72,11 +72,15 @@ public:
 	double percent_position() const;
 
 signals:
+	void get_data(const QString& name, const Vertex3i);
 
 public slots:
 	void on_timeout();
 	void on_timeout_playing();
 	void on_readyRead();
+
+protected:
+	void tryParseData(const QByteArray& data);
 
 	// VirtGLObject interface
 public:
@@ -109,8 +113,6 @@ private:
 	QTime m_time_waiting_telemetry;
 
 	QVector3D m_center_accel;
-
-	void tryParseData(const QByteArray& data);
 
 	void load_from_xml();
 	void save_to_xml();
