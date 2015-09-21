@@ -12,7 +12,7 @@ struct Chart{
 	Chart(){
 		min_value = max_value = 0;
 		max_count = 10000;
-		color = QColor((255 * rand())/RAND_MAX, (255 * rand())/RAND_MAX, (255 * rand())/RAND_MAX);
+		color = QColor((255.0 * rand())/RAND_MAX, (255.0 * rand())/RAND_MAX, (255.0 * rand())/RAND_MAX);
 	}
 
 	double min_value;
