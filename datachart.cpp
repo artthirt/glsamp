@@ -43,6 +43,9 @@ void DataChart::on_timeout()
 
 void DataChart::on_put_data(const QString &chart, double value)
 {
+	if(m_nowatch.contains(chart))
+		return;
+
 	m_charts[chart].add_value(value);
 }
 

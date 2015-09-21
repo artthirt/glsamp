@@ -9,6 +9,7 @@
 #include <QTime>
 
 #include "struct_controls.h"
+#include "simplekalmanfilter.h"
 
 class QUdpSocket;
 
@@ -73,6 +74,7 @@ public:
 
 signals:
 	void get_data(const QString& name, const Vertex3i);
+	void get_data(const QString& name, double value);
 
 public slots:
 	void on_timeout();
@@ -113,6 +115,8 @@ private:
 	QTime m_time_waiting_telemetry;
 
 	QVector3D m_center_accel;
+
+	SimpleKalmanFilter m_kalman;
 
 	void load_from_xml();
 	void save_to_xml();

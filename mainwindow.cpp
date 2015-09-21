@@ -42,7 +42,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	m_available_telemetry = new QLabel(this);
 	ui->statusBar->addWidget(m_available_telemetry);
 
-	bool res = connect(&m_gyroData, SIGNAL(get_data(QString,Vertex3i)), ui->widget_graph, SLOT(on_put_data(QString,Vertex3i)));
+	connect(&m_gyroData, SIGNAL(get_data(QString,Vertex3i)), ui->widget_graph, SLOT(on_put_data(QString,Vertex3i)));
+	connect(&m_gyroData, SIGNAL(get_data(QString,double)), ui->widget_graph, SLOT(on_put_data(QString,double)));
 
 	ui->widget_graph->add_nowatch("gyro");
 

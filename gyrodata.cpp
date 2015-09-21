@@ -416,6 +416,10 @@ void GyroData::on_timeout_playing()
 		emit get_data("gyro", st.gyro);
 		emit get_data("accel", st.accel);
 
+		m_kalman.set_zk(st.accel.z());
+		emit get_data("kalman_accel.z", m_kalman.xk);
+
+
 		m_telemtries.push_front(st);
 
 		while(m_telemtries.size() >= max_count_telemetry){
@@ -614,6 +618,9 @@ void GyroData::tryParseData(const QByteArray &data)
 
 	emit get_data("gyro", st.gyro);
 	emit get_data("accel", st.accel);
+
+	m_kalman.set_zk(st.accel.z());
+	emit get_data("kalman_accel.z", m_kalman.xk);
 
 	m_telemtries.push_front(st);
 
