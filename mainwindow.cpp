@@ -26,6 +26,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->dsb_div_gyro->setValue(m_gyroData.divider_gyro());
 	ui->sb_rshift_accel->setValue(m_gyroData.shift_accel());
 	ui->sb_rshift_gyro->setValue(m_gyroData.shift_gyro());
+	ui->cb_show_loaded->setChecked(m_gyroData.showing_downloaded_data());
 
 	m_available_telemetry = new QLabel(this);
 	ui->statusBar->addWidget(m_available_telemetry);
@@ -112,6 +113,10 @@ void MainWindow::on_timeout_cfg()
 		}else{
 			m_available_telemetry->setText("telemetry not received");
 		}
+	}
+
+	if(m_gyroData.is_play()){
+		ui->hs_playing_data->setValue(m_gyroData.percent_position());
 	}
 }
 
@@ -260,4 +265,24 @@ void MainWindow::on_sb_rshift_gyro_valueChanged(int arg1)
 void MainWindow::on_sb_rshift_accel_valueChanged(int arg1)
 {
 	m_gyroData.set_shift_accel(arg1);
+}
+
+void MainWindow::on_hs_set_end_position_sliderMoved(int position)
+{
+	m_gyroData.set_end_pos_downloaded_data(position);
+}
+
+void MainWindow::on_pushButton_9_clicked()
+{
+	m_gyroData.play();
+}
+
+void MainWindow::on_pushButton_10_clicked()
+{
+	m_gyroData.stop();
+}
+
+void MainWindow::on_cb_show_loaded_clicked(bool checked)
+{
+	m_gyroData.set_showing_downloaded_data(checked);
 }

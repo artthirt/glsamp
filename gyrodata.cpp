@@ -1,5 +1,6 @@
 #include "gyrodata.h"
 
+#include <QDir>
 #include <QFile>
 #include <QTextStream>
 #include <QByteArray>
@@ -18,6 +19,13 @@
 
 #include <GL/gl.h>
 
+#include <simple_xml.hpp>
+
+///////////////////////////////
+
+const QString config_dir("/.glsamp/");
+const QString xml_config("gyro.xml");
+
 ///////////////////////////////
 
 void draw_line(const QVector3D& v1, const QVector3D& v2, const QColor& col = Qt::white)
@@ -27,6 +35,16 @@ void draw_line(const QVector3D& v1, const QVector3D& v2, const QColor& col = Qt:
 	glBegin(GL_LINES);
 	glVertex3d(v1.x(), v1.y(), v1.z());
 	glVertex3d(v2.x(), v2.y(), v2.z());
+	glEnd();
+}
+
+void draw_line(const Vertex3f& v1, const Vertex3f& v2, const QColor& col = Qt::white)
+{
+	glColor3ub(col.red(), col.green(), col.blue());
+
+	glBegin(GL_LINES);
+	glVertex3fv(v1.data);
+	glVertex3fv(v2.data);
 	glEnd();
 }
 
@@ -49,13 +67,24 @@ GyroData::GyroData(QObject *parent) :
   , m_divider_gyro(10)
   , m_shift_accel(5)
   , m_shift_gyro(3)
+  , m_percent_downloaded_data(1)
+  , m_showing_downloaded_data(true)
+  , m_is_play(false)
+  , m_current_playing_pos(0)
 {
 	setType(GYRODATA);
 
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(on_timeout()));
 	m_timer.start(300);
 
+	connect(&m_timer_playing, SIGNAL(timeout()), this, SLOT(on_timeout_playing()));
+	m_timer_playing.start(100);
+
 	m_time_waiting_telemetry.start();
+
+	m_fileName = "../data/data.csv";
+
+	load_from_xml();
 }
 
 GyroData::~GyroData()
@@ -64,6 +93,8 @@ GyroData::~GyroData()
 		m_socket->abort();
 	}
 	delete m_socket;
+
+	save_to_xml();
 }
 
 QString GyroData::fileName() const
@@ -152,15 +183,15 @@ void GyroData::openFile(const QString fileName)
 		g2	= sl[5].toDouble();
 		g3	= sl[6].toDouble();
 
-		m_accel_data.push_back(QVector3D(a1, a2, a3));
-		m_gyro_data.push_back(QVector3D(g1, g2, g3));
+		m_accel_data.push_back(Vertex3i(a1, a2, a3));
+		m_gyro_data.push_back(Vertex3i(g1, g2, g3));
 		m_temp_data.push_back(t);
 
 		ind++;
 	}
 
-	normalize_vector(m_accel_data);
-	normalize_vector(m_gyro_data);
+//	normalize_vector(m_accel_data);
+//	normalize_vector(m_gyro_data);
 
 	file.close();
 }
@@ -310,10 +341,87 @@ void GyroData::set_shift_accel(int val)
 	m_shift_accel = val;
 }
 
+void GyroData::set_end_pos_downloaded_data(double value)
+{
+	if(value < 0) value = 0;
+	if(value > 100) value = 100;
+	m_percent_downloaded_data = value / 100.0;
+}
+
+double GyroData::end_pos_downloaded_data() const
+{
+	return m_percent_downloaded_data;
+}
+
+bool GyroData::showing_downloaded_data() const
+{
+	return m_showing_downloaded_data;
+}
+
+void GyroData::set_showing_downloaded_data(bool value)
+{
+	m_showing_downloaded_data = value;
+}
+
+bool GyroData::is_play() const
+{
+	return m_is_play;
+}
+
+void GyroData::play()
+{
+	if(!m_gyro_data.size() && !m_accel_data.size())
+		return;
+	m_is_play = true;
+}
+
+void GyroData::stop()
+{
+	if(m_is_play){
+		m_telemtries.clear();
+	}
+	m_is_play = false;
+	m_current_playing_pos = 0;
+}
+
+double GyroData::percent_position() const
+{
+	int mm = qMax(m_accel_data.size(), m_gyro_data.size());
+	if(!mm)
+		return 0;
+	return 100.0 * m_current_playing_pos / mm;
+}
+
 void GyroData::on_timeout()
 {
 	if(m_telemtries.size() > 3){
 		m_telemtries.pop_back();
+	}
+}
+
+void GyroData::on_timeout_playing()
+{
+	if(m_is_play && (m_gyro_data.size() || m_accel_data.size())){
+
+		int mm = qMax(m_accel_data.size(), m_gyro_data.size());
+
+		int cpg = qMin(m_gyro_data.size(), m_current_playing_pos);
+		int cpa = qMin(m_accel_data.size(), m_current_playing_pos);
+
+		StructTelemetry st;
+		st.gyro = m_gyro_data[cpg];
+		st.accel = m_accel_data[cpa];
+
+		m_telemtries.push_front(st);
+
+		while(m_telemtries.size() >= max_count_telemetry){
+			m_telemtries.pop_back();
+		}
+
+		m_current_playing_pos += 1;
+		if(m_current_playing_pos >= mm){
+			m_current_playing_pos = 0;
+		}
 	}
 }
 
@@ -335,7 +443,7 @@ void GyroData::on_readyRead()
 
 void GyroData::init()
 {
-	openFile("../data/data.csv");
+	openFile(m_fileName);
 }
 
 QVector3D get_pt_on_line(const QVector3D& p0, const QVector3D& n, double t)
@@ -355,27 +463,37 @@ static inline Vertex3f _V(const Vertex3i& v)
 
 void GyroData::draw()
 {
+	double div_gyro = 1.0 / m_divider_gyro;
+	double div_accel = 1.0 / m_divider_accel;
+
 	glPointSize(3);
 
-	glColor3f(0, 1, 0);
-	glBegin(GL_POINTS);
-	foreach (QVector3D it, m_accel_data) {
-		glVertex3d(it.x(), it.y(), it.z());
-	}
-	glEnd();
+	if(m_showing_downloaded_data){
+		int count_accel = m_percent_downloaded_data * m_accel_data.size();
+		int count_gyro = m_percent_downloaded_data * m_gyro_data.size();
 
-	glColor3f(1, 0, 0);
-	glBegin(GL_POINTS);
-	foreach (QVector3D it, m_gyro_data) {
-		glVertex3d(it.x(), it.y(), it.z());
-	}
-	glEnd();
+		glColor3f(0, 1, 0);
+		glBegin(GL_POINTS);
+		for (int i = 0; i < count_accel; i++) {
+			Vertex3f tmp(_V(rshift(m_accel_data[i], m_shift_accel)) * div_accel);
+			glVertex3fv(tmp.data);
+		}
+		glEnd();
 
-	glPointSize(7);
-	glColor3f(1, 1, 0);
-	glBegin(GL_POINTS);
-	glVertex3f(m_center_accel.x(), m_center_accel.y(), m_center_accel.z());
-	glEnd();
+		glColor3f(1, 0, 0);
+		glBegin(GL_POINTS);
+		for (int i = 0; i< count_gyro; i++) {
+			Vertex3f tmp(_V(rshift(m_gyro_data[i], m_shift_gyro)) * div_gyro);
+			glVertex3fv(tmp.data);
+		}
+		glEnd();
+
+		glPointSize(7);
+		glColor3f(1, 1, 0);
+		glBegin(GL_POINTS);
+		glVertex3f(m_center_accel.x(), m_center_accel.y(), m_center_accel.z());
+		glEnd();
+	}
 
 	glLineWidth(4);
 
@@ -404,9 +522,6 @@ void GyroData::draw()
 
 	if(m_telemtries.size()){
 
-		double div_gyro = 1.0 / m_divider_gyro;
-		double div_accel = 1.0 / m_divider_accel;
-
 		Vertex3f tmp(_V(rshift(m_telemtries[0].gyro, m_shift_gyro)) * div_gyro);
 
 		glColor3f(1, 0.5, 0);
@@ -414,6 +529,10 @@ void GyroData::draw()
 			glVertex3fv(tmp.data);
 		glEnd();
 
+		glLineWidth(3);
+		draw_line(Vertex3f(), tmp, QColor(255, 128, 0));
+
+		glLineWidth(1);
 		glBegin(GL_LINE_STRIP);
 		for (int i = 0; i < m_telemtries.size(); i++){
 			StructTelemetry& st = m_telemtries[i];
@@ -432,6 +551,10 @@ void GyroData::draw()
 			glVertex3fv(tmp.data);
 		glEnd();
 
+		glLineWidth(3);
+		draw_line(Vertex3f(), tmp, QColor(128, 255, 0));
+
+		glLineWidth(1);
 		glBegin(GL_LINE_STRIP);
 		for (int i = 0; i < m_telemtries.size(); i++){
 			StructTelemetry& st = m_telemtries[i];
@@ -467,7 +590,7 @@ void GyroData::tryParseData(const QByteArray &data)
 	QDataStream stream(data);
 	stream.setByteOrder(QDataStream::BigEndian);
 	stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
-	stream.setVersion(QDataStream::Qt_5_3);
+	stream.setVersion(QDataStream::Qt_4_8);
 
 	StructTelemetry st;
 
@@ -489,4 +612,46 @@ void GyroData::tryParseData(const QByteArray &data)
 	m_telemtries.push_front(st);
 
 	m_time_waiting_telemetry.restart();
+}
+
+void GyroData::load_from_xml()
+{
+	QString config_file = QDir::homePath() + config_dir + xml_config;
+
+	SimpleXML sxml(config_file);
+
+	if(!sxml.load())
+		return;
+
+	set_end_pos_downloaded_data(sxml.get_xml_double("end_position") * 100.0);
+	m_divider_accel = sxml.get_xml_double("divider_accel");
+	m_divider_gyro = sxml.get_xml_double("divider_gyro");
+	m_shift_accel = sxml.get_xml_int("shift_accel");
+	m_shift_gyro = sxml.get_xml_int("shift_gyro");
+	m_fileName = sxml.get_xml_string("filename");
+	m_showing_downloaded_data = sxml.get_xml_int("showing_downloaded_data");
+}
+
+void GyroData::save_to_xml()
+{
+	QString config_file = QDir::homePath() + config_dir;
+
+	QDir dir(QDir::homePath());
+
+	if(!dir.exists(config_file))
+		dir.mkdir(config_file);
+
+	config_file += xml_config;
+
+	SimpleXML sxml(config_file, true);
+
+	sxml.set_dom_value_num("end_position", m_percent_downloaded_data);
+	sxml.set_dom_value_num("divider_accel", m_divider_accel);
+	sxml.set_dom_value_num("divider_gyro", m_divider_gyro);
+	sxml.set_dom_value_num("shift_accel", m_shift_accel);
+	sxml.set_dom_value_num("shift_gyro", m_shift_gyro);
+	sxml.set_dom_value_s("filename", m_fileName);
+	sxml.set_dom_value_num("showing_downloaded_data", m_showing_downloaded_data);
+
+	sxml.save();
 }

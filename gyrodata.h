@@ -56,10 +56,26 @@ public:
 	int shift_accel() const;
 	void set_shift_accel(int val);
 
+	/**
+	 * @brief set_end_position_loaded_data
+	 * @param value - percent for drawing data
+	 */
+	void set_end_pos_downloaded_data(double value);
+	double end_pos_downloaded_data() const;
+
+	bool showing_downloaded_data() const;
+	void set_showing_downloaded_data(bool value);
+
+	bool is_play() const;
+	void play();
+	void stop();
+	double percent_position() const;
+
 signals:
 
 public slots:
 	void on_timeout();
+	void on_timeout_playing();
 	void on_readyRead();
 
 	// VirtGLObject interface
@@ -71,8 +87,8 @@ public:
 
 private:
 	QString m_fileName;
-	QVector< QVector3D > m_gyro_data;
-	QVector< QVector3D > m_accel_data;
+	QVector< Vertex3i > m_gyro_data;
+	QVector< Vertex3i > m_accel_data;
 	QVector< double > m_temp_data;
 	QUdpSocket *m_socket;
 	double m_divider_gyro;
@@ -80,7 +96,14 @@ private:
 	int m_shift_gyro;
 	int m_shift_accel;
 
+	bool m_showing_downloaded_data;
+	bool m_is_play;
+	int m_current_playing_pos;
+
+	double m_percent_downloaded_data;
+
 	QTimer m_timer;
+	QTimer m_timer_playing;
 
 	QVector< StructTelemetry > m_telemtries;
 	QTime m_time_waiting_telemetry;
@@ -88,6 +111,9 @@ private:
 	QVector3D m_center_accel;
 
 	void tryParseData(const QByteArray& data);
+
+	void load_from_xml();
+	void save_to_xml();
 };
 
 #endif // GYRODATA_H

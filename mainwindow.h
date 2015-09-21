@@ -78,6 +78,14 @@ private slots:
 
 	void on_sb_rshift_accel_valueChanged(int arg1);
 
+	void on_hs_set_end_position_sliderMoved(int position);
+
+	void on_pushButton_9_clicked();
+
+	void on_pushButton_10_clicked();
+
+	void on_cb_show_loaded_clicked(bool checked);
+
 protected:
 	void init_list_objects();
 
