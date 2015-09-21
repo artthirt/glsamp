@@ -21,32 +21,27 @@ public:
 	void init(){
 		B = 0;
 		Pk = 0;
-		F = 10;
+		F = 1;
 		uk = 0;
 		Kk = 0;
-		H = 10;
-		Q = 20;
+		H = 1;
+		Q = 200;
 		R = 20;
 		xk = 0;
 		k = 0;
 	}
-	void prediction(){
-		double xk1 = F * xk + B * uk;
-		double Pk1 = F * Pk + Q;
-
-		xk = xk1;
-		Pk = Pk1;
-	}
 	void correction(double zk){
-		Kk = Pk * H / (H * Pk * H + R);
-		xk = xk + Kk * (zk - H * xk);
-		Pk = (1 - Kk * H) * Pk;
+		double xk1 = F * xk + B * uk;
+		double Pk1 = F * Pk * F + Q;
+
+		Kk = Pk * H / (H * Pk1 * H + R);
+		xk = xk1 + Kk * (zk - H * xk1);
+		Pk = (1 - Kk * H) * Pk1;
 	}
 	void set_zk(double zk){
 		if(!k){
 			xk = zk;
 		}
-		prediction();
 		correction(zk);
 		k++;
 	}
