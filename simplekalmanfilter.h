@@ -13,7 +13,7 @@ public:
 	double Kk;
 	double H;
 	double R;
-	__int64 k;
+	long long k;
 
 	SimpleKalmanFilter(){
 		init();
