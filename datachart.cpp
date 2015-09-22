@@ -4,6 +4,7 @@
 #include <QPen>
 #include <QBrush>
 #include <QFontMetrics>
+#include <QPointF>
 
 DataChart::DataChart(QObject *parent)
 {
@@ -116,6 +117,16 @@ void DataChart::paintEvent(QPaintEvent *ev)
 	rt_space = rt.adjusted(20, 20, -20, -20);
 	painter.setPen(QPen(QBrush(Qt::black), 3));
 	painter.drawRect(rt_space);
+
+	{
+		painter.setPen(QPen(QBrush(Qt::lightGray), 1));
+		double x = rt_space.left();
+		while( x < rt_space.right()){
+			painter.drawLine(QPointF(x, rt_space.top()), QPointF(x, rt_space.bottom()));
+
+			x += m_dt;
+		}
+	}
 
 	painter.setPen(QPen(QBrush(Qt::black), 1));
 
