@@ -64,7 +64,7 @@ void DataChart::on_put_data(const QString &chart, Vertex3i value)
 	m_charts[ch_z].add_value(value.z());
 }
 
-void draw_line(QPainter& painter, const Chart& chart, const QRect& rt, double dt, double minv, double maxv)
+void draw_line(QPainter& painter, const Chart& chart, const QRect& rt, double dt, double minv, double maxv, int max_cnt)
 {
 	double dy = rt.height() / (maxv - minv);
 
@@ -79,7 +79,9 @@ void draw_line(QPainter& painter, const Chart& chart, const QRect& rt, double dt
 		}
 	}else{
 		double x = rt.left(), y = rt.height() - 1;
-		for(int i = 0; i < chart.data.size(); i++){
+		int ind_min = (max_cnt * dt - rt.width()) / rt.width();
+		ind_min = qMax(0, ind_min);
+		for(int i = ind_min; i < chart.data.size(); i++){
 			y = rt.bottom() - (chart.data[i] - minv) * dy;
 
 			poly << QPointF(x, y);
@@ -99,12 +101,15 @@ void DataChart::paintEvent(QPaintEvent *ev)
 
 	double min_value = 0, max_value = 0;
 	int max_text_width = 0;
+	int max_cnt = 0;
 
 	QFontMetrics fm(font(), this);
 
 	for(QMap< QString, Chart >::iterator it = m_charts.begin(); it != m_charts.end(); it++){
 		min_value = qMin(min_value, it.value().min_value);
 		max_value = qMax(max_value, it.value().max_value);
+
+		max_cnt = qMax(it.value().data.size(), max_cnt);
 
 		QSize s = fm.size(Qt::TextSingleLine, it.key());
 		max_text_width = qMax(max_text_width, s.width());
@@ -131,7 +136,7 @@ void DataChart::paintEvent(QPaintEvent *ev)
 	painter.setPen(QPen(QBrush(Qt::black), 1));
 
 	for(QMap< QString, Chart >::iterator it = m_charts.begin(); it != m_charts.end(); it++){
-		draw_line(painter, it.value(), rt_space, m_dt, min_value, max_value);
+		draw_line(painter, it.value(), rt_space, m_dt, min_value, max_value, max_cnt);
 	}
 
 	double x = rt_space.right() - max_text_width - 5, y = rt_space.top() + 20;
