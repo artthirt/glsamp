@@ -505,9 +505,6 @@ void QuadModel::calc_trajectory()
 	for(int i = 0; i < 4; i++){
 		m_tmp_n[i] = n[i];
 	}
-
-	qDebug() << "---";
-
 }
 
 void QuadModel::draw_tmp_struct()

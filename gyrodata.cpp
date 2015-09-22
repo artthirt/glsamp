@@ -11,6 +11,8 @@
 #include <QUdpSocket>
 #include <QDataStream>
 
+#include "writelog.h"
+
 #if (_MSC_VER >= 1500 && _MSC_VER <= 1600)
 #include <Windows.h>
 #else
@@ -621,6 +623,8 @@ void GyroData::tryParseData(const QByteArray &data)
 
 	m_kalman.set_zk(st.accel.z());
 	emit get_data("kalman_accel.z", m_kalman.xk);
+
+	WriteLog::instance()->add_data("gyro", st);
 
 	m_telemtries.push_front(st);
 

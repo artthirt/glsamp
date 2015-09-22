@@ -45,7 +45,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(&m_gyroData, SIGNAL(get_data(QString,Vertex3i)), ui->widget_graph, SLOT(on_put_data(QString,Vertex3i)));
 	connect(&m_gyroData, SIGNAL(get_data(QString,double)), ui->widget_graph, SLOT(on_put_data(QString,double)));
 
-	ui->widget_graph->add_nowatch("accel");
+	ui->widget_graph->add_nowatch("gyro");
 
 	setWindowState( Qt::WindowMaximized );
 }

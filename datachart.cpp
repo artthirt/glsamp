@@ -71,11 +71,14 @@ void draw_line(QPainter& painter, const Chart& chart, const QRect& rt, double dt
 	QPolygonF poly;
 	if(chart.data.size() * dt > rt.width()){
 		double x = rt.right(), y = rt.height() - 1;
-		for(int i = chart.data.size() - 1; i >= 0 && x >= rt.left(); i--){
-			y = rt.bottom() - (chart.data[i] - minv) * dy;
+		double offset = (max_cnt - chart.data.size()) * dt;
+		if(rt.bottom() - offset > rt.left()){
+			for(int i = chart.data.size() - 1; i >= 0 && x >= rt.left(); i--){
+				y = rt.bottom() - offset - (chart.data[i] - minv) * dy;
 
-			poly << QPointF(x, y);
-			x -= dt;
+				poly << QPointF(x, y);
+				x -= dt;
+			}
 		}
 	}else{
 		double x = rt.left(), y = rt.height() - 1;

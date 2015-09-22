@@ -23,7 +23,8 @@ SOURCES += main.cpp\
     gyrodata.cpp \
     simple_xml.cpp \
     datachart.cpp \
-    simplekalmanfilter.cpp
+    simplekalmanfilter.cpp \
+    writelog.cpp
 
 HEADERS  += mainwindow.h \
     virtglobject.h \
@@ -35,7 +36,8 @@ HEADERS  += mainwindow.h \
     simple_xml.hpp \
     datachart.h \
     global.h \
-    simplekalmanfilter.h
+    simplekalmanfilter.h \
+    writelog.h
 
 FORMS    += mainwindow.ui \
     glspace.ui
