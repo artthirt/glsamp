@@ -38,6 +38,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->sb_rshift_accel->setValue(m_gyroData.shift_accel());
 	ui->sb_rshift_gyro->setValue(m_gyroData.shift_gyro());
 	ui->cb_show_loaded->setChecked(m_gyroData.showing_downloaded_data());
+	ui->dsb_frequency_playing->setValue(m_gyroData.freq_playing());
 
 	m_available_telemetry = new QLabel(this);
 	ui->statusBar->addWidget(m_available_telemetry);
@@ -341,4 +342,9 @@ void MainWindow::on_pushButton_10_clicked()
 void MainWindow::on_cb_show_loaded_clicked(bool checked)
 {
 	m_gyroData.set_showing_downloaded_data(checked);
+}
+
+void MainWindow::on_dsb_frequency_playing_valueChanged(double arg1)
+{
+	m_gyroData.set_freq_playing(arg1);
 }

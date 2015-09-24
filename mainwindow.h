@@ -86,6 +86,8 @@ private slots:
 
 	void on_cb_show_loaded_clicked(bool checked);
 
+	void on_dsb_frequency_playing_valueChanged(double arg1);
+
 protected:
 	void init_list_objects();
 

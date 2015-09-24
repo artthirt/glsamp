@@ -30,6 +30,8 @@ LogFile &LogFile::operator=(const LogFile &log)
 	logFile.setFileName(log.logFile.fileName());
 	max_line_in_buffer = log.max_line_in_buffer;
 	data = log.data;
+
+	return *this;
 }
 
 void LogFile::openFile(const QString &name)

@@ -171,20 +171,30 @@ void GyroData::openFile(const QString fileName)
 		line = line.trimmed();
 		QStringList sl = line.split(';');
 
-		if(sl.size() < 7){
+		double a1, a2, a3, t, g1, g2, g3;
+
+		if(sl.size() == 7){
+			a1	= sl[0].toDouble();
+			a2	= sl[1].toDouble();
+			a3	= sl[2].toDouble();
+			t	= sl[3].toDouble();
+			g1	= sl[4].toDouble();
+			g2	= sl[5].toDouble();
+			g3	= sl[6].toDouble();
+		}
+		if(sl.size() >= 10){
+			t	= sl[4].toDouble();
+			a1	= sl[5].toDouble();
+			a2	= sl[6].toDouble();
+			a3	= sl[7].toDouble();
+			g1	= sl[8].toDouble();
+			g2	= sl[9].toDouble();
+			g3	= sl[10].toDouble();
+		}
+		if(!sl.size()){
 			qDebug() << "data in line" << ind << "not enough:" << sl.size();
 			continue;
 		}
-
-		double a1, a2, a3, t, g1, g2, g3;
-
-		a1	= sl[0].toDouble();
-		a2	= sl[1].toDouble();
-		a3	= sl[2].toDouble();
-		t	= sl[3].toDouble();
-		g1	= sl[4].toDouble();
-		g2	= sl[5].toDouble();
-		g3	= sl[6].toDouble();
 
 		m_accel_data.push_back(Vertex3i(a1, a2, a3));
 		m_gyro_data.push_back(Vertex3i(g1, g2, g3));
@@ -395,6 +405,18 @@ double GyroData::percent_position() const
 	return 100.0 * m_current_playing_pos / mm;
 }
 
+double GyroData::freq_playing() const
+{
+	double timeout = m_timer_playing.interval();
+	return 1000.0 / timeout;
+}
+
+void GyroData::set_freq_playing(double value)
+{
+	double timeout = 1000.0 / value;
+	m_timer_playing.setInterval(timeout);
+}
+
 void GyroData::on_timeout()
 {
 	if(m_telemtries.size() > 3){
@@ -418,8 +440,8 @@ void GyroData::on_timeout_playing()
 		emit get_data("gyro", st.gyro);
 		emit get_data("accel", st.accel);
 
-		m_kalman.set_zk(st.gyro.z());
-		emit get_data("kalman_gyro.z", m_kalman.xk);
+		m_kalman.set_zk(st.accel.z());
+		emit get_data("kalman_accel.z", m_kalman.xk);
 
 
 		m_telemtries.push_front(st);
@@ -647,6 +669,11 @@ void GyroData::load_from_xml()
 	m_shift_gyro = sxml.get_xml_int("shift_gyro");
 	m_fileName = sxml.get_xml_string("filename");
 	m_showing_downloaded_data = sxml.get_xml_int("showing_downloaded_data");
+
+	double freq = sxml.get_xml_double("freq_playing");
+	if(freq){
+		set_freq_playing(freq);
+	}
 }
 
 void GyroData::save_to_xml()
@@ -669,6 +696,9 @@ void GyroData::save_to_xml()
 	sxml.set_dom_value_num("shift_gyro", m_shift_gyro);
 	sxml.set_dom_value_s("filename", m_fileName);
 	sxml.set_dom_value_num("showing_downloaded_data", m_showing_downloaded_data);
+
+	double freq = freq_playing();
+	sxml.set_dom_value_num("freq_playing", freq);
 
 	sxml.save();
 }

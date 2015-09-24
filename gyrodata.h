@@ -72,6 +72,9 @@ public:
 	void stop();
 	double percent_position() const;
 
+	double freq_playing() const;
+	void set_freq_playing(double value);
+
 signals:
 	void get_data(const QString& name, const Vertex3i);
 	void get_data(const QString& name, double value);
