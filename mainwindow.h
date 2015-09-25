@@ -92,6 +92,8 @@ private slots:
 
 	void on_pushButton_6_clicked(bool checked);
 
+	void on_pb_reset_clicked();
+
 protected:
 	void init_list_objects();
 

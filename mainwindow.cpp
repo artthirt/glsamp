@@ -46,8 +46,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(&m_gyroData, SIGNAL(get_data(QString,Vertex3i)), ui->widget_graph, SLOT(on_put_data(QString,Vertex3i)));
 	connect(&m_gyroData, SIGNAL(get_data(QString,double)), ui->widget_graph, SLOT(on_put_data(QString,double)));
 
-	ui->widget_graph->add_nowatch("gyro");
-	ui->widget_graph->add_nowatch("kalman_gyro");
+	ui->widget_graph->add_nowatch("accel");
+	ui->widget_graph->add_nowatch("kalman_accel");
 
 	setWindowState( Qt::WindowMaximized );
 }
@@ -370,4 +370,11 @@ void MainWindow::on_pushButton_6_clicked(bool checked)
 	}else{
 		m_gyroData.stop_calc_offset_gyro();
 	}
+}
+
+void MainWindow::on_pb_reset_clicked()
+{
+	m_gyroData.stop();
+	m_gyroData.reset();
+	ui->hs_set_end_position->setValue(m_gyroData.end_pos_downloaded_data());
 }

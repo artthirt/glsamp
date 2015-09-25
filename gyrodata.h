@@ -193,6 +193,10 @@ public:
 	 * @brief stop_calc_center_gyro
 	 */
 	void stop_calc_offset_gyro();
+	/**
+	 * @brief reset
+	 */
+	void reset();
 
 signals:
 	void get_data(const QString& name, const Vertex3i);
@@ -217,7 +221,6 @@ private:
 	QString m_fileName;
 	QVector< Vertex3i > m_gyro_data;
 	QVector< Vertex3i > m_accel_data;
-	QVector< double > m_temp_data;
 	QUdpSocket *m_socket;
 	double m_divider_gyro;
 	double m_divider_accel;
@@ -241,8 +244,16 @@ private:
 	Vertex3f m_offset_accel;
 	int m_count_gyro_offset_data;
 
+	Vertex3f m_rotate_pos;
+	QTime m_data_freq_calc;
+	qint64 m_count_data_recv;
+	double m_data_freq;
+
 	SimpleKalmanFilter m_kalman[6];
 
+	void calc_gyro_offset(Vertex3i &gyro);
+	void calc_data_freq();
+	void clear_data();
 	void load_from_xml();
 	void save_to_xml();
 };

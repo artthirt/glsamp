@@ -870,6 +870,13 @@ for accel data</string>
            </spacer>
           </item>
           <item>
+           <widget class="QPushButton" name="pb_reset">
+            <property name="text">
+             <string>reset</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QPushButton" name="pushButton_6">
             <property name="minimumSize">
              <size>

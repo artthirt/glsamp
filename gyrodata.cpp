@@ -76,6 +76,8 @@ GyroData::GyroData(QObject *parent) :
   , m_current_playing_pos(0)
   , m_is_calc_offset_gyro(false)
   , m_count_gyro_offset_data(0)
+  , m_count_data_recv(0)
+  , m_data_freq(1)
 {
 	setType(GYRODATA);
 
@@ -84,6 +86,8 @@ GyroData::GyroData(QObject *parent) :
 
 	connect(&m_timer_playing, SIGNAL(timeout()), this, SLOT(on_timeout_playing()));
 	m_timer_playing.start(100);
+
+	m_data_freq = m_timer_playing.interval() / 1000.0;
 
 	m_time_waiting_telemetry.start();
 
@@ -159,13 +163,14 @@ void GyroData::openFile(const QString fileName)
 	if(!file.open(QIODevice::ReadOnly))
 		return;
 
+	clear_data();
+
 	m_fileName = fileName;
 
 	QTextStream tstream(&file);
 
 	m_gyro_data.clear();
 	m_accel_data.clear();
-	m_temp_data.clear();
 
 	int ind = 0;
 	while(!tstream.atEnd()){
@@ -200,7 +205,6 @@ void GyroData::openFile(const QString fileName)
 
 		m_accel_data.push_back(Vertex3i(a1, a2, a3));
 		m_gyro_data.push_back(Vertex3i(g1, g2, g3));
-		m_temp_data.push_back(t);
 
 		ind++;
 	}
@@ -299,6 +303,8 @@ void GyroData::send_start_to_net(const QHostAddress &host, ushort port)
 	}
 	QByteArray data("START");
 	m_socket->writeDatagram(data, host, port);
+
+	m_count_data_recv = 0;
 }
 
 void GyroData::send_stop_to_net(const QHostAddress &host, ushort port)
@@ -309,6 +315,9 @@ void GyroData::send_stop_to_net(const QHostAddress &host, ushort port)
 	}
 	QByteArray data("STOP");
 	m_socket->writeDatagram(data, host, port);
+
+	m_data_freq_calc.restart();
+	m_count_data_recv = 0;
 }
 
 bool GyroData::is_available_telemetry() const
@@ -365,7 +374,7 @@ void GyroData::set_end_pos_downloaded_data(double value)
 
 double GyroData::end_pos_downloaded_data() const
 {
-	return m_percent_downloaded_data;
+	return m_percent_downloaded_data * 100.0;
 }
 
 bool GyroData::showing_downloaded_data() const
@@ -388,6 +397,9 @@ void GyroData::play()
 	if(!m_gyro_data.size() && !m_accel_data.size())
 		return;
 	m_is_play = true;
+
+	m_data_freq_calc.restart();
+	m_count_data_recv = 0;
 }
 
 void GyroData::pause()
@@ -402,6 +414,9 @@ void GyroData::stop()
 	}
 	m_is_play = false;
 	m_current_playing_pos = 0;
+
+	m_data_freq_calc.restart();
+	m_count_data_recv = 0;
 }
 
 double GyroData::percent_position() const
@@ -431,6 +446,8 @@ void GyroData::set_freq_playing(double value)
 {
 	double timeout = 1000.0 / value;
 	m_timer_playing.setInterval(timeout);
+
+	m_data_freq = value / 1000.0;
 }
 
 void GyroData::start_calc_offset_gyro()
@@ -438,6 +455,7 @@ void GyroData::start_calc_offset_gyro()
 	m_is_calc_offset_gyro = true;
 	m_offset_gyro = Vertex3f();
 	m_count_gyro_offset_data = 0;
+	m_rotate_pos = Vertex3f();
 }
 
 void GyroData::stop_calc_offset_gyro()
@@ -446,6 +464,11 @@ void GyroData::stop_calc_offset_gyro()
 	if(m_count_gyro_offset_data){
 		m_offset_gyro *= 1.0/m_count_gyro_offset_data;
 	}
+}
+
+void GyroData::reset()
+{
+	clear_data();
 }
 
 void GyroData::on_timeout()
@@ -487,12 +510,7 @@ void GyroData::on_timeout_playing()
 
 		emit get_data("kalman_accel", kav);
 
-		if(m_is_calc_offset_gyro){
-			m_offset_gyro += st.gyro;
-			m_count_gyro_offset_data++;
-		}else{
-			st.gyro -= m_offset_gyro;
-		}
+		calc_gyro_offset(st.gyro);
 
 		m_telemtries.push_front(st);
 
@@ -573,6 +591,12 @@ void GyroData::draw()
 
 	glLineWidth(4);
 
+	glPushMatrix();
+
+	glRotatef(m_rotate_pos.x(), 1, 0, 0);
+	glRotatef(m_rotate_pos.y(), 0, 1, 0);
+	glRotatef(m_rotate_pos.z(), 0, 0, 1);
+
 	glColor3f(1, 0.2, 0.2);
 	glBegin(GL_LINES);
 	glVertex3f(0, 0, 0);
@@ -590,6 +614,8 @@ void GyroData::draw()
 	glVertex3f(0, 0, 0);
 	glVertex3f(0, 0, 1);
 	glEnd();
+
+	glPopMatrix();
 
 	glLineWidth(1);
 
@@ -657,32 +683,44 @@ QVector3D GyroData::position() const
 	return QVector3D();
 }
 
+void GyroData::calc_gyro_offset(Vertex3i &gyro)
+{
+	if(m_is_calc_offset_gyro){
+		m_offset_gyro += gyro;
+		m_count_gyro_offset_data++;
+	}else{
+		gyro -= m_offset_gyro;
+	}
+}
+
+void GyroData::calc_data_freq()
+{
+	if(m_count_data_recv){
+		double s = m_data_freq_calc.elapsed() / 1000.0;
+		m_data_freq = s / m_count_data_recv;
+	}
+}
+
+void GyroData::clear_data()
+{
+	m_count_gyro_offset_data = 0;
+	m_percent_downloaded_data = 1;
+	m_offset_gyro = Vertex3f();
+	m_offset_accel = Vertex3f();
+	m_rotate_pos = Vertex3f();
+	m_count_data_recv = 0;
+}
+
 void GyroData::tryParseData(const QByteArray &data)
 {
 	while(m_telemtries.size() >= max_count_telemetry){
 		m_telemtries.pop_back();
 	}
 
-	QDataStream stream(data);
-	stream.setByteOrder(QDataStream::BigEndian);
-	stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
-	stream.setVersion(QDataStream::Qt_4_8);
-
 	StructTelemetry st;
 
-	stream >> st.power_on;
-	FOREACH(i, cnt_engines, stream >> st.power[i]);
-	stream >> st.tangaj;
-	stream >> st.bank;
-	stream >> st.course;
-	stream >> st.temp;
-	stream >> st.height;
-	stream >> st.gyro.data[0];
-	stream >> st.gyro.data[1];
-	stream >> st.gyro.data[2];
-	stream >> st.accel.data[0];
-	stream >> st.accel.data[1];
-	stream >> st.accel.data[2];
+	QDataStream stream(data);
+	st.read_from(stream);
 
 	emit get_data("gyro", st.gyro);
 	emit get_data("accel", st.accel);
@@ -701,6 +739,12 @@ void GyroData::tryParseData(const QByteArray &data)
 	st.accel = kav;
 	st.gyro = kgv;
 
+	calc_gyro_offset(st.gyro);
+
+	calc_data_freq();
+
+	m_rotate_pos += st.angular_speed() * m_data_freq;
+
 	emit get_data("kalman_accel", kav);
 	emit get_data("kalman_gyro", kgv);
 
@@ -709,6 +753,12 @@ void GyroData::tryParseData(const QByteArray &data)
 	m_telemtries.push_front(st);
 
 	m_time_waiting_telemetry.restart();
+
+	if(!m_count_data_recv){
+		m_data_freq_calc.start();
+	}
+
+	m_count_data_recv++;
 }
 
 void GyroData::load_from_xml()
