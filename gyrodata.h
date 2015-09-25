@@ -43,18 +43,75 @@ public:
 	 */
 	void recalc_accel(double threshold, double threshold_deriv = 0.01);
 
+	/**
+	 * @brief send_start_to_net
+	 * signal for start send data from device
+	 * @param host
+	 * @param port
+	 */
 	void send_start_to_net(const QHostAddress& host, ushort port);
+	/**
+	 * @brief send_stop_to_net
+	 * signal for sotp send data from device
+	 * @param host
+	 * @param port
+	 */
 	void send_stop_to_net(const QHostAddress& host, ushort port);
+	/**
+	 * @brief is_available_telemetry
+	 * available telemetry from device
+	 * @return
+	 */
 	bool is_available_telemetry() const;
 
+	/**
+	 * @brief divider_gyro
+	 * divider for gyroscope
+	 * @return
+	 */
 	double divider_gyro() const;
+	/**
+	 * @brief set_divider_gyro
+	 * set divider for gyroscope
+	 * @param val
+	 */
 	void set_divider_gyro(double val);
+	/**
+	 * @brief divider_accel
+	 * divider for accelerometer
+	 * @return
+	 */
 	double divider_accel() const;
+	/**
+	 * @brief set_divider_accel
+	 * set divider for accelerometer
+	 * @param val
+	 */
 	void set_divider_accel(double val);
 
+	/**
+	 * @brief shift_gyro
+	 * count of significant bits of data from gyroscope
+	 * @return
+	 */
 	int shift_gyro() const;
+	/**
+	 * @brief set_shift_gyro
+	 * set count of significant bits of data from gyroscope
+	 * @param val
+	 */
 	void set_shift_gyro(int val);
+	/**
+	 * @brief shift_accel
+	 * count of significant bits of data from accelerometer
+	 * @return
+	 */
 	int shift_accel() const;
+	/**
+	 * @brief set_shift_accel
+	 * set count of significant bits of data from accelerometer
+	 * @param val
+	 */
 	void set_shift_accel(int val);
 
 	/**
@@ -62,18 +119,80 @@ public:
 	 * @param value - percent for drawing data
 	 */
 	void set_end_pos_downloaded_data(double value);
+	/**
+	 * @brief end_pos_downloaded_data
+	 * current position representing of downloaded data
+	 * @return
+	 */
 	double end_pos_downloaded_data() const;
 
+	/**
+	 * @brief showing_downloaded_data
+	 * current state of visible data
+	 * @return
+	 */
 	bool showing_downloaded_data() const;
+	/**
+	 * @brief set_showing_downloaded_data
+	 * use for visible downloaded data
+	 * @param value
+	 */
 	void set_showing_downloaded_data(bool value);
 
+	/**
+	 * @brief is_play
+	 * current playback state
+	 * @return
+	 */\
 	bool is_play() const;
+	/**
+	 * @brief play
+	 * start playback
+	 */
 	void play();
+	/**
+	 * @brief pause
+	 * pause for playback
+	 */
+	void pause();
+	/**
+	 * @brief stop
+	 * stop playback
+	 */
 	void stop();
+	/**
+	 * @brief percent_position
+	 * position of playback data
+	 * @return
+	 */
 	double percent_position() const;
+	/**
+	 * @brief set_position_playback
+	 * set position in percent for playback
+	 * @param position
+	 */
+	void set_position_playback(double position);
 
+	/**
+	 * @brief freq_playing
+	 * current frequency of playing
+	 * @return
+	 */
 	double freq_playing() const;
+	/**
+	 * @brief set_freq_playing
+	 * set frequency of playing
+	 * @param value
+	 */
 	void set_freq_playing(double value);
+	/**
+	 * @brief start_calc_center_gyro
+	 */
+	void start_calc_offset_gyro();
+	/**
+	 * @brief stop_calc_center_gyro
+	 */
+	void stop_calc_offset_gyro();
 
 signals:
 	void get_data(const QString& name, const Vertex3i);
@@ -117,9 +236,12 @@ private:
 	QVector< StructTelemetry > m_telemtries;
 	QTime m_time_waiting_telemetry;
 
-	QVector3D m_center_accel;
+	Vertex3f m_offset_gyro;
+	bool m_is_calc_offset_gyro;
+	Vertex3f m_offset_accel;
+	int m_count_gyro_offset_data;
 
-	SimpleKalmanFilter m_kalman;
+	SimpleKalmanFilter m_kalman[6];
 
 	void load_from_xml();
 	void save_to_xml();

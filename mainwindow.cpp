@@ -47,6 +47,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(&m_gyroData, SIGNAL(get_data(QString,double)), ui->widget_graph, SLOT(on_put_data(QString,double)));
 
 	ui->widget_graph->add_nowatch("gyro");
+	ui->widget_graph->add_nowatch("kalman_gyro");
 
 	setWindowState( Qt::WindowMaximized );
 }
@@ -329,16 +330,6 @@ void MainWindow::on_hs_set_end_position_sliderMoved(int position)
 	m_gyroData.set_end_pos_downloaded_data(position);
 }
 
-void MainWindow::on_pushButton_9_clicked()
-{
-	m_gyroData.play();
-}
-
-void MainWindow::on_pushButton_10_clicked()
-{
-	m_gyroData.stop();
-}
-
 void MainWindow::on_cb_show_loaded_clicked(bool checked)
 {
 	m_gyroData.set_showing_downloaded_data(checked);
@@ -347,4 +338,36 @@ void MainWindow::on_cb_show_loaded_clicked(bool checked)
 void MainWindow::on_dsb_frequency_playing_valueChanged(double arg1)
 {
 	m_gyroData.set_freq_playing(arg1);
+}
+
+void MainWindow::on_hs_playing_data_valueChanged(int value)
+{
+	m_gyroData.set_position_playback(value);
+}
+
+void MainWindow::on_pb_play_clicked(bool checked)
+{
+	if(checked){
+		m_gyroData.play();
+		if(!m_gyroData.is_play()){
+			ui->pb_play->setChecked(false);
+		}
+	}else{
+		m_gyroData.pause();
+	}
+}
+
+void MainWindow::on_pb_stop_clicked()
+{
+	m_gyroData.stop();
+	ui->pb_play->setChecked(false);
+}
+
+void MainWindow::on_pushButton_6_clicked(bool checked)
+{
+	if(checked){
+		m_gyroData.start_calc_offset_gyro();
+	}else{
+		m_gyroData.stop_calc_offset_gyro();
+	}
 }

@@ -80,13 +80,17 @@ private slots:
 
 	void on_hs_set_end_position_sliderMoved(int position);
 
-	void on_pushButton_9_clicked();
-
-	void on_pushButton_10_clicked();
-
 	void on_cb_show_loaded_clicked(bool checked);
 
 	void on_dsb_frequency_playing_valueChanged(double arg1);
+
+	void on_hs_playing_data_valueChanged(int value);
+
+	void on_pb_play_clicked(bool checked);
+
+	void on_pb_stop_clicked();
+
+	void on_pushButton_6_clicked(bool checked);
 
 protected:
 	void init_list_objects();

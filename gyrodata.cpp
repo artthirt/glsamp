@@ -74,6 +74,8 @@ GyroData::GyroData(QObject *parent) :
   , m_showing_downloaded_data(true)
   , m_is_play(false)
   , m_current_playing_pos(0)
+  , m_is_calc_offset_gyro(false)
+  , m_count_gyro_offset_data(0)
 {
 	setType(GYRODATA);
 
@@ -388,6 +390,11 @@ void GyroData::play()
 	m_is_play = true;
 }
 
+void GyroData::pause()
+{
+	m_is_play = false;
+}
+
 void GyroData::stop()
 {
 	if(m_is_play){
@@ -405,6 +412,15 @@ double GyroData::percent_position() const
 	return 100.0 * m_current_playing_pos / mm;
 }
 
+void GyroData::set_position_playback(double position)
+{
+	if(position < 0 || position > 100)
+		return;
+	int mm = qMax(m_accel_data.size(), m_gyro_data.size());
+	double pos = mm * position / 100.0;
+	m_current_playing_pos = pos;
+}
+
 double GyroData::freq_playing() const
 {
 	double timeout = m_timer_playing.interval();
@@ -415,6 +431,21 @@ void GyroData::set_freq_playing(double value)
 {
 	double timeout = 1000.0 / value;
 	m_timer_playing.setInterval(timeout);
+}
+
+void GyroData::start_calc_offset_gyro()
+{
+	m_is_calc_offset_gyro = true;
+	m_offset_gyro = Vertex3f();
+	m_count_gyro_offset_data = 0;
+}
+
+void GyroData::stop_calc_offset_gyro()
+{
+	m_is_calc_offset_gyro = false;
+	if(m_count_gyro_offset_data){
+		m_offset_gyro *= 1.0/m_count_gyro_offset_data;
+	}
 }
 
 void GyroData::on_timeout()
@@ -440,9 +471,17 @@ void GyroData::on_timeout_playing()
 		emit get_data("gyro", st.gyro);
 		emit get_data("accel", st.accel);
 
-		m_kalman.set_zk(st.accel.z());
-		emit get_data("kalman_accel.z", m_kalman.xk);
+		m_kalman[0].set_zk(st.accel.x());
+		m_kalman[1].set_zk(st.accel.y());
+		m_kalman[2].set_zk(st.accel.z());
+		emit get_data("kalman_accel", Vertex3f(m_kalman[0].xk, m_kalman[1].xk, m_kalman[2].xk));
 
+		if(m_is_calc_offset_gyro){
+			m_offset_gyro += st.gyro;
+			m_count_gyro_offset_data++;
+		}else{
+			st.gyro -= m_offset_gyro;
+		}
 
 		m_telemtries.push_front(st);
 
@@ -518,12 +557,6 @@ void GyroData::draw()
 			Vertex3f tmp(_V(rshift(m_gyro_data[i], m_shift_gyro)) * div_gyro);
 			glVertex3fv(tmp.data);
 		}
-		glEnd();
-
-		glPointSize(7);
-		glColor3f(1, 1, 0);
-		glBegin(GL_POINTS);
-		glVertex3f(m_center_accel.x(), m_center_accel.y(), m_center_accel.z());
 		glEnd();
 	}
 
@@ -643,8 +676,22 @@ void GyroData::tryParseData(const QByteArray &data)
 	emit get_data("gyro", st.gyro);
 	emit get_data("accel", st.accel);
 
-	m_kalman.set_zk(st.accel.z());
-	emit get_data("kalman_accel.z", m_kalman.xk);
+	m_kalman[0].set_zk(st.accel.x());
+	m_kalman[1].set_zk(st.accel.y());
+	m_kalman[2].set_zk(st.accel.z());
+
+	m_kalman[3].set_zk(st.gyro.x());
+	m_kalman[4].set_zk(st.gyro.y());
+	m_kalman[5].set_zk(st.gyro.z());
+
+	Vertex3f kav(Vertex3f(m_kalman[0].xk, m_kalman[1].xk, m_kalman[2].xk));
+	Vertex3f kgv(Vertex3f(m_kalman[3].xk, m_kalman[4].xk, m_kalman[5].xk));
+
+	st.accel = kav;
+	st.gyro = kgv;
+
+	emit get_data("kalman_accel", kav);
+	emit get_data("kalman_gyro", kgv);
 
 	WriteLog::instance()->add_data("gyro", st);
 

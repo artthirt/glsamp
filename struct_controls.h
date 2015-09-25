@@ -35,6 +35,18 @@ struct Vertex3_{
 		FOREACH(i, 3, data[i] *= value);
 		return *this;
 	}
+	Vertex3_& operator*= (T value){
+		FOREACH(i, 3, data[i] *= value);
+		return *this;
+	}
+	Vertex3_& operator+= (const Vertex3_& v){
+		FOREACH(i, 3, data[i] += v.data[i]);
+		return *this;
+	}
+	Vertex3_& operator-= (const Vertex3_& v){
+		FOREACH(i, 3, data[i] -= v.data[i]);
+		return *this;
+	}
 
 	T data[3];
 };
