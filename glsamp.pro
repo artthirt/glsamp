@@ -15,6 +15,8 @@ CONFIG += c++11
 
 DEFINES += _USE_MATH_DEFINES
 
+INCLUDEPATH += $$PWD/submodules/struct_controls
+
 SOURCES += main.cpp\
         mainwindow.cpp \
     glspace.cpp \
@@ -31,13 +33,13 @@ HEADERS  += mainwindow.h \
     glspace.h \
     quadmodel.h \
     controlmodel.h \
-    struct_controls.h \
     gyrodata.h \
     simple_xml.hpp \
     datachart.h \
     global.h \
     simplekalmanfilter.h \
-    writelog.h
+	writelog.h \
+	submodules/struct_controls/struct_controls.h
 
 FORMS    += mainwindow.ui \
     glspace.ui

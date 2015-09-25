@@ -474,7 +474,18 @@ void GyroData::on_timeout_playing()
 		m_kalman[0].set_zk(st.accel.x());
 		m_kalman[1].set_zk(st.accel.y());
 		m_kalman[2].set_zk(st.accel.z());
-		emit get_data("kalman_accel", Vertex3f(m_kalman[0].xk, m_kalman[1].xk, m_kalman[2].xk));
+
+		m_kalman[3].set_zk(st.gyro.x());
+		m_kalman[4].set_zk(st.gyro.y());
+		m_kalman[5].set_zk(st.gyro.z());
+
+		Vertex3f kav(Vertex3f(m_kalman[0].xk, m_kalman[1].xk, m_kalman[2].xk));
+		Vertex3f kgv(Vertex3f(m_kalman[3].xk, m_kalman[4].xk, m_kalman[5].xk));
+
+		st.accel = kav;
+		st.gyro = kgv;
+
+		emit get_data("kalman_accel", kav);
 
 		if(m_is_calc_offset_gyro){
 			m_offset_gyro += st.gyro;
