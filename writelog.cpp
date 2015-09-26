@@ -3,6 +3,7 @@
 #include <QTextStream>
 #include <QDateTime>
 #include <QDir>
+#include <QApplication>
 
 LogFile::LogFile()
 {
@@ -41,7 +42,7 @@ void LogFile::openFile(const QString &name)
 
 	QDir dir(QDir::homePath());
 
-	QString log_path = QDir::homePath() + log_dir;
+	QString log_path = /*QDir::homePath() +*/ QApplication::applicationDirPath() + "/" + log_dir;
 
 	if(!dir.exists(log_path)){
 		dir.mkdir(log_path);
@@ -181,6 +182,10 @@ void WriteLog::add_data(const QString &name, const StructTelemetry &data)
 	ADDVAL(data.gyro.x());
 	ADDVAL(data.gyro.y());
 	ADDVAL(data.gyro.z());
+
+	ADDVAL(data.afs_sel);
+	ADDVAL(data.fs_sel);
+	ADDVAL(data.freq);
 
 	m_logFiles[name].push_data(name, str);
 }

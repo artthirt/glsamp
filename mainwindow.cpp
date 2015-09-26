@@ -49,6 +49,9 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->widget_graph->add_nowatch("accel");
 	ui->widget_graph->add_nowatch("kalman_accel");
 
+	ui->le_ip_gyro_data->setText(m_gyroData.addr().toString());
+	ui->sb_gyro_data->setValue(m_gyroData.port());
+
 	setWindowState( Qt::WindowMaximized );
 }
 
@@ -138,6 +141,7 @@ void MainWindow::on_timeout_cfg()
 	if(m_gyroData.is_play()){
 		ui->hs_playing_data->setValue(m_gyroData.percent_position());
 	}
+	ui->lb_count_value->setText("count: " + QString::number(m_gyroData.count_gyro_offset_data()));
 }
 
 void MainWindow::on_vs_power_valueChanged(int value)
@@ -225,7 +229,7 @@ void MainWindow::init_list_objects()
 
 void MainWindow::load_from_xml()
 {
-	QString config_file = QDir::homePath() + config_dir + xml_config;
+	QString config_file = /*QDir::homePath() + */QApplication::applicationDirPath() + "/" + config_dir + xml_config;
 
 	SimpleXML sxml(config_file);
 
@@ -242,7 +246,7 @@ void MainWindow::load_from_xml()
 
 void MainWindow::save_to_xml()
 {
-	QString config_file = QDir::homePath() + config_dir;
+	QString config_file = /*QDir::homePath() + */QApplication::applicationDirPath() + "/" + config_dir;
 
 	QDir dir(QDir::homePath());
 
@@ -377,4 +381,9 @@ void MainWindow::on_pb_reset_clicked()
 	m_gyroData.stop();
 	m_gyroData.reset();
 	ui->hs_set_end_position->setValue(m_gyroData.end_pos_downloaded_data());
+}
+
+void MainWindow::on_pushButton_9_clicked()
+{
+	m_gyroData.set_zero_pos();
 }

@@ -57,6 +57,8 @@ public:
 	 * @param port
 	 */
 	void send_stop_to_net(const QHostAddress& host, ushort port);
+	QHostAddress addr() const;
+	ushort port() const;
 	/**
 	 * @brief is_available_telemetry
 	 * available telemetry from device
@@ -194,9 +196,18 @@ public:
 	 */
 	void stop_calc_offset_gyro();
 	/**
+	 * @brief count_vec_for_calc
+	 * @return
+	 */
+	int count_gyro_offset_data() const;
+	/**
 	 * @brief reset
 	 */
 	void reset();
+	/**
+	 * @brief set_zero_pos
+	 */
+	void set_zero_pos();
 
 signals:
 	void get_data(const QString& name, const Vertex3i);
@@ -219,8 +230,7 @@ public:
 
 private:
 	QString m_fileName;
-	QVector< Vertex3i > m_gyro_data;
-	QVector< Vertex3i > m_accel_data;
+	QVector< StructTelemetry > m_downloaded_telemetries;
 	QUdpSocket *m_socket;
 	double m_divider_gyro;
 	double m_divider_accel;
@@ -245,14 +255,13 @@ private:
 	int m_count_gyro_offset_data;
 
 	Vertex3f m_rotate_pos;
-	QTime m_data_freq_calc;
-	qint64 m_count_data_recv;
-	double m_data_freq;
+
+	QHostAddress m_addr;
+	ushort m_port;
 
 	SimpleKalmanFilter m_kalman[6];
 
-	void calc_gyro_offset(Vertex3i &gyro);
-	void calc_data_freq();
+	void calc_offsets(Vertex3i &gyro, Vertex3i &accel);
 	void clear_data();
 	void load_from_xml();
 	void save_to_xml();

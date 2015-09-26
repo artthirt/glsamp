@@ -104,6 +104,7 @@ struct StructControls
 
 const int cnt_engines = 4;
 const int raw_count = 46;
+const float default_freq = 100;
 
 struct StructTelemetry
 {
@@ -118,6 +119,7 @@ struct StructTelemetry
 		course = tangaj = bank = 0;
 		fs_sel = 0;
 		afs_sel = 0;
+		freq = default_freq;
 		FOREACH(i, raw_count, raw[i] = 0);
 	}
 	/**
@@ -136,6 +138,7 @@ struct StructTelemetry
 		temp = st.temp;
 		afs_sel = st.afs_sel;
 		fs_sel = st.fs_sel;
+		freq = st.freq;
 		std::copy(st.raw, st.raw + raw_count, raw);
 	}
 	/**
@@ -159,6 +162,7 @@ struct StructTelemetry
 		FOREACH(i, Vertex3i::count, stream << accel[i]);
 		stream << afs_sel;
 		stream << fs_sel;
+		stream << freq;
 		stream.writeRawData(reinterpret_cast< char* >(raw), raw_count);
 	}
 	/**
@@ -182,11 +186,14 @@ struct StructTelemetry
 		FOREACH(i, Vertex3i::count, stream >> accel[i]);
 		stream >> afs_sel;
 		stream >> fs_sel;
+		stream >> freq;
 		stream.readRawData(reinterpret_cast< char* >(raw), raw_count);
 	}
 
-	Vertex3f angular_speed(){
+	Vertex3f angular_speed(const Vertex3f& offset = Vertex3f()){
 		float factor = 1.0;
+		Vertex3f g = gyro;
+		g -= offset;
 		switch (fs_sel) {
 			case 0:
 			default:
@@ -202,8 +209,11 @@ struct StructTelemetry
 				factor = 2000.0f / 32768.0f;
 				break;
 		}
-		Vertex3f res = Vertex3f(gyro);
-		res *= factor;
+		Vertex3f res = Vertex3f(g);
+		if(!freq)
+			freq = default_freq;
+
+		res *= factor * 1.0/freq;
 		return res;
 	}
 
@@ -216,6 +226,8 @@ struct StructTelemetry
 	float course;
 	float temp;
 	float height;
+	float freq;							/// It is used to define part of the data
+										/// from the sensors to a single point in time
 
 	Vertex3i gyro;
 

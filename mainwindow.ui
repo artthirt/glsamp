@@ -70,7 +70,7 @@
   <widget class="QDockWidget" name="dockWidget">
    <property name="minimumSize">
     <size>
-     <width>400</width>
+     <width>300</width>
      <height>626</height>
     </size>
    </property>
@@ -430,9 +430,18 @@
   <widget class="QDockWidget" name="dockWidget_4">
    <property name="minimumSize">
     <size>
-     <width>424</width>
+     <width>400</width>
      <height>633</height>
     </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>400</width>
+     <height>524287</height>
+    </size>
+   </property>
+   <property name="features">
+    <set>QDockWidget::AllDockWidgetFeatures</set>
    </property>
    <property name="windowTitle">
     <string>&amp;gyro data</string>
@@ -871,8 +880,41 @@ for accel data</string>
           </item>
           <item>
            <widget class="QPushButton" name="pb_reset">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>50</height>
+             </size>
+            </property>
             <property name="text">
              <string>reset</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_9">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>set zero
+ position</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="lb_count_value">
+            <property name="minimumSize">
+             <size>
+              <width>70</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>count: 0</string>
             </property>
            </widget>
           </item>
@@ -881,7 +923,7 @@ for accel data</string>
             <property name="minimumSize">
              <size>
               <width>0</width>
-              <height>40</height>
+              <height>50</height>
              </size>
             </property>
             <property name="maximumSize">
@@ -891,8 +933,8 @@ for accel data</string>
              </size>
             </property>
             <property name="text">
-             <string>start/stop calc 
-offset gyro</string>
+             <string>start/stop
+calc offsets</string>
             </property>
             <property name="checkable">
              <bool>true</bool>

@@ -7,6 +7,7 @@
 #include <QStringList>
 #include <QColor>
 #include <QDebug>
+#include <QApplication>
 
 #include <QUdpSocket>
 #include <QDataStream>
@@ -76,8 +77,6 @@ GyroData::GyroData(QObject *parent) :
   , m_current_playing_pos(0)
   , m_is_calc_offset_gyro(false)
   , m_count_gyro_offset_data(0)
-  , m_count_data_recv(0)
-  , m_data_freq(1)
 {
 	setType(GYRODATA);
 
@@ -86,8 +85,6 @@ GyroData::GyroData(QObject *parent) :
 
 	connect(&m_timer_playing, SIGNAL(timeout()), this, SLOT(on_timeout_playing()));
 	m_timer_playing.start(100);
-
-	m_data_freq = m_timer_playing.interval() / 1000.0;
 
 	m_time_waiting_telemetry.start();
 
@@ -169,8 +166,7 @@ void GyroData::openFile(const QString fileName)
 
 	QTextStream tstream(&file);
 
-	m_gyro_data.clear();
-	m_accel_data.clear();
+	m_downloaded_telemetries.clear();
 
 	int ind = 0;
 	while(!tstream.atEnd()){
@@ -178,7 +174,9 @@ void GyroData::openFile(const QString fileName)
 		line = line.trimmed();
 		QStringList sl = line.split(';');
 
-		double a1, a2, a3, t, g1, g2, g3;
+		StructTelemetry st;
+
+		double a1, a2, a3, t, g1, g2, g3, f = 100, afs = 0, fs = 0;
 
 		if(sl.size() == 7){
 			a1	= sl[0].toDouble();
@@ -197,14 +195,23 @@ void GyroData::openFile(const QString fileName)
 			g1	= sl[8].toDouble();
 			g2	= sl[9].toDouble();
 			g3	= sl[10].toDouble();
+			afs	= sl[11].toDouble();
+			fs	= sl[12].toDouble();
+			f	= sl[13].toDouble();
 		}
 		if(!sl.size()){
 			qDebug() << "data in line" << ind << "not enough:" << sl.size();
 			continue;
 		}
 
-		m_accel_data.push_back(Vertex3i(a1, a2, a3));
-		m_gyro_data.push_back(Vertex3i(g1, g2, g3));
+		st.accel = (Vertex3i(a1, a2, a3));
+		st.gyro =(Vertex3i(g1, g2, g3));
+		st.temp = t;
+		st.afs_sel = afs;
+		st.fs_sel = fs;
+		st.freq = f;
+
+		m_downloaded_telemetries.push_back(st);
 
 		ind++;
 	}
@@ -304,7 +311,8 @@ void GyroData::send_start_to_net(const QHostAddress &host, ushort port)
 	QByteArray data("START");
 	m_socket->writeDatagram(data, host, port);
 
-	m_count_data_recv = 0;
+	m_addr = host;
+	m_port = port;
 }
 
 void GyroData::send_stop_to_net(const QHostAddress &host, ushort port)
@@ -316,8 +324,18 @@ void GyroData::send_stop_to_net(const QHostAddress &host, ushort port)
 	QByteArray data("STOP");
 	m_socket->writeDatagram(data, host, port);
 
-	m_data_freq_calc.restart();
-	m_count_data_recv = 0;
+	m_addr = host;
+	m_port = port;
+}
+
+QHostAddress GyroData::addr() const
+{
+	return m_addr;
+}
+
+ushort GyroData::port() const
+{
+	return m_port;
 }
 
 bool GyroData::is_available_telemetry() const
@@ -394,12 +412,9 @@ bool GyroData::is_play() const
 
 void GyroData::play()
 {
-	if(!m_gyro_data.size() && !m_accel_data.size())
+	if(!m_downloaded_telemetries.size())
 		return;
 	m_is_play = true;
-
-	m_data_freq_calc.restart();
-	m_count_data_recv = 0;
 }
 
 void GyroData::pause()
@@ -414,14 +429,11 @@ void GyroData::stop()
 	}
 	m_is_play = false;
 	m_current_playing_pos = 0;
-
-	m_data_freq_calc.restart();
-	m_count_data_recv = 0;
 }
 
 double GyroData::percent_position() const
 {
-	int mm = qMax(m_accel_data.size(), m_gyro_data.size());
+	int mm = m_downloaded_telemetries.size();
 	if(!mm)
 		return 0;
 	return 100.0 * m_current_playing_pos / mm;
@@ -431,7 +443,7 @@ void GyroData::set_position_playback(double position)
 {
 	if(position < 0 || position > 100)
 		return;
-	int mm = qMax(m_accel_data.size(), m_gyro_data.size());
+	int mm = m_downloaded_telemetries.size();
 	double pos = mm * position / 100.0;
 	m_current_playing_pos = pos;
 }
@@ -446,8 +458,6 @@ void GyroData::set_freq_playing(double value)
 {
 	double timeout = 1000.0 / value;
 	m_timer_playing.setInterval(timeout);
-
-	m_data_freq = value / 1000.0;
 }
 
 void GyroData::start_calc_offset_gyro()
@@ -463,12 +473,23 @@ void GyroData::stop_calc_offset_gyro()
 	m_is_calc_offset_gyro = false;
 	if(m_count_gyro_offset_data){
 		m_offset_gyro *= 1.0/m_count_gyro_offset_data;
+		m_rotate_pos = Vertex3f();
 	}
+}
+
+int GyroData::count_gyro_offset_data() const
+{
+	return m_count_gyro_offset_data;
 }
 
 void GyroData::reset()
 {
 	clear_data();
+}
+
+void GyroData::set_zero_pos()
+{
+	m_rotate_pos = Vertex3f();
 }
 
 void GyroData::on_timeout()
@@ -480,16 +501,9 @@ void GyroData::on_timeout()
 
 void GyroData::on_timeout_playing()
 {
-	if(m_is_play && (m_gyro_data.size() || m_accel_data.size())){
+	if(m_is_play && (m_downloaded_telemetries.size())){
 
-		int mm = qMax(m_accel_data.size(), m_gyro_data.size());
-
-		int cpg = qMin(m_gyro_data.size(), m_current_playing_pos);
-		int cpa = qMin(m_accel_data.size(), m_current_playing_pos);
-
-		StructTelemetry st;
-		st.gyro = m_gyro_data[cpg];
-		st.accel = m_accel_data[cpa];
+		StructTelemetry st = m_downloaded_telemetries[m_current_playing_pos];;
 
 		emit get_data("gyro", st.gyro);
 		emit get_data("accel", st.accel);
@@ -510,7 +524,9 @@ void GyroData::on_timeout_playing()
 
 		emit get_data("kalman_accel", kav);
 
-		calc_gyro_offset(st.gyro);
+		calc_offsets(st.gyro, st.accel);
+
+		m_rotate_pos -= st.angular_speed(m_offset_gyro);
 
 		m_telemtries.push_front(st);
 
@@ -519,7 +535,7 @@ void GyroData::on_timeout_playing()
 		}
 
 		m_current_playing_pos += 1;
-		if(m_current_playing_pos >= mm){
+		if(m_current_playing_pos >= m_downloaded_telemetries.size()){
 			m_current_playing_pos = 0;
 		}
 	}
@@ -569,21 +585,20 @@ void GyroData::draw()
 	glPointSize(3);
 
 	if(m_showing_downloaded_data){
-		int count_accel = m_percent_downloaded_data * m_accel_data.size();
-		int count_gyro = m_percent_downloaded_data * m_gyro_data.size();
+		int count = m_percent_downloaded_data * m_downloaded_telemetries.size();
 
 		glColor3f(0, 1, 0);
 		glBegin(GL_POINTS);
-		for (int i = 0; i < count_accel; i++) {
-			Vertex3f tmp(_V(rshift(m_accel_data[i], m_shift_accel)) * div_accel);
+		for (int i = 0; i < count; i++) {
+			Vertex3f tmp(_V(rshift(m_downloaded_telemetries[i].accel, m_shift_accel)) * div_accel);
 			glVertex3fv(tmp.data);
 		}
 		glEnd();
 
 		glColor3f(1, 0, 0);
 		glBegin(GL_POINTS);
-		for (int i = 0; i< count_gyro; i++) {
-			Vertex3f tmp(_V(rshift(m_gyro_data[i], m_shift_gyro)) * div_gyro);
+		for (int i = 0; i< count; i++) {
+			Vertex3f tmp(_V(rshift(m_downloaded_telemetries[i].gyro, m_shift_gyro)) * div_gyro);
 			glVertex3fv(tmp.data);
 		}
 		glEnd();
@@ -683,21 +698,15 @@ QVector3D GyroData::position() const
 	return QVector3D();
 }
 
-void GyroData::calc_gyro_offset(Vertex3i &gyro)
+void GyroData::calc_offsets(Vertex3i &gyro, Vertex3i &accel)
 {
 	if(m_is_calc_offset_gyro){
 		m_offset_gyro += gyro;
 		m_count_gyro_offset_data++;
+		m_offset_accel += accel;
 	}else{
-		gyro -= m_offset_gyro;
-	}
-}
-
-void GyroData::calc_data_freq()
-{
-	if(m_count_data_recv){
-		double s = m_data_freq_calc.elapsed() / 1000.0;
-		m_data_freq = s / m_count_data_recv;
+//		gyro -= m_offset_gyro;
+//		accel -= m_offset_accel;
 	}
 }
 
@@ -708,7 +717,6 @@ void GyroData::clear_data()
 	m_offset_gyro = Vertex3f();
 	m_offset_accel = Vertex3f();
 	m_rotate_pos = Vertex3f();
-	m_count_data_recv = 0;
 }
 
 void GyroData::tryParseData(const QByteArray &data)
@@ -739,11 +747,9 @@ void GyroData::tryParseData(const QByteArray &data)
 	st.accel = kav;
 	st.gyro = kgv;
 
-	calc_gyro_offset(st.gyro);
+	calc_offsets(st.gyro, st.accel);
 
-	calc_data_freq();
-
-	m_rotate_pos += st.angular_speed() * m_data_freq;
+	m_rotate_pos -= st.angular_speed(m_offset_gyro);
 
 	emit get_data("kalman_accel", kav);
 	emit get_data("kalman_gyro", kgv);
@@ -753,17 +759,11 @@ void GyroData::tryParseData(const QByteArray &data)
 	m_telemtries.push_front(st);
 
 	m_time_waiting_telemetry.restart();
-
-	if(!m_count_data_recv){
-		m_data_freq_calc.start();
-	}
-
-	m_count_data_recv++;
 }
 
 void GyroData::load_from_xml()
 {
-	QString config_file = QDir::homePath() + config_dir + xml_config;
+	QString config_file = /*QDir::homePath() + */QApplication::applicationDirPath() + "/" + config_dir + xml_config;
 
 	SimpleXML sxml(config_file);
 
@@ -777,6 +777,14 @@ void GyroData::load_from_xml()
 	m_shift_gyro = sxml.get_xml_int("shift_gyro");
 	m_fileName = sxml.get_xml_string("filename");
 	m_showing_downloaded_data = sxml.get_xml_int("showing_downloaded_data");
+	m_addr = QHostAddress(sxml.get_xml_string("ip"));
+	m_port = sxml.get_xml_int("port");
+
+	if(m_addr.isNull()){
+		m_addr = QHostAddress("192.168.0.200");
+	}
+	if(!m_port)
+		m_port = 7777;
 
 	double freq = sxml.get_xml_double("freq_playing");
 	if(freq){
@@ -786,12 +794,12 @@ void GyroData::load_from_xml()
 
 void GyroData::save_to_xml()
 {
-	QString config_file = QDir::homePath() + config_dir;
+	QString config_file = /*QDir::homePath() + */QApplication::applicationDirPath() + "/" + config_dir;
 
 	QDir dir(QDir::homePath());
 
-	if(!dir.exists(config_file))
-		dir.mkdir(config_file);
+	//if(!dir.exists(config_file))
+	dir.mkdir(config_file);
 
 	config_file += xml_config;
 
@@ -804,6 +812,8 @@ void GyroData::save_to_xml()
 	sxml.set_dom_value_num("shift_gyro", m_shift_gyro);
 	sxml.set_dom_value_s("filename", m_fileName);
 	sxml.set_dom_value_num("showing_downloaded_data", m_showing_downloaded_data);
+	sxml.set_dom_value_s("ip", m_addr.toString());
+	sxml.set_dom_value_num("port", m_port);
 
 	double freq = freq_playing();
 	sxml.set_dom_value_num("freq_playing", freq);
