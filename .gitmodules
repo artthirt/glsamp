@@ -1,0 +1,3 @@
+[submodule "submodules/struct_controls"]
+	path = submodules/struct_controls
+	url = https://github.com/artthirt/struct_controls.git

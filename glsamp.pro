@@ -8,6 +8,12 @@ QT       += core gui opengl xml network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
+CONFIG(debug, debug|release){
+	DST_DIR=$$OUT_PWD/debug
+}else{
+	DST_DIR=$$OUT_PWD/release
+}
+
 TARGET = glsamp
 TEMPLATE = app
 
@@ -43,3 +49,8 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui \
     glspace.ui
+
+UI_DIR = $$DST_DIR/tmp/ui
+OBJECTS_DIR = $$DST_DIR/obj
+MOC_DIR = $$DST_DIR/moc
+RCC_DIR = $$DST_DIR/rcc

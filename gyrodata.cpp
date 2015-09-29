@@ -108,6 +108,8 @@ GyroData::GyroData(QObject *parent) :
   , m_count_gyro_offset_data(0)
   , m_is_calculated(false)
   , m_tmp_angle(0)
+  , m_port(7777)
+  , m_addr(QHostAddress("192.168.0.200"))
 {
 	setType(GYRODATA);
 
@@ -459,7 +461,7 @@ void GyroData::pause()
 void GyroData::stop()
 {
 	if(m_is_play){
-		m_telemtries.clear();
+		m_telemetries.clear();
 	}
 	m_is_play = false;
 	m_current_playing_pos = 0;
@@ -543,8 +545,8 @@ void GyroData::set_zero_pos()
 
 void GyroData::on_timeout()
 {
-	if(m_telemtries.size() > 3){
-		m_telemtries.pop_back();
+	if(m_telemetries.size() > 3){
+		m_telemetries.pop_back();
 	}
 }
 
@@ -556,80 +558,6 @@ inline Vertex3d QV3V3(const QVector3D& v)
 inline QVector3D V3QV3(const Vertex3d& v)
 {
 	return QVector3D(v.x(), v.y(), v.z());
-}
-
-void GyroData::on_timeout_playing()
-{
-	if(m_is_play && (m_downloaded_telemetries.size())){
-
-		StructTelemetry st = m_downloaded_telemetries[m_current_playing_pos];;
-
-		emit get_data("gyro", st.gyro);
-		emit get_data("accel", st.accel);
-
-		m_kalman[0].set_zk(st.accel.x());
-		m_kalman[1].set_zk(st.accel.y());
-		m_kalman[2].set_zk(st.accel.z());
-
-		m_kalman[3].set_zk(st.gyro.x());
-		m_kalman[4].set_zk(st.gyro.y());
-		m_kalman[5].set_zk(st.gyro.z());
-
-		Vertex3d kav(Vertex3d(m_kalman[0].xk, m_kalman[1].xk, m_kalman[2].xk));
-		Vertex3d kgv(Vertex3d(m_kalman[3].xk, m_kalman[4].xk, m_kalman[5].xk));
-
-		st.accel = kav;
-		st.gyro = kgv;
-
-		m_mean_accel = m_mean_accel * 0.9f + Vertex3d(st.accel) * 0.1f;
-
-		emit get_data("kalman_accel", kav);
-
-		calc_offsets(st.gyro, st.accel);
-
-		if(!m_is_calc_offset_gyro && m_is_calculated){
-			m_rotate_pos -= st.angular_speed(m_offset_gyro);
-
-			Vertex3d offset(m_mean_accel);
-			int offset_len = offset.length();
-			offset_len = m_len_Gaccel - offset_len;
-			offset_len >>= m_shift_accel;
-			offset.normalize();
-			offset *= (double)offset_len;
-			m_translate_speed += offset;
-			m_translate_pos += (m_translate_speed * (1.0/m_divider_accel));
-
-			QQuaternion qX, qY, qZ, qres;
-			qX = QQuaternion::fromAxisAndAngle(QVector3D(1, 0, 0), m_rotate_pos.x());
-			qY = QQuaternion::fromAxisAndAngle(QVector3D(0, 1, 0), m_rotate_pos.y());
-			qZ = QQuaternion::fromAxisAndAngle(QVector3D(0, 0, 1), m_rotate_pos.z());
-			qres = qX * qY * qZ;
-			Vertex3d norm(0, 0, -1), accel(m_mean_accel);
-
-			norm = QV3V3(qres.rotatedVector(V3QV3(norm)));
-
-			accel.normalize();
-			norm.normalize();
-			double angle = Vertex3d::dot(norm, accel);
-			angle = acos(angle) * 180.0 / M_PI;
-			if(fabs(angle) > 1e-7){
-				Vertex3d axes = Vertex3d::cross(accel, norm).normalized();
-				m_tmp_axes = axes;
-			}
-			m_tmp_angle = angle;
-		}
-
-		m_telemtries.push_front(st);
-
-		while(m_telemtries.size() >= max_count_telemetry){
-			m_telemtries.pop_back();
-		}
-
-		m_current_playing_pos += 1;
-		if(m_current_playing_pos >= m_downloaded_telemetries.size()){
-			m_current_playing_pos = 0;
-		}
-	}
 }
 
 void GyroData::on_readyRead()
@@ -754,9 +682,9 @@ void GyroData::draw()
 
 	glPointSize(4);
 
-	if(m_telemtries.size()){
+	if(m_telemetries.size()){
 
-		Vertex3d tmp(_V(rshift(m_telemtries[0].gyro, m_shift_gyro)) * div_gyro);
+		Vertex3d tmp(_V(rshift(m_telemetries[0].gyro, m_shift_gyro)) * div_gyro);
 
 		glColor3f(1, 0.5, 0);
 		glBegin(GL_POINTS);
@@ -768,9 +696,9 @@ void GyroData::draw()
 
 		glLineWidth(1);
 		glBegin(GL_LINE_STRIP);
-		for (int i = 0; i < m_telemtries.size(); i++){
-			StructTelemetry& st = m_telemtries[i];
-			float dd = (float)(m_telemtries.size() - i) / m_telemtries.size();
+		for (int i = 0; i < m_telemetries.size(); i++){
+			StructTelemetry& st = m_telemetries[i];
+			float dd = (float)(m_telemetries.size() - i) / m_telemetries.size();
 			glColor3f(1 * dd, 0.5 * dd, 0);
 
 			tmp = _V(rshift(st.gyro, m_shift_gyro)) * div_gyro;
@@ -781,7 +709,7 @@ void GyroData::draw()
 
 		glColor3f(0.5, 1, 0);
 		glBegin(GL_POINTS);
-			tmp = _V(rshift(m_telemtries[0].accel, m_shift_accel)) * div_accel;
+			tmp = _V(rshift(m_telemetries[0].accel, m_shift_accel)) * div_accel;
 			glVertex3dv(tmp.data);
 		glEnd();
 
@@ -790,9 +718,9 @@ void GyroData::draw()
 
 		glLineWidth(1);
 		glBegin(GL_LINE_STRIP);
-		for (int i = 0; i < m_telemtries.size(); i++){
-			StructTelemetry& st = m_telemtries[i];
-			float dd = (float)(m_telemtries.size() - i) / m_telemtries.size();
+		for (int i = 0; i < m_telemetries.size(); i++){
+			StructTelemetry& st = m_telemetries[i];
+			float dd = (float)(m_telemetries.size() - i) / m_telemetries.size();
 			glColor3f(0.5 * dd, 1 * dd, 0);
 
 			tmp = _V(rshift(st.accel, m_shift_accel)) * div_accel;
@@ -841,10 +769,29 @@ void GyroData::clear_data()
 	m_mean_accel = Vertex3d();
 }
 
+void GyroData::on_timeout_playing()
+{
+	if(m_is_play && (m_downloaded_telemetries.size())){
+
+		StructTelemetry st = m_downloaded_telemetries[m_current_playing_pos];;
+
+		analyze_telemetry(st);
+
+		while(m_telemetries.size() >= max_count_telemetry){
+			m_telemetries.pop_back();
+		}
+
+		m_current_playing_pos += 1;
+		if(m_current_playing_pos >= m_downloaded_telemetries.size()){
+			m_current_playing_pos = 0;
+		}
+	}
+}
+
 void GyroData::tryParseData(const QByteArray &data)
 {
-	while(m_telemtries.size() >= max_count_telemetry){
-		m_telemtries.pop_back();
+	while(m_telemetries.size() >= max_count_telemetry){
+		m_telemetries.pop_back();
 	}
 
 	StructTelemetry st;
@@ -852,6 +799,14 @@ void GyroData::tryParseData(const QByteArray &data)
 	QDataStream stream(data);
 	st.read_from(stream);
 
+	analyze_telemetry(st);
+
+
+	m_time_waiting_telemetry.restart();
+}
+
+void GyroData::analyze_telemetry(StructTelemetry &st)
+{
 	emit get_data("gyro", st.gyro);
 	emit get_data("accel", st.accel);
 
@@ -869,20 +824,50 @@ void GyroData::tryParseData(const QByteArray &data)
 	st.accel = kav;
 	st.gyro = kgv;
 
-	calc_offsets(st.gyro, st.accel);
-
-	if(!m_is_calc_offset_gyro){
-		m_rotate_pos -= st.angular_speed(m_offset_gyro);
-	}
-
 	emit get_data("kalman_accel", kav);
 	emit get_data("kalman_gyro", kgv);
 
+	calc_offsets(st.gyro, st.accel);
+
+	m_mean_accel = m_mean_accel * 0.9f + Vertex3d(st.accel) * 0.1f;
+
+	if(!m_is_calc_offset_gyro && m_is_calculated){
+		m_rotate_pos -= st.angular_speed(m_offset_gyro);
+
+		Vertex3d offset(m_mean_accel);
+		int offset_len = offset.length();
+		offset_len = m_len_Gaccel - offset_len;
+		offset_len >>= m_shift_accel;
+		offset.normalize();
+		offset *= (double)offset_len;
+		m_translate_speed += offset;
+		m_translate_pos += (m_translate_speed * (1.0/m_divider_accel));
+
+		QQuaternion qX, qY, qZ, qres;
+		qX = QQuaternion::fromAxisAndAngle(QVector3D(1, 0, 0), m_rotate_pos.x());
+		qY = QQuaternion::fromAxisAndAngle(QVector3D(0, 1, 0), m_rotate_pos.y());
+		qZ = QQuaternion::fromAxisAndAngle(QVector3D(0, 0, 1), m_rotate_pos.z());
+		qres = qX * qY * qZ;
+		Vertex3d norm(0, 0, -1), accel(m_mean_accel);
+
+		norm = QV3V3(qres.rotatedVector(V3QV3(norm)));
+
+		accel.normalize();
+		norm.normalize();
+		double angle = Vertex3d::dot(norm, accel);
+		angle = acos(angle) * 180.0 / M_PI;
+		if(fabs(angle) > 1e-7){
+			Vertex3d axes = Vertex3d::cross(accel, norm).normalized();
+			m_tmp_axes = axes;
+		}
+		m_tmp_angle = angle;
+	}
+
+	m_telemetries.push_front(st);
+
 	WriteLog::instance()->add_data("gyro", st);
 
-	m_telemtries.push_front(st);
-
-	m_time_waiting_telemetry.restart();
+	m_telemetries.push_front(st);
 }
 
 void GyroData::load_from_xml()

@@ -222,6 +222,7 @@ public slots:
 
 protected:
 	void tryParseData(const QByteArray& data);
+	void analyze_telemetry(StructTelemetry& st);
 
 	// VirtGLObject interface
 public:
@@ -248,7 +249,7 @@ private:
 	QTimer m_timer;
 	QTimer m_timer_playing;
 
-	QVector< StructTelemetry > m_telemtries;
+	QVector< StructTelemetry > m_telemetries;
 	QTime m_time_waiting_telemetry;
 
 	Vertex3d m_offset_gyro;
