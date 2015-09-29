@@ -55,36 +55,58 @@ struct Vertex3_{
 		FOREACH(i, count, data[i] = static_cast< T > (v.data[i]));
 	}
 
-	T x() const { return data[0]; }
-	T y() const { return data[1]; }
-	T z() const { return data[2]; }
-	void setX(T value) { data[0] = value; }
-	void setY(T value) { data[1] = value; }
-	void setZ(T value) { data[2] = value; }
+	inline T x() const { return data[0]; }
+	inline T y() const { return data[1]; }
+	inline T z() const { return data[2]; }
+	inline void setX(T value) { data[0] = value; }
+	inline void setY(T value) { data[1] = value; }
+	inline void setZ(T value) { data[2] = value; }
 
-	Vertex3_& operator* (T value){
+	inline Vertex3_& operator* (T value){
 		FOREACH(i, count, data[i] *= value);
 		return *this;
 	}
-	Vertex3_& operator*= (T value){
+	inline Vertex3_& operator*= (T value){
 		FOREACH(i, count, data[i] *= value);
 		return *this;
 	}
-	Vertex3_& operator+= (const Vertex3_& v){
+	inline Vertex3_& operator+= (const Vertex3_& v){
 		FOREACH(i, count, data[i] += v.data[i]);
 		return *this;
 	}
-	Vertex3_& operator-= (const Vertex3_& v){
+	inline Vertex3_& operator-= (const Vertex3_& v){
 		FOREACH(i, count, data[i] -= v.data[i]);
 		return *this;
 	}
-	T& operator[] (int index){
+	inline T& operator[] (int index){
 		ASSERT_EC(index >=0 && index < count, "index out of range");
 		return data[index];
 	}
-	T& operator[] (int index) const{
+	inline T& operator[] (int index) const{
 		ASSERT_EC(index >=0 && index < count, "index out of range");
 		return data[index];
+	}
+	inline float length() const{
+		float res = 0;
+		FOREACH(i, count, res += data[i] * data[i]);
+		return sqrt(res);
+	}
+	inline float length_square() const{
+		float res = 0;
+		FOREACH(i, count, res += data[i] * data[i]);
+		return res;
+	}
+	static float dot(const Vertex3_& v1, const Vertex3_& v2){
+		float res = 0;
+		FOREACH(i, count, res += v1.data[i] * v2.data[2]);
+		return res;
+	}
+	static Vertex3_ cross(const Vertex3_& v1, const Vertex3_& v2){
+		Vertex3_ res;
+		res.setX(v1.y() * v2.z() - v1.z() * v2.y());
+		res.setY(v1.z() * v2.x() - v1.x() * v2.z());
+		res.setZ(v1.x() * v2.y() - v1.y() - v2.x());
+		return res;
 	}
 
 	T data[count];

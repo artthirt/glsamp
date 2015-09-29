@@ -44,7 +44,7 @@ class DataChart: public QWidget
 {
 	Q_OBJECT
 public:
-	DataChart(QObject* parent = 0);
+	DataChart(QWidget *parent = 0);
 
 	void clear();
 	void clear(const QString& chart);

@@ -69,7 +69,7 @@ void LogFile::write_data()
 	while(data.size()){
 		m_mutex.lock();
 		QString dt = data.front() + "\n";
-		qint64 res = logFile.write(dt.toUtf8());
+		logFile.write(dt.toUtf8());
 		data.pop_front();
 		m_mutex.unlock();
 	}

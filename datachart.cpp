@@ -6,7 +6,8 @@
 #include <QFontMetrics>
 #include <QPointF>
 
-DataChart::DataChart(QObject *parent)
+DataChart::DataChart(QWidget *parent)
+	: QWidget(parent)
 {
 	m_dt = 10;
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(on_timeout()));

@@ -558,10 +558,10 @@ void QuadModel::draw_telemetry()
 
 	glLoadIdentity();
 
-	glTranslatef(0.4, 0.35, -1.01f);
+	glTranslatef(0.4f, 0.35f, -1.01f);
 
 	const int cnt_circle = 50;
-	const float R = 0.1;
+	const float R = 0.1f;
 
 	glLineWidth(2);
 	glColor3f(1, 1, 1);
@@ -573,8 +573,8 @@ void QuadModel::draw_telemetry()
 		x = R * sin(2.0 * M_PI * i/cnt_circle);
 		y = R * cos(2.0 * M_PI * i/cnt_circle);
 
-		glVertex3f(0, 0, -0.001);
-		glVertex3f(x, y, -0.001);
+		glVertex3f(0, 0, -0.001f);
+		glVertex3f(x, y, -0.001f);
 	}
 	glEnd();
 
@@ -629,7 +629,7 @@ void QuadModel::draw_telemetry()
 		vc.setX(0);
 		double l = vc.y();
 		offset_course = l;
-		glColor3f(0.7, 0.7, 0.7);
+		glColor3f(0.7f, 0.7f, 0.7f);
 		glLineWidth(4);
 		QVector3D v0 = vp * l, v1, v2;
 		l = v0.length();
@@ -654,10 +654,10 @@ void QuadModel::draw_telemetry()
 			if(l <= R){
 				l = sqrt(R * R - l * l);
 				v3 = vz - l * vl0, v4 = vz + l * vl0;
-				glVertex3f(v3.x(), v3.y(), -0.0005);
-				glVertex3f(v4.x(), v4.y(), -0.0005);
+				glVertex3f(v3.x(), v3.y(), -0.0005f);
+				glVertex3f(v4.x(), v4.y(), -0.0005f);
 			}else{
-				glVertex3f(vz.x(), vz.y(), -0.0005);
+				glVertex3f(vz.x(), vz.y(), -0.0005f);
 			}
 		}
 		glEnd();
@@ -692,7 +692,7 @@ void QuadModel::draw_telemetry()
 			l = sqrt(R * R - l * l)/3;
 			v3 = vz - l * vl, v4 = vz + l * vl;
 			/// scale of down tangaj
-			glColor3f(1, 0.7, 0);
+			glColor3f(1, 0.7f, 0);
 			glBegin(GL_LINES);
 			glVertex3f(v3.x(), v3.y(), v3.z());
 			glVertex3f(v4.x(), v4.y(), v4.z());

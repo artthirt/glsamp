@@ -146,7 +146,7 @@ void MainWindow::on_timeout_cfg()
 
 void MainWindow::on_vs_power_valueChanged(int value)
 {
-	m_model.set_power(ui->vs_power->value() * 0.1);
+	m_model.set_power(value * 0.1);
 }
 
 void MainWindow::on_pb_zero_2_clicked()
@@ -198,7 +198,7 @@ void MainWindow::on_pushButton_4_clicked()
 
 void MainWindow::on_dsb_mean_valueChanged(double arg1)
 {
-	double v1 = ui->dsb_mean->value();
+	double v1 = arg1;
 	double v2 = ui->dsb_sigma->value();
 
 	m_model.set_distribution_parameters(v1, v2);
@@ -207,7 +207,7 @@ void MainWindow::on_dsb_mean_valueChanged(double arg1)
 void MainWindow::on_dsb_sigma_valueChanged(double arg1)
 {
 	double v1 = ui->dsb_mean->value();
-	double v2 = ui->dsb_sigma->value();
+	double v2 = arg1;
 
 	m_model.set_distribution_parameters(v1, v2);
 }

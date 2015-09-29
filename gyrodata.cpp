@@ -249,6 +249,8 @@ void search_min_pt(const QVector< QVector3D >& data, QVector3D& min, QVector3D& 
 		res_min = min_v(res_min, it);
 		res_max = max_v(res_max, it);
 	 }
+	 min = res_min;
+	 max = res_max;
 }
 
 bool search_outliers(const QVector3D& center, double mean_radius, double threshold,
@@ -278,7 +280,8 @@ bool search_outliers(const QVector3D& center, double mean_radius, double thresho
 
 void GyroData::recalc_accel(double threshold, double threshold_deriv)
 {
-	double mean_radius = 0;
+	Q_UNUSED(threshold);
+	Q_UNUSED(threshold_deriv);
 //	m_center_accel = get_center(m_accel_data, mean_radius);
 
 //	bool loop = true;
@@ -526,7 +529,9 @@ void GyroData::on_timeout_playing()
 
 		calc_offsets(st.gyro, st.accel);
 
-		m_rotate_pos -= st.angular_speed(m_offset_gyro);
+		if(!m_is_calc_offset_gyro){
+			m_rotate_pos -= st.angular_speed(m_offset_gyro);
+		}
 
 		m_telemtries.push_front(st);
 
@@ -612,19 +617,19 @@ void GyroData::draw()
 	glRotatef(m_rotate_pos.y(), 0, 1, 0);
 	glRotatef(m_rotate_pos.z(), 0, 0, 1);
 
-	glColor3f(1, 0.2, 0.2);
+	glColor3f(1.f, 0.2f, 0.2f);
 	glBegin(GL_LINES);
 	glVertex3f(0, 0, 0);
 	glVertex3f(1, 0, 0);
 	glEnd();
 
-	glColor3f(0.2, 1, 0.2);
+	glColor3f(0.2f, 1.f, 0.2f);
 	glBegin(GL_LINES);
 	glVertex3f(0, 0, 0);
 	glVertex3f(0, 1, 0);
 	glEnd();
 
-	glColor3f(0.2, 0.2, 1);
+	glColor3f(0.2f, 0.2f, 1.f);
 	glBegin(GL_LINES);
 	glVertex3f(0, 0, 0);
 	glVertex3f(0, 0, 1);
@@ -749,7 +754,9 @@ void GyroData::tryParseData(const QByteArray &data)
 
 	calc_offsets(st.gyro, st.accel);
 
-	m_rotate_pos -= st.angular_speed(m_offset_gyro);
+	if(!m_is_calc_offset_gyro){
+		m_rotate_pos -= st.angular_speed(m_offset_gyro);
+	}
 
 	emit get_data("kalman_accel", kav);
 	emit get_data("kalman_gyro", kgv);
