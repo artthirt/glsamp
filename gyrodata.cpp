@@ -110,6 +110,7 @@ GyroData::GyroData(QObject *parent) :
   , m_tmp_angle(0)
   , m_port(7777)
   , m_addr(QHostAddress("192.168.0.200"))
+  , m_part_of_freq(1.0/40.0)	/// default: (1/8000)/(5/1000)
 {
 	setType(GYRODATA);
 
@@ -633,7 +634,7 @@ void GyroData::draw()
 
 	glPushMatrix();
 
-	glRotated(-m_tmp_angle, m_tmp_axes.x(), m_tmp_axes.y(), m_tmp_axes.z());
+	//glRotated(-m_tmp_angle, m_tmp_axes.x(), m_tmp_axes.y(), m_tmp_axes.z());
 
 	glRotatef(m_rotate_pos.x(), 1, 0, 0);
 	glRotatef(m_rotate_pos.y(), 0, 1, 0);
@@ -794,13 +795,25 @@ void GyroData::tryParseData(const QByteArray &data)
 		m_telemetries.pop_back();
 	}
 
+	if(!m_tick_telemetry.isValid() || m_tick_telemetry.hasExpired(max_delay_for_data)){
+		m_tick_telemetry.restart();
+	}
+
 	StructTelemetry st;
 
 	QDataStream stream(data);
 	st.read_from(stream);
 
+	qint64 tick_delta = m_tick_telemetry.nsecsElapsed();
+	double part_of_time = tick_delta / 1e+9;
+	double tick = 2.0 / st.freq;
+	m_part_of_freq = tick/part_of_time;
+
+	m_tick_telemetry.restart();
+
 	analyze_telemetry(st);
 
+	WriteLog::instance()->add_data("gyro", st);
 
 	m_time_waiting_telemetry.restart();
 }
@@ -832,7 +845,7 @@ void GyroData::analyze_telemetry(StructTelemetry &st)
 	m_mean_accel = m_mean_accel * 0.9f + Vertex3d(st.accel) * 0.1f;
 
 	if(!m_is_calc_offset_gyro && m_is_calculated){
-		m_rotate_pos -= st.angular_speed(m_offset_gyro);
+		m_rotate_pos -= (st.angular_speed(m_offset_gyro) * m_part_of_freq);
 
 		Vertex3d offset(m_mean_accel);
 		int offset_len = offset.length();
@@ -865,9 +878,8 @@ void GyroData::analyze_telemetry(StructTelemetry &st)
 
 	m_telemetries.push_front(st);
 
-	WriteLog::instance()->add_data("gyro", st);
-
-	m_telemetries.push_front(st);
+	if(m_telemetries.size() > 10)
+		m_telemetries.pop_back();
 }
 
 void GyroData::load_from_xml()
@@ -887,13 +899,13 @@ void GyroData::load_from_xml()
 	m_fileName = sxml.get_xml_string("filename");
 	m_showing_downloaded_data = sxml.get_xml_int("showing_downloaded_data");
 	m_addr = QHostAddress(sxml.get_xml_string("ip"));
-	m_port = sxml.get_xml_int("port");
+	ushort port = sxml.get_xml_int("port");
 
 	if(m_addr.isNull()){
 		m_addr = QHostAddress("192.168.0.200");
 	}
-	if(!m_port)
-		m_port = 7777;
+	if(port)
+		m_port = port;
 
 	double freq = sxml.get_xml_double("freq_playing");
 	if(freq){

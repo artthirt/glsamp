@@ -7,6 +7,7 @@
 #include <QTimer>
 #include <QHostAddress>
 #include <QTime>
+#include <QElapsedTimer>
 
 #include <QQuaternion>
 
@@ -251,6 +252,8 @@ private:
 
 	QVector< StructTelemetry > m_telemetries;
 	QTime m_time_waiting_telemetry;
+	QElapsedTimer m_tick_telemetry;
+	double m_part_of_freq;
 
 	Vertex3d m_offset_gyro;
 	bool m_is_calc_offset_gyro;
