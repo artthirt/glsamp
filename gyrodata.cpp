@@ -9,6 +9,9 @@
 #include <QDebug>
 #include <QApplication>
 
+#include <QVector3D>
+#include <QQuaternion>
+
 #include <QUdpSocket>
 #include <QDataStream>
 
@@ -42,13 +45,13 @@ void draw_line(const QVector3D& v1, const QVector3D& v2, const QColor& col = Qt:
 	glEnd();
 }
 
-void draw_line(const Vertex3f& v1, const Vertex3f& v2, const QColor& col = Qt::white)
+void draw_line(const Vertex3d& v1, const Vertex3d& v2, const QColor& col = Qt::white)
 {
 	glColor3ub(col.red(), col.green(), col.blue());
 
 	glBegin(GL_LINES);
-	glVertex3fv(v1.data);
-	glVertex3fv(v2.data);
+	glVertex3dv(v1.data);
+	glVertex3dv(v2.data);
 	glEnd();
 }
 
@@ -57,6 +60,32 @@ inline Vertex3i rshift(const Vertex3i& val, int shift)
 	Vertex3i res;
 	FOREACH(i, 3, res.data[i] = val.data[i] >> shift);
 	return res;
+}
+
+void parse_quaternsion(const QQuaternion& qa, QVector3D& axes, double& angle)
+{
+	QQuaternion q = qa.normalized();
+
+	double qw = q.scalar();
+	if(qFuzzyCompare(fabs(qw), 1)){
+		angle = 0;
+		axes = QVector3D(0, 0, 1);
+		return;
+	}
+
+	double div = 1.0 / sqrt(1 - qw * qw);
+	/*
+	 *  angle = 2 * acos(qw)
+	 *	x = qx / sqrt(1-qw*qw)
+	 *	y = qy / sqrt(1-qw*qw)
+	 *	z = qz / sqrt(1-qw*qw)
+	 */
+
+	angle = 2 * acos(q.scalar());
+	angle *= 180.0 / M_PI;
+	axes.setX(q.x() * div);
+	axes.setX(q.y() * div);
+	axes.setX(q.z() * div);
 }
 
 ///////////////////////////////
@@ -77,6 +106,8 @@ GyroData::GyroData(QObject *parent) :
   , m_current_playing_pos(0)
   , m_is_calc_offset_gyro(false)
   , m_count_gyro_offset_data(0)
+  , m_is_calculated(false)
+  , m_tmp_angle(0)
 {
 	setType(GYRODATA);
 
@@ -466,9 +497,13 @@ void GyroData::set_freq_playing(double value)
 void GyroData::start_calc_offset_gyro()
 {
 	m_is_calc_offset_gyro = true;
-	m_offset_gyro = Vertex3f();
+	m_is_calculated = false;
+	m_offset_gyro = Vertex3d();
 	m_count_gyro_offset_data = 0;
-	m_rotate_pos = Vertex3f();
+	m_rotate_pos = Vertex3d();
+	m_translate_pos = Vertex3d();
+	m_mean_Gaccel = Vertex3d();
+	m_len_Gaccel = 0;
 }
 
 void GyroData::stop_calc_offset_gyro()
@@ -476,7 +511,13 @@ void GyroData::stop_calc_offset_gyro()
 	m_is_calc_offset_gyro = false;
 	if(m_count_gyro_offset_data){
 		m_offset_gyro *= 1.0/m_count_gyro_offset_data;
-		m_rotate_pos = Vertex3f();
+		m_mean_Gaccel *= 1.0/m_count_gyro_offset_data;
+
+		m_len_Gaccel = m_mean_Gaccel.length();
+
+		m_rotate_pos = Vertex3d();
+		m_translate_pos = Vertex3d();
+		m_is_calculated = true;
 	}
 }
 
@@ -492,7 +533,12 @@ void GyroData::reset()
 
 void GyroData::set_zero_pos()
 {
-	m_rotate_pos = Vertex3f();
+	m_rotate_pos = Vertex3d();
+	m_translate_pos = Vertex3d();
+	m_translate_speed = Vertex3d();
+	m_tmp_axes = Vertex3f(1, 0, 0);
+	m_tmp_angle = 0;
+	m_mean_accel = Vertex3d();
 }
 
 void GyroData::on_timeout()
@@ -500,6 +546,16 @@ void GyroData::on_timeout()
 	if(m_telemtries.size() > 3){
 		m_telemtries.pop_back();
 	}
+}
+
+inline Vertex3d QV3V3(const QVector3D& v)
+{
+	return Vertex3d(v.x(), v.y(), v.z());
+}
+
+inline QVector3D V3QV3(const Vertex3d& v)
+{
+	return QVector3D(v.x(), v.y(), v.z());
 }
 
 void GyroData::on_timeout_playing()
@@ -519,18 +575,48 @@ void GyroData::on_timeout_playing()
 		m_kalman[4].set_zk(st.gyro.y());
 		m_kalman[5].set_zk(st.gyro.z());
 
-		Vertex3f kav(Vertex3f(m_kalman[0].xk, m_kalman[1].xk, m_kalman[2].xk));
-		Vertex3f kgv(Vertex3f(m_kalman[3].xk, m_kalman[4].xk, m_kalman[5].xk));
+		Vertex3d kav(Vertex3d(m_kalman[0].xk, m_kalman[1].xk, m_kalman[2].xk));
+		Vertex3d kgv(Vertex3d(m_kalman[3].xk, m_kalman[4].xk, m_kalman[5].xk));
 
 		st.accel = kav;
 		st.gyro = kgv;
+
+		m_mean_accel = m_mean_accel * 0.9f + Vertex3d(st.accel) * 0.1f;
 
 		emit get_data("kalman_accel", kav);
 
 		calc_offsets(st.gyro, st.accel);
 
-		if(!m_is_calc_offset_gyro){
+		if(!m_is_calc_offset_gyro && m_is_calculated){
 			m_rotate_pos -= st.angular_speed(m_offset_gyro);
+
+			Vertex3d offset(m_mean_accel);
+			int offset_len = offset.length();
+			offset_len = m_len_Gaccel - offset_len;
+			offset_len >>= m_shift_accel;
+			offset.normalize();
+			offset *= (double)offset_len;
+			m_translate_speed += offset;
+			m_translate_pos += (m_translate_speed * (1.0/m_divider_accel));
+
+			QQuaternion qX, qY, qZ, qres;
+			qX = QQuaternion::fromAxisAndAngle(QVector3D(1, 0, 0), m_rotate_pos.x());
+			qY = QQuaternion::fromAxisAndAngle(QVector3D(0, 1, 0), m_rotate_pos.y());
+			qZ = QQuaternion::fromAxisAndAngle(QVector3D(0, 0, 1), m_rotate_pos.z());
+			qres = qX * qY * qZ;
+			Vertex3d norm(0, 0, -1), accel(m_mean_accel);
+
+			norm = QV3V3(qres.rotatedVector(V3QV3(norm)));
+
+			accel.normalize();
+			norm.normalize();
+			double angle = Vertex3d::dot(norm, accel);
+			angle = acos(angle) * 180.0 / M_PI;
+			if(fabs(angle) > 1e-7){
+				Vertex3d axes = Vertex3d::cross(accel, norm).normalized();
+				m_tmp_axes = axes;
+			}
+			m_tmp_angle = angle;
 		}
 
 		m_telemtries.push_front(st);
@@ -577,9 +663,9 @@ inline double sign(double v1)
 	return v1 >= 0? 1.0 : -1.0;
 }
 
-static inline Vertex3f _V(const Vertex3i& v)
+static inline Vertex3d _V(const Vertex3i& v)
 {
-	return Vertex3f(v);
+	return Vertex3d(v);
 }
 
 void GyroData::draw()
@@ -595,23 +681,31 @@ void GyroData::draw()
 		glColor3f(0, 1, 0);
 		glBegin(GL_POINTS);
 		for (int i = 0; i < count; i++) {
-			Vertex3f tmp(_V(rshift(m_downloaded_telemetries[i].accel, m_shift_accel)) * div_accel);
-			glVertex3fv(tmp.data);
+			Vertex3d tmp(_V(rshift(m_downloaded_telemetries[i].accel, m_shift_accel)) * div_accel);
+			glVertex3dv(tmp.data);
 		}
 		glEnd();
 
 		glColor3f(1, 0, 0);
 		glBegin(GL_POINTS);
 		for (int i = 0; i< count; i++) {
-			Vertex3f tmp(_V(rshift(m_downloaded_telemetries[i].gyro, m_shift_gyro)) * div_gyro);
-			glVertex3fv(tmp.data);
+			Vertex3d tmp(_V(rshift(m_downloaded_telemetries[i].gyro, m_shift_gyro)) * div_gyro);
+			glVertex3dv(tmp.data);
 		}
 		glEnd();
 	}
 
 	glLineWidth(4);
 
+
+	if(m_is_calculated){
+		draw_line(Vertex3d(), m_translate_pos, Qt::magenta);
+		draw_line(Vertex3d(), m_tmp_axes, Qt::yellow);
+	}
+
 	glPushMatrix();
+
+	glRotated(-m_tmp_angle, m_tmp_axes.x(), m_tmp_axes.y(), m_tmp_axes.z());
 
 	glRotatef(m_rotate_pos.x(), 1, 0, 0);
 	glRotatef(m_rotate_pos.y(), 0, 1, 0);
@@ -619,20 +713,38 @@ void GyroData::draw()
 
 	glColor3f(1.f, 0.2f, 0.2f);
 	glBegin(GL_LINES);
-	glVertex3f(0, 0, 0);
-	glVertex3f(1, 0, 0);
+	glVertex3d(0, 0, 0);
+	glVertex3d(1, 0, 0);
+
+	glVertex3d(1, 0, 0);
+	glVertex3d(0.7, 0.3, 0);
+
+	glVertex3d(1, 0, 0);
+	glVertex3d(0.7, -0.3, 0);
 	glEnd();
 
 	glColor3f(0.2f, 1.f, 0.2f);
 	glBegin(GL_LINES);
-	glVertex3f(0, 0, 0);
-	glVertex3f(0, 1, 0);
+	glVertex3d(0, 0, 0);
+	glVertex3d(0, 1, 0);
+
+	glVertex3d(0, 1, 0);
+	glVertex3d(0.3, 0.7, 0);
+
+	glVertex3d(0, 1, 0);
+	glVertex3d(-0.3, 0.7, 0);
 	glEnd();
 
 	glColor3f(0.2f, 0.2f, 1.f);
 	glBegin(GL_LINES);
-	glVertex3f(0, 0, 0);
-	glVertex3f(0, 0, 1);
+	glVertex3d(0, 0, 0);
+	glVertex3d(0, 0, 1);
+
+	glVertex3d(0, 0, 1);
+	glVertex3d(0.3, 0, 0.7);
+
+	glVertex3d(0, 0, 1);
+	glVertex3d(-0.3, 0, 0.7);
 	glEnd();
 
 	glPopMatrix();
@@ -644,15 +756,15 @@ void GyroData::draw()
 
 	if(m_telemtries.size()){
 
-		Vertex3f tmp(_V(rshift(m_telemtries[0].gyro, m_shift_gyro)) * div_gyro);
+		Vertex3d tmp(_V(rshift(m_telemtries[0].gyro, m_shift_gyro)) * div_gyro);
 
 		glColor3f(1, 0.5, 0);
 		glBegin(GL_POINTS);
-			glVertex3fv(tmp.data);
+			glVertex3dv(tmp.data);
 		glEnd();
 
 		glLineWidth(3);
-		draw_line(Vertex3f(), tmp, QColor(255, 128, 0));
+		draw_line(Vertex3d(), tmp, QColor(255, 128, 0));
 
 		glLineWidth(1);
 		glBegin(GL_LINE_STRIP);
@@ -663,18 +775,18 @@ void GyroData::draw()
 
 			tmp = _V(rshift(st.gyro, m_shift_gyro)) * div_gyro;
 
-			glVertex3fv(tmp.data);
+			glVertex3dv(tmp.data);
 		}
 		glEnd();
 
 		glColor3f(0.5, 1, 0);
 		glBegin(GL_POINTS);
 			tmp = _V(rshift(m_telemtries[0].accel, m_shift_accel)) * div_accel;
-			glVertex3fv(tmp.data);
+			glVertex3dv(tmp.data);
 		glEnd();
 
 		glLineWidth(3);
-		draw_line(Vertex3f(), tmp, QColor(128, 255, 0));
+		draw_line(Vertex3d(), tmp, QColor(128, 255, 0));
 
 		glLineWidth(1);
 		glBegin(GL_LINE_STRIP);
@@ -685,7 +797,7 @@ void GyroData::draw()
 
 			tmp = _V(rshift(st.accel, m_shift_accel)) * div_accel;
 
-			glVertex3fv(tmp.data);
+			glVertex3dv(tmp.data);
 		}
 		glEnd();
 	}
@@ -707,8 +819,9 @@ void GyroData::calc_offsets(Vertex3i &gyro, Vertex3i &accel)
 {
 	if(m_is_calc_offset_gyro){
 		m_offset_gyro += gyro;
+		m_mean_Gaccel += accel;
+
 		m_count_gyro_offset_data++;
-		m_offset_accel += accel;
 	}else{
 //		gyro -= m_offset_gyro;
 //		accel -= m_offset_accel;
@@ -717,11 +830,15 @@ void GyroData::calc_offsets(Vertex3i &gyro, Vertex3i &accel)
 
 void GyroData::clear_data()
 {
+	m_is_calculated = false;
 	m_count_gyro_offset_data = 0;
 	m_percent_downloaded_data = 1;
-	m_offset_gyro = Vertex3f();
-	m_offset_accel = Vertex3f();
-	m_rotate_pos = Vertex3f();
+	m_offset_gyro = Vertex3d();
+	m_rotate_pos = Vertex3d();
+	m_mean_Gaccel = Vertex3d();
+	m_tmp_axes = Vertex3f(1, 0, 0);
+	m_tmp_angle = 0;
+	m_mean_accel = Vertex3d();
 }
 
 void GyroData::tryParseData(const QByteArray &data)
@@ -746,8 +863,8 @@ void GyroData::tryParseData(const QByteArray &data)
 	m_kalman[4].set_zk(st.gyro.y());
 	m_kalman[5].set_zk(st.gyro.z());
 
-	Vertex3f kav(Vertex3f(m_kalman[0].xk, m_kalman[1].xk, m_kalman[2].xk));
-	Vertex3f kgv(Vertex3f(m_kalman[3].xk, m_kalman[4].xk, m_kalman[5].xk));
+	Vertex3d kav(Vertex3d(m_kalman[0].xk, m_kalman[1].xk, m_kalman[2].xk));
+	Vertex3d kgv(Vertex3d(m_kalman[3].xk, m_kalman[4].xk, m_kalman[5].xk));
 
 	st.accel = kav;
 	st.gyro = kgv;

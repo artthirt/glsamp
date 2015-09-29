@@ -2,6 +2,7 @@
 #define STRUCT_CONTROLS_H
 
 #include <vector>
+#include <math.h>
 #include <QDataStream>
 
 /// \brief FOREACH - cycle for the expression at
@@ -70,6 +71,14 @@ struct Vertex3_{
 		FOREACH(i, count, data[i] *= value);
 		return *this;
 	}
+	inline Vertex3_& operator+ (const Vertex3_& v2){
+		FOREACH(i, count, data[i] += v2.data[i]);
+		return *this;
+	}
+	inline Vertex3_& operator- (const Vertex3_& v2){
+		FOREACH(i, count, data[i] -= v2.data[i]);
+		return *this;
+	}
 	inline Vertex3_& operator+= (const Vertex3_& v){
 		FOREACH(i, count, data[i] += v.data[i]);
 		return *this;
@@ -86,26 +95,41 @@ struct Vertex3_{
 		ASSERT_EC(index >=0 && index < count, "index out of range");
 		return data[index];
 	}
-	inline float length() const{
-		float res = 0;
+	inline double length() const{
+		double res = 0;
 		FOREACH(i, count, res += data[i] * data[i]);
 		return sqrt(res);
 	}
-	inline float length_square() const{
-		float res = 0;
+	inline double length_square() const{
+		double res = 0;
 		FOREACH(i, count, res += data[i] * data[i]);
 		return res;
 	}
-	static float dot(const Vertex3_& v1, const Vertex3_& v2){
-		float res = 0;
-		FOREACH(i, count, res += v1.data[i] * v2.data[2]);
+	inline Vertex3_ normalize(){
+		double res = length();
+		double rabs = fabs(res);
+		if(rabs < 1e-7)
+			return *this;
+		res = 1.0 / res;
+		FOREACH(i, count, data[i] *= res);
+		return *this;
+	}
+	inline Vertex3_ normalized(){
+		Vertex3_ res(*this);
+		res.normalize();
+		return res;
+	}
+
+	static double dot(const Vertex3_& v1, const Vertex3_& v2){
+		double res = 0;
+		FOREACH(i, count, res += v1.data[i] * v2.data[i]);
 		return res;
 	}
 	static Vertex3_ cross(const Vertex3_& v1, const Vertex3_& v2){
 		Vertex3_ res;
 		res.setX(v1.y() * v2.z() - v1.z() * v2.y());
 		res.setY(v1.z() * v2.x() - v1.x() * v2.z());
-		res.setZ(v1.x() * v2.y() - v1.y() - v2.x());
+		res.setZ(v1.x() * v2.y() - v1.y() * v2.x());
 		return res;
 	}
 
@@ -113,6 +137,7 @@ struct Vertex3_{
 };
 
 typedef Vertex3_< float > Vertex3f;
+typedef Vertex3_< double > Vertex3d;
 typedef Vertex3_< int > Vertex3i;
 
 struct StructControls
@@ -212,9 +237,9 @@ struct StructTelemetry
 		stream.readRawData(reinterpret_cast< char* >(raw), raw_count);
 	}
 
-	Vertex3f angular_speed(const Vertex3f& offset = Vertex3f()){
+	Vertex3d angular_speed(const Vertex3d& offset = Vertex3d()){
 		float factor = 1.0;
-		Vertex3f g = gyro;
+		Vertex3d g = gyro;
 		g -= offset;
 		switch (fs_sel) {
 			case 0:
@@ -231,7 +256,7 @@ struct StructTelemetry
 				factor = 2000.0f / 32768.0f;
 				break;
 		}
-		Vertex3f res = Vertex3f(g);
+		Vertex3d res = Vertex3d(g);
 		if(!freq)
 			freq = default_freq;
 

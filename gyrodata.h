@@ -8,6 +8,8 @@
 #include <QHostAddress>
 #include <QTime>
 
+#include <QQuaternion>
+
 #include "struct_controls.h"
 #include "simplekalmanfilter.h"
 
@@ -249,12 +251,19 @@ private:
 	QVector< StructTelemetry > m_telemtries;
 	QTime m_time_waiting_telemetry;
 
-	Vertex3f m_offset_gyro;
+	Vertex3d m_offset_gyro;
 	bool m_is_calc_offset_gyro;
-	Vertex3f m_offset_accel;
+	bool m_is_calculated;
 	int m_count_gyro_offset_data;
+	Vertex3d m_tmp_axes;
+	double m_tmp_angle;
+	Vertex3d m_mean_accel;
 
-	Vertex3f m_rotate_pos;
+	Vertex3d m_rotate_pos;
+	Vertex3d m_translate_pos;
+	Vertex3d m_translate_speed;
+	Vertex3d m_mean_Gaccel;
+	double m_len_Gaccel;
 
 	QHostAddress m_addr;
 	ushort m_port;
