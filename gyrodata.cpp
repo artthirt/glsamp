@@ -806,8 +806,7 @@ void GyroData::tryParseData(const QByteArray &data)
 
 	qint64 tick_delta = m_tick_telemetry.nsecsElapsed();
 	double part_of_time = tick_delta / 1e+9;
-	double tick = 2.0 / st.freq;
-	m_part_of_freq = tick/part_of_time;
+	m_part_of_freq = part_of_time;
 
 	m_tick_telemetry.restart();
 

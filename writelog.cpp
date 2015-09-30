@@ -186,6 +186,7 @@ void WriteLog::add_data(const QString &name, const StructTelemetry &data)
 	ADDVAL(data.afs_sel);
 	ADDVAL(data.fs_sel);
 	ADDVAL(data.freq);
+	ADDVAL(data.tick);
 
 	m_logFiles[name].push_data(name, str);
 }
