@@ -21,7 +21,8 @@ CONFIG += c++11
 
 DEFINES += _USE_MATH_DEFINES
 
-INCLUDEPATH += $$PWD/submodules/struct_controls
+INCLUDEPATH += . \
+				$$PWD/submodules/struct_controls
 
 SOURCES += main.cpp\
         mainwindow.cpp \
