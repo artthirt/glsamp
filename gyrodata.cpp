@@ -844,7 +844,7 @@ void GyroData::tryParseData(const QByteArray &data)
 	}
 }
 
-const int min_threshold_accel = 400;
+const int min_threshold_accel = 200;
 
 void GyroData::analyze_telemetry(StructTelemetry &st)
 {
@@ -878,11 +878,11 @@ void GyroData::analyze_telemetry(StructTelemetry &st)
 		if(m_past_accel.isNull())
 			m_past_accel = st.accel;
 
-		double lenG = m_mean_Gaccel.length();
-		double lenA = st.accel.length();
-		if(qAbs(lenG - lenA) < min_threshold_accel){
-			m_tmp_accel = m_tmp_accel * 0.9 + Vertex3d(st.accel) * 0.1;
-		}
+//		double lenG = m_mean_Gaccel.length();
+//		double lenA = st.accel.length();
+//		if(lenA - lenG < min_threshold_accel && lenA > 0.5 * lenG){
+//			m_tmp_accel = m_tmp_accel * 0.9 + Vertex3d(st.accel) * 0.1;
+//		}
 
 //		Vertex3d staccel(st.accel);
 //		Vertex3d offset = staccel - Vertex3d(m_past_accel);
