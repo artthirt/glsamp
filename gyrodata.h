@@ -95,31 +95,6 @@ public:
 	void set_divider_accel(double val);
 
 	/**
-	 * @brief shift_gyro
-	 * count of significant bits of data from gyroscope
-	 * @return
-	 */
-	int shift_gyro() const;
-	/**
-	 * @brief set_shift_gyro
-	 * set count of significant bits of data from gyroscope
-	 * @param val
-	 */
-	void set_shift_gyro(int val);
-	/**
-	 * @brief shift_accel
-	 * count of significant bits of data from accelerometer
-	 * @return
-	 */
-	int shift_accel() const;
-	/**
-	 * @brief set_shift_accel
-	 * set count of significant bits of data from accelerometer
-	 * @param val
-	 */
-	void set_shift_accel(int val);
-
-	/**
 	 * @brief set_end_position_loaded_data
 	 * @param value - percent for drawing data
 	 */
@@ -238,8 +213,7 @@ private:
 	QUdpSocket *m_socket;
 	double m_divider_gyro;
 	double m_divider_accel;
-	int m_shift_gyro;
-	int m_shift_accel;
+	long long m_index;
 
 	bool m_showing_downloaded_data;
 	bool m_is_play;
@@ -253,7 +227,9 @@ private:
 	QVector< StructTelemetry > m_telemetries;
 	QTime m_time_waiting_telemetry;
 	QElapsedTimer m_tick_telemetry;
-	double m_part_of_freq;
+	double m_part_of_time;
+	long long m_past_tick;
+	long long m_first_tick;
 
 	Vertex3d m_offset_gyro;
 	bool m_is_calc_offset_gyro;
@@ -262,12 +238,14 @@ private:
 	Vertex3d m_tmp_axes;
 	double m_tmp_angle;
 	Vertex3d m_mean_accel;
+	Vertex3d m_tmp_accel;
 
 	Vertex3d m_rotate_pos;
 	Vertex3d m_translate_pos;
 	Vertex3d m_translate_speed;
 	Vertex3d m_mean_Gaccel;
 	double m_len_Gaccel;
+	Vertex3i m_past_accel;
 
 	QHostAddress m_addr;
 	ushort m_port;
@@ -278,6 +256,8 @@ private:
 	void clear_data();
 	void load_from_xml();
 	void save_to_xml();
+
+	void draw_text(const Vertex3d& v, QString text);
 };
 
 #endif // GYRODATA_H

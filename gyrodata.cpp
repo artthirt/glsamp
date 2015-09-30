@@ -8,6 +8,7 @@
 #include <QColor>
 #include <QDebug>
 #include <QApplication>
+#include <QGLWidget>
 
 #include <QVector3D>
 #include <QQuaternion>
@@ -96,10 +97,8 @@ void parse_quaternsion(const QQuaternion& qa, QVector3D& axes, double& angle)
 GyroData::GyroData(QObject *parent) :
 	VirtGLObject(parent)
   , m_socket(0)
-  , m_divider_accel(100)
-  , m_divider_gyro(10)
-  , m_shift_accel(5)
-  , m_shift_gyro(3)
+  , m_divider_accel(5000)
+  , m_divider_gyro(5000)
   , m_percent_downloaded_data(1)
   , m_showing_downloaded_data(true)
   , m_is_play(false)
@@ -110,7 +109,10 @@ GyroData::GyroData(QObject *parent) :
   , m_tmp_angle(0)
   , m_port(7777)
   , m_addr(QHostAddress("192.168.0.200"))
-  , m_part_of_freq(1.0/40.0)	/// default: (1/8000)/(5/1000)
+  , m_part_of_time(5.0/1000.0)	/// default: (5/1000)
+  , m_past_tick(0)
+  , m_first_tick(0)
+  , m_index(0)
 {
 	setType(GYRODATA);
 
@@ -211,6 +213,7 @@ void GyroData::openFile(const QString fileName)
 		StructTelemetry st;
 
 		double a1, a2, a3, t, g1, g2, g3, f = 100, afs = 0, fs = 0;
+		long long tm = 0;
 
 		if(sl.size() == 7){
 			a1	= sl[0].toDouble();
@@ -221,7 +224,7 @@ void GyroData::openFile(const QString fileName)
 			g2	= sl[5].toDouble();
 			g3	= sl[6].toDouble();
 		}
-		if(sl.size() >= 10){
+		if(sl.size() >= 13){
 			t	= sl[4].toDouble();
 			a1	= sl[5].toDouble();
 			a2	= sl[6].toDouble();
@@ -232,6 +235,9 @@ void GyroData::openFile(const QString fileName)
 			afs	= sl[11].toDouble();
 			fs	= sl[12].toDouble();
 			f	= sl[13].toDouble();
+		}
+		if(sl.size() >= 14){
+			tm = sl[14].toLongLong();
 		}
 		if(!sl.size()){
 			qDebug() << "data in line" << ind << "not enough:" << sl.size();
@@ -244,6 +250,7 @@ void GyroData::openFile(const QString fileName)
 		st.afs_sel = afs;
 		st.fs_sel = fs;
 		st.freq = f;
+		st.tick = tm;
 
 		m_downloaded_telemetries.push_back(st);
 
@@ -400,26 +407,6 @@ void GyroData::set_divider_accel(double val)
 	m_divider_accel = val;
 }
 
-int GyroData::shift_gyro() const
-{
-	return m_shift_gyro;
-}
-
-void GyroData::set_shift_gyro(int val)
-{
-	m_shift_gyro = val;
-}
-
-int GyroData::shift_accel() const
-{
-	return m_shift_accel;
-}
-
-void GyroData::set_shift_accel(int val)
-{
-	m_shift_accel = val;
-}
-
 void GyroData::set_end_pos_downloaded_data(double value)
 {
 	if(value < 0) value = 0;
@@ -505,6 +492,7 @@ void GyroData::start_calc_offset_gyro()
 	m_count_gyro_offset_data = 0;
 	m_rotate_pos = Vertex3d();
 	m_translate_pos = Vertex3d();
+	m_translate_speed = Vertex3f();
 	m_mean_Gaccel = Vertex3d();
 	m_len_Gaccel = 0;
 }
@@ -517,6 +505,8 @@ void GyroData::stop_calc_offset_gyro()
 		m_mean_Gaccel *= 1.0/m_count_gyro_offset_data;
 
 		m_len_Gaccel = m_mean_Gaccel.length();
+
+		m_tmp_accel = m_mean_Gaccel;
 
 		m_rotate_pos = Vertex3d();
 		m_translate_pos = Vertex3d();
@@ -542,6 +532,8 @@ void GyroData::set_zero_pos()
 	m_tmp_axes = Vertex3f(1, 0, 0);
 	m_tmp_angle = 0;
 	m_mean_accel = Vertex3d();
+	m_past_tick = 0;
+	m_first_tick = 0;
 }
 
 void GyroData::on_timeout()
@@ -610,7 +602,7 @@ void GyroData::draw()
 		glColor3f(0, 1, 0);
 		glBegin(GL_POINTS);
 		for (int i = 0; i < count; i++) {
-			Vertex3d tmp(_V(rshift(m_downloaded_telemetries[i].accel, m_shift_accel)) * div_accel);
+			Vertex3d tmp(_V(m_downloaded_telemetries[i].accel) * div_accel);
 			glVertex3dv(tmp.data);
 		}
 		glEnd();
@@ -618,7 +610,7 @@ void GyroData::draw()
 		glColor3f(1, 0, 0);
 		glBegin(GL_POINTS);
 		for (int i = 0; i< count; i++) {
-			Vertex3d tmp(_V(rshift(m_downloaded_telemetries[i].gyro, m_shift_gyro)) * div_gyro);
+			Vertex3d tmp(_V(m_downloaded_telemetries[i].gyro) * div_gyro);
 			glVertex3dv(tmp.data);
 		}
 		glEnd();
@@ -685,7 +677,7 @@ void GyroData::draw()
 
 	if(m_telemetries.size()){
 
-		Vertex3d tmp(_V(rshift(m_telemetries[0].gyro, m_shift_gyro)) * div_gyro);
+		Vertex3d tmp(_V(m_telemetries[0].gyro) * div_gyro);
 
 		glColor3f(1, 0.5, 0);
 		glBegin(GL_POINTS);
@@ -702,7 +694,7 @@ void GyroData::draw()
 			float dd = (float)(m_telemetries.size() - i) / m_telemetries.size();
 			glColor3f(1 * dd, 0.5 * dd, 0);
 
-			tmp = _V(rshift(st.gyro, m_shift_gyro)) * div_gyro;
+			tmp = _V(st.gyro) * div_gyro;
 
 			glVertex3dv(tmp.data);
 		}
@@ -710,12 +702,25 @@ void GyroData::draw()
 
 		glColor3f(0.5, 1, 0);
 		glBegin(GL_POINTS);
-			tmp = _V(rshift(m_telemetries[0].accel, m_shift_accel)) * div_accel;
+			tmp = _V(m_telemetries[0].accel) * div_accel;
 			glVertex3dv(tmp.data);
 		glEnd();
 
+		glPushMatrix();
+
+//		glRotatef(-m_rotate_pos.x(), 1, 0, 0);
+//		glRotatef(-m_rotate_pos.y(), 0, 1, 0);
+//		glRotatef(-m_rotate_pos.z(), 0, 0, 1);
+
 		glLineWidth(3);
+		draw_line(Vertex3d(), m_mean_accel * div_accel, QColor(128, 255, 128));
+		draw_text(m_mean_accel * div_accel, "mean_accel");
+		draw_line(Vertex3d(), m_tmp_accel * div_accel, QColor(255, 128, 0));
+		draw_text(m_tmp_accel * div_accel, "tmp_accel. "
+				  + QString::number(m_mean_Gaccel.length() - m_telemetries[0].accel.length()));
+
 		draw_line(Vertex3d(), tmp, QColor(128, 255, 0));
+		draw_text(tmp, "accel");
 
 		glLineWidth(1);
 		glBegin(GL_LINE_STRIP);
@@ -724,11 +729,13 @@ void GyroData::draw()
 			float dd = (float)(m_telemetries.size() - i) / m_telemetries.size();
 			glColor3f(0.5 * dd, 1 * dd, 0);
 
-			tmp = _V(rshift(st.accel, m_shift_accel)) * div_accel;
+			tmp = _V(st.accel) * div_accel;
 
 			glVertex3dv(tmp.data);
 		}
 		glEnd();
+
+		glPopMatrix();
 	}
 //	draw_line(p1, cp1m);
 //	draw_line(p2, cp1m);
@@ -768,33 +775,47 @@ void GyroData::clear_data()
 	m_tmp_axes = Vertex3f(1, 0, 0);
 	m_tmp_angle = 0;
 	m_mean_accel = Vertex3d();
+	m_past_tick = 0;
+	m_first_tick = 0;
+	m_index = 0;
 }
 
 void GyroData::on_timeout_playing()
 {
 	if(m_is_play && (m_downloaded_telemetries.size())){
 
-		StructTelemetry st = m_downloaded_telemetries[m_current_playing_pos];;
+		if(m_current_playing_pos >= m_downloaded_telemetries.size()){
+			m_current_playing_pos = 0;
+			set_zero_pos();
+		}
+
+		StructTelemetry st = m_downloaded_telemetries[m_current_playing_pos];
+
+		if(st.tick && m_first_tick){
+			long long tick = st.tick - m_first_tick;
+			qDebug() << m_index << tick - m_past_tick << st.tick << m_first_tick + m_past_tick;
+			m_part_of_time = (double)(tick - m_past_tick) / 1e+3;
+			m_past_tick = tick;
+		}else{
+			if(st.tick){
+				m_first_tick = st.tick;
+				m_past_tick = st.tick - m_first_tick;
+			}
+		}
 
 		analyze_telemetry(st);
 
-		while(m_telemetries.size() >= max_count_telemetry){
-			m_telemetries.pop_back();
-		}
+		m_current_playing_pos++;
+		m_index++;
+	}
 
-		m_current_playing_pos += 1;
-		if(m_current_playing_pos >= m_downloaded_telemetries.size()){
-			m_current_playing_pos = 0;
-		}
+	while(m_telemetries.size() >= max_count_telemetry){
+		m_telemetries.pop_back();
 	}
 }
 
 void GyroData::tryParseData(const QByteArray &data)
 {
-	while(m_telemetries.size() >= max_count_telemetry){
-		m_telemetries.pop_back();
-	}
-
 	if(!m_tick_telemetry.isValid() || m_tick_telemetry.hasExpired(max_delay_for_data)){
 		m_tick_telemetry.restart();
 	}
@@ -806,7 +827,7 @@ void GyroData::tryParseData(const QByteArray &data)
 
 	qint64 tick_delta = m_tick_telemetry.nsecsElapsed();
 	double part_of_time = tick_delta / 1e+9;
-	m_part_of_freq = part_of_time;
+	m_part_of_time = part_of_time;
 
 	m_tick_telemetry.restart();
 
@@ -815,7 +836,15 @@ void GyroData::tryParseData(const QByteArray &data)
 	WriteLog::instance()->add_data("gyro", st);
 
 	m_time_waiting_telemetry.restart();
+
+	m_index++;
+
+	while(m_telemetries.size() >= max_count_telemetry){
+		m_telemetries.pop_back();
+	}
 }
+
+const int min_threshold_accel = 400;
 
 void GyroData::analyze_telemetry(StructTelemetry &st)
 {
@@ -841,19 +870,33 @@ void GyroData::analyze_telemetry(StructTelemetry &st)
 
 	calc_offsets(st.gyro, st.accel);
 
-	m_mean_accel = m_mean_accel * 0.9f + Vertex3d(st.accel) * 0.1f;
+	m_mean_accel = m_mean_accel * 0.9 + Vertex3d(st.accel) * 0.1;
 
 	if(!m_is_calc_offset_gyro && m_is_calculated){
-		m_rotate_pos -= (st.angular_speed(m_offset_gyro) * m_part_of_freq);
+		m_rotate_pos -= (st.angular_speed(m_offset_gyro) * m_part_of_time);
 
-		Vertex3d offset(m_mean_accel);
-		int offset_len = offset.length();
-		offset_len = m_len_Gaccel - offset_len;
-		offset_len >>= m_shift_accel;
-		offset.normalize();
-		offset *= (double)offset_len;
-		m_translate_speed += offset;
-		m_translate_pos += (m_translate_speed * (1.0/m_divider_accel));
+		if(m_past_accel.isNull())
+			m_past_accel = st.accel;
+
+		double lenG = m_mean_Gaccel.length();
+		double lenA = st.accel.length();
+		if(qAbs(lenG - lenA) < min_threshold_accel){
+			m_tmp_accel = m_tmp_accel * 0.9 + Vertex3d(st.accel) * 0.1;
+		}
+
+//		Vertex3d staccel(st.accel);
+//		Vertex3d offset = staccel - Vertex3d(m_past_accel);
+//		m_past_accel = st.accel;
+
+//		int offset_len = offset.length();
+//		//offset_len = m_len_Gaccel - offset_len;
+//		if(qAbs(offset_len) < min_threshold_accel){
+//			offset_len = 0;
+//		}
+////		offset.normalize();
+////		offset *= (double)offset_len;
+//		m_translate_speed += offset;
+//		m_translate_pos += (m_translate_speed * (1.0/m_divider_accel));
 
 		QQuaternion qX, qY, qZ, qres;
 		qX = QQuaternion::fromAxisAndAngle(QVector3D(1, 0, 0), m_rotate_pos.x());
@@ -877,8 +920,8 @@ void GyroData::analyze_telemetry(StructTelemetry &st)
 
 	m_telemetries.push_front(st);
 
-	if(m_telemetries.size() > 10)
-		m_telemetries.pop_back();
+//	if(m_telemetries.size() > 10)
+//		m_telemetries.pop_back();
 }
 
 void GyroData::load_from_xml()
@@ -893,8 +936,6 @@ void GyroData::load_from_xml()
 	set_end_pos_downloaded_data(sxml.get_xml_double("end_position") * 100.0);
 	m_divider_accel = sxml.get_xml_double("divider_accel");
 	m_divider_gyro = sxml.get_xml_double("divider_gyro");
-	m_shift_accel = sxml.get_xml_int("shift_accel");
-	m_shift_gyro = sxml.get_xml_int("shift_gyro");
 	m_fileName = sxml.get_xml_string("filename");
 	m_showing_downloaded_data = sxml.get_xml_int("showing_downloaded_data");
 	m_addr = QHostAddress(sxml.get_xml_string("ip"));
@@ -928,8 +969,6 @@ void GyroData::save_to_xml()
 	sxml.set_dom_value_num("end_position", m_percent_downloaded_data);
 	sxml.set_dom_value_num("divider_accel", m_divider_accel);
 	sxml.set_dom_value_num("divider_gyro", m_divider_gyro);
-	sxml.set_dom_value_num("shift_accel", m_shift_accel);
-	sxml.set_dom_value_num("shift_gyro", m_shift_gyro);
 	sxml.set_dom_value_s("filename", m_fileName);
 	sxml.set_dom_value_num("showing_downloaded_data", m_showing_downloaded_data);
 	sxml.set_dom_value_s("ip", m_addr.toString());
@@ -939,4 +978,13 @@ void GyroData::save_to_xml()
 	sxml.set_dom_value_num("freq_playing", freq);
 
 	sxml.save();
+}
+
+void GyroData::draw_text(const Vertex3d &v, QString text)
+{
+	QGLWidget *w = dynamic_cast< QGLWidget* >(parent());
+	if(w){
+		glColor3f(1, 1, 1);
+		w->renderText(v.x(), v.y(), v.z(), text, QFont("Arial", 14));
+	}
 }

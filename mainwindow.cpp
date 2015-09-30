@@ -35,8 +35,6 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->lb_filename->setText(m_gyroData.fileName());
 	ui->dsb_accel_data->setValue(m_gyroData.divider_accel());
 	ui->dsb_div_gyro->setValue(m_gyroData.divider_gyro());
-	ui->sb_rshift_accel->setValue(m_gyroData.shift_accel());
-	ui->sb_rshift_gyro->setValue(m_gyroData.shift_gyro());
 	ui->cb_show_loaded->setChecked(m_gyroData.showing_downloaded_data());
 	ui->dsb_frequency_playing->setValue(m_gyroData.freq_playing());
 
@@ -241,7 +239,12 @@ void MainWindow::load_from_xml()
 	restoreState(state);
 
 	m_model.set_is_enable(sxml.get_xml_int("quadmodel"));
+	m_model.set_draw_lever(sxml.get_xml_int("drawlever"));
 	m_gyroData.set_is_enable(sxml.get_xml_int("gyrodata"));
+
+	ui->tw_settings->setCurrentIndex(sxml.get_xml_int("tab_index"));
+
+	ui->chb_draw_lever->setChecked(m_model.is_draw_lever());
 }
 
 void MainWindow::save_to_xml()
@@ -261,6 +264,8 @@ void MainWindow::save_to_xml()
 	sxml.set_dom_value_s("state", state.toBase64());
 	sxml.set_dom_value_num("quadmodel", m_model.is_enable());
 	sxml.set_dom_value_num("gyrodata", m_gyroData.is_enable());
+	sxml.set_dom_value_num("drawlever", m_model.is_draw_lever());
+	sxml.set_dom_value_num("tab_index", ui->tw_settings->currentIndex());
 
 	sxml.save();
 
@@ -294,11 +299,6 @@ void MainWindow::on_pushButton_5_clicked()
 	}
 }
 
-void MainWindow::on_pushButton_6_clicked()
-{
-	m_gyroData.recalc_accel(ui->dsb_threshold->value());
-}
-
 void MainWindow::on_pushButton_7_clicked()
 {
 	m_gyroData.send_start_to_net(QHostAddress(ui->le_ip_gyro_data->text()), ui->sb_gyro_data->value());
@@ -319,16 +319,6 @@ void MainWindow::on_dsb_accel_data_valueChanged(double arg1)
 	m_gyroData.set_divider_accel(arg1);
 }
 
-void MainWindow::on_sb_rshift_gyro_valueChanged(int arg1)
-{
-	m_gyroData.set_shift_gyro(arg1);
-}
-
-void MainWindow::on_sb_rshift_accel_valueChanged(int arg1)
-{
-	m_gyroData.set_shift_accel(arg1);
-}
-
 void MainWindow::on_hs_set_end_position_sliderMoved(int position)
 {
 	m_gyroData.set_end_pos_downloaded_data(position);
@@ -346,7 +336,7 @@ void MainWindow::on_dsb_frequency_playing_valueChanged(double arg1)
 
 void MainWindow::on_hs_playing_data_valueChanged(int value)
 {
-	m_gyroData.set_position_playback(value);
+//	m_gyroData.set_position_playback(value);
 }
 
 void MainWindow::on_pb_play_clicked(bool checked)
@@ -386,4 +376,9 @@ void MainWindow::on_pb_reset_clicked()
 void MainWindow::on_pushButton_9_clicked()
 {
 	m_gyroData.set_zero_pos();
+}
+
+void MainWindow::on_chb_draw_lever_clicked(bool checked)
+{
+	m_model.set_draw_lever(checked);
 }

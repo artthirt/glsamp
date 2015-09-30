@@ -92,6 +92,7 @@ void get_lever_axes(const QVector3D* v, QVector3D *vv)
 
 QuadModel::QuadModel(QObject *parent):
 	VirtGLObject(parent)
+  , m_is_draw_lever(true)
 {
 	setType(QUADMODEL);
 
@@ -264,6 +265,16 @@ StructTelemetry QuadModel::telemetry() const
 	return m_telemetry;
 }
 
+bool QuadModel::is_draw_lever() const
+{
+	return m_is_draw_lever;
+}
+
+void QuadModel::set_draw_lever(bool value)
+{
+	m_is_draw_lever = value;
+}
+
 
 void QuadModel::init()
 {
@@ -320,10 +331,48 @@ void QuadModel::draw()
 	glMultMatrixf((mt.data()));
 #endif
 
-	draw_lever(QVector3D(0, wd_lv, 0), 45,	Qt::yellow);
-	draw_lever(QVector3D(0, wd_lv, 0), 135,	Qt::green);
-	draw_lever(QVector3D(0, wd_lv, 0), -45,	Qt::yellow);
-	draw_lever(QVector3D(0, wd_lv, 0), -135,Qt::green);
+	if(m_is_draw_lever){
+		draw_lever(QVector3D(0, wd_lv, 0), 45,	Qt::yellow);
+		draw_lever(QVector3D(0, wd_lv, 0), 135,	Qt::green);
+		draw_lever(QVector3D(0, wd_lv, 0), -45,	Qt::yellow);
+		draw_lever(QVector3D(0, wd_lv, 0), -135,Qt::green);
+	}
+
+	glColor3f(1.f, 0.2f, 0.2f);
+	glBegin(GL_LINES);
+	glVertex3d(0, 0, 0);
+	glVertex3d(1, 0, 0);
+
+	glVertex3d(1, 0, 0);
+	glVertex3d(0.7, 0.3, 0);
+
+	glVertex3d(1, 0, 0);
+	glVertex3d(0.7, -0.3, 0);
+	glEnd();
+
+	glColor3f(0.2f, 1.f, 0.2f);
+	glBegin(GL_LINES);
+	glVertex3d(0, 0, 0);
+	glVertex3d(0, 1, 0);
+
+	glVertex3d(0, 1, 0);
+	glVertex3d(0.3, 0.7, 0);
+
+	glVertex3d(0, 1, 0);
+	glVertex3d(-0.3, 0.7, 0);
+	glEnd();
+
+	glColor3f(0.2f, 0.2f, 1.f);
+	glBegin(GL_LINES);
+	glVertex3d(0, 0, 0);
+	glVertex3d(0, 0, 1);
+
+	glVertex3d(0, 0, 1);
+	glVertex3d(0.3, 0, 0.7);
+
+	glVertex3d(0, 0, 1);
+	glVertex3d(-0.3, 0, 0.7);
+	glEnd();
 
 	glLineWidth(1);
 

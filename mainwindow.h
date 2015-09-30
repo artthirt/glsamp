@@ -64,8 +64,6 @@ private slots:
 
 	void on_pushButton_5_clicked();
 
-	void on_pushButton_6_clicked();
-
 	void on_pushButton_7_clicked();
 
 	void on_pushButton_8_clicked();
@@ -73,10 +71,6 @@ private slots:
 	void on_dsb_div_gyro_valueChanged(double arg1);
 
 	void on_dsb_accel_data_valueChanged(double arg1);
-
-	void on_sb_rshift_gyro_valueChanged(int arg1);
-
-	void on_sb_rshift_accel_valueChanged(int arg1);
 
 	void on_hs_set_end_position_sliderMoved(int position);
 
@@ -95,6 +89,8 @@ private slots:
 	void on_pb_reset_clicked();
 
 	void on_pushButton_9_clicked();
+
+	void on_chb_draw_lever_clicked(bool checked);
 
 protected:
 	void init_list_objects();

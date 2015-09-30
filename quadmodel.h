@@ -160,6 +160,17 @@ public:
 	 */
 	StructTelemetry telemetry() const;
 
+	/**
+	 * @brief is_draw_lever
+	 * @return
+	 */
+	bool is_draw_lever() const;
+	/**
+	 * @brief set_draw_lever
+	 * @param value
+	 */
+	void set_draw_lever(bool value);
+
 public:
 	virtual void init();
 	virtual void draw();
@@ -174,6 +185,8 @@ private:
 	double m_mg;
 	double m_max_power;
 	double m_koeff;
+
+	bool m_is_draw_lever;
 
 	QColor m_color;
 	QVector3D m_normal;
