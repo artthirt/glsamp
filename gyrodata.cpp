@@ -15,6 +15,7 @@
 
 #include <QUdpSocket>
 #include <QDataStream>
+#include <QThreadPool>
 
 #include "writelog.h"
 
@@ -29,12 +30,29 @@
 #include <global.h>
 #include <simple_xml.hpp>
 
+#include "calibrateaccelerometer.h"
+
 ///////////////////////////////
 Q_DECLARE_METATYPE(Vertex3i)
 
 const QString xml_config("gyro.xml");
 
 ///////////////////////////////
+
+QVector3D get_pt_on_line(const QVector3D& p0, const QVector3D& n, double t)
+{
+	return p0 + n * t;
+}
+
+inline double sign(double v1)
+{
+	return v1 >= 0? 1.0 : -1.0;
+}
+
+static inline Vertex3d _V(const Vertex3i& v)
+{
+	return Vertex3d(v);
+}
 
 void draw_line(const QVector3D& v1, const QVector3D& v2, const QColor& col = Qt::white)
 {
@@ -121,6 +139,9 @@ GyroData::GyroData(QObject *parent) :
 
 	connect(&m_timer_playing, SIGNAL(timeout()), this, SLOT(on_timeout_playing()));
 	m_timer_playing.start(100);
+
+	connect(&m_timer_calibrate, SIGNAL(timeout()), this, SLOT(on_timeout_calibrate()));
+	m_timer_calibrate.setInterval(300);
 
 	m_time_waiting_telemetry.start();
 
@@ -261,62 +282,6 @@ void GyroData::openFile(const QString fileName)
 //	normalize_vector(m_gyro_data);
 
 	file.close();
-}
-
-inline QVector3D min_v(const QVector3D& v1, const QVector3D& v2)
-{
-	return QVector3D(
-				qMin(v1.x(), v2.x()),
-				qMin(v1.y(), v2.y()),
-				qMin(v1.z(), v2.z())
-				);
-}
-
-inline QVector3D max_v(const QVector3D& v1, const QVector3D& v2)
-{
-	return QVector3D(
-				qMax(v1.x(), v2.x()),
-				qMax(v1.y(), v2.y()),
-				qMax(v1.z(), v2.z())
-				);
-}
-
-void search_min_pt(const QVector< QVector3D >& data, QVector3D& min, QVector3D& max)
-{
-	 QVector3D res_min = data[0];
-	 QVector3D res_max = res_min;
-
-	 foreach (QVector3D it, data) {
-		res_min = min_v(res_min, it);
-		res_max = max_v(res_max, it);
-	 }
-	 min = res_min;
-	 max = res_max;
-}
-
-bool search_outliers(const QVector3D& center, double mean_radius, double threshold,
-					 QVector< QVector3D >& data, QVector< QVector3D >& out, QVector< int >& errors)
-{
-	if(!data.size() || qFuzzyIsNull(mean_radius))
-		return false;
-
-	out.clear();
-	errors.resize(data.size());
-	int i = 0;
-	foreach (QVector3D it, data) {
-		QVector3D vec = it - center;
-		double len = vec.length();
-		//double a = len / mean_radius;
-
-		if(qAbs(len - mean_radius) > threshold){
-			errors[i] = 1;
-		}else{
-			errors[i] = 0;
-			out.push_back(it);
-		}
-		i++;
-	}
-	return true;
 }
 
 void GyroData::recalc_accel(double threshold, double threshold_deriv)
@@ -524,7 +489,7 @@ void GyroData::reset()
 	clear_data();
 }
 
-void GyroData::set_zero_pos()
+void GyroData::set_init_position()
 {
 	m_rotate_pos = Vertex3d();
 	m_translate_pos = Vertex3d();
@@ -536,10 +501,37 @@ void GyroData::set_zero_pos()
 	m_first_tick = 0;
 }
 
+bool GyroData::calibrate()
+{
+	if(m_calibrate.is_progress())
+		return false;
+
+	m_calibrate.set_parameters(&m_downloaded_telemetries);
+
+	m_timer_calibrate.start();
+
+	QThreadPool::globalInstance()->start(new CalibrateAccelerometerRunnable(&m_calibrate));
+
+	return true;
+}
+
+const CalibrateAccelerometer &GyroData::calibrateAccelerometer() const
+{
+	return m_calibrate;
+}
+
 void GyroData::on_timeout()
 {
 	if(m_telemetries.size() > 3){
 		m_telemetries.pop_back();
+	}
+}
+
+void GyroData::on_timeout_calibrate()
+{
+	if(m_calibrate.is_done()){
+		m_timer_calibrate.stop();
+		m_sphere = m_calibrate.result();
 	}
 }
 
@@ -572,21 +564,6 @@ void GyroData::on_readyRead()
 void GyroData::init()
 {
 	openFile(m_fileName);
-}
-
-QVector3D get_pt_on_line(const QVector3D& p0, const QVector3D& n, double t)
-{
-	return p0 + n * t;
-}
-
-inline double sign(double v1)
-{
-	return v1 >= 0? 1.0 : -1.0;
-}
-
-static inline Vertex3d _V(const Vertex3i& v)
-{
-	return Vertex3d(v);
 }
 
 void GyroData::draw()
@@ -737,6 +714,8 @@ void GyroData::draw()
 
 		glPopMatrix();
 	}
+
+	draw_sphere();
 //	draw_line(p1, cp1m);
 //	draw_line(p2, cp1m);
 //	draw_line(p3, cp1m);
@@ -786,7 +765,7 @@ void GyroData::on_timeout_playing()
 
 		if(m_current_playing_pos >= m_downloaded_telemetries.size()){
 			m_current_playing_pos = 0;
-			set_zero_pos();
+			set_init_position();
 		}
 
 		StructTelemetry st = m_downloaded_telemetries[m_current_playing_pos];
@@ -987,4 +966,54 @@ void GyroData::draw_text(const Vertex3d &v, QString text)
 		glColor3f(1, 1, 1);
 		w->renderText(v.x(), v.y(), v.z(), text, QFont("Arial", 14));
 	}
+}
+
+inline Vertex3d get_pt_sphere(double id, double jd, double R)
+{
+	double x = R * sin(id * 2 * M_PI) * cos(jd * 2 * M_PI);
+	double y = R * cos(id * 2 * M_PI) * cos(jd * 2 * M_PI);
+	double z = R * sin(jd * 2 * M_PI);
+	return Vertex3d(x, y, z);
+}
+
+void GyroData::draw_sphere()
+{
+	if(m_sphere.isNull())
+		return;
+
+	glPushMatrix();
+
+	Vertex3d cp(m_sphere.cp);
+	cp *= 1.0 / m_divider_accel;
+
+	glTranslated(cp.x(), cp.y(), cp.z());
+
+	const int count = 32;
+
+	glColor3f(1, 1, 1);
+
+	double R = m_sphere.mean_radius / m_divider_accel;
+	for(int i = 0; i < count; i++){
+		double id = (double)i / count;
+		double id1 = (double)(i + 1) / count;
+		for(int j = 0; j < count; j++){
+			double jd = (double)j / count;
+			double jd1 = (double)(j + 1)/ count;
+
+			Vertex3d v1 = get_pt_sphere(id, jd, R);
+			Vertex3d v2 = get_pt_sphere(id1, jd, R);
+			Vertex3d v3 = get_pt_sphere(id1, jd1, R);
+			Vertex3d v4 = get_pt_sphere(id, jd1, R);
+
+			glBegin(GL_LINE_LOOP);
+			glVertex3dv(v1.data);
+			glVertex3dv(v2.data);
+			glVertex3dv(v3.data);
+			glVertex3dv(v4.data);
+			glEnd();
+		}
+	}
+
+
+	glPopMatrix();
 }

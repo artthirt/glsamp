@@ -13,12 +13,16 @@
 
 #include "struct_controls.h"
 #include "simplekalmanfilter.h"
+#include "calibrateaccelerometer.h"
 
 class QUdpSocket;
 
 const int max_count_telemetry = 1000;
 const int max_delay_for_data = 200;
 
+/**
+ * @brief The GyroData class
+ */
 class GyroData : public VirtGLObject
 {
 	Q_OBJECT
@@ -180,12 +184,20 @@ public:
 	int count_gyro_offset_data() const;
 	/**
 	 * @brief reset
+	 * reset the initial state
 	 */
 	void reset();
 	/**
-	 * @brief set_zero_pos
+	 * @brief set_init_position
+	 * reset rotation and moving for the arrows
 	 */
-	void set_zero_pos();
+	void set_init_position();
+	/**
+	 * @brief calibrate
+	 */
+	bool calibrate();
+
+	const CalibrateAccelerometer &calibrateAccelerometer() const;
 
 signals:
 	void get_data(const QString& name, const Vertex3i);
@@ -194,6 +206,7 @@ signals:
 public slots:
 	void on_timeout();
 	void on_timeout_playing();
+	void on_timeout_calibrate();
 	void on_readyRead();
 
 protected:
@@ -223,6 +236,7 @@ private:
 
 	QTimer m_timer;
 	QTimer m_timer_playing;
+	QTimer m_timer_calibrate;
 
 	QVector< StructTelemetry > m_telemetries;
 	QTime m_time_waiting_telemetry;
@@ -252,12 +266,16 @@ private:
 
 	SimpleKalmanFilter m_kalman[6];
 
+	StructMeanSphere m_sphere;
+	CalibrateAccelerometer m_calibrate;
+
 	void calc_offsets(Vertex3i &gyro, Vertex3i &accel);
 	void clear_data();
 	void load_from_xml();
 	void save_to_xml();
 
 	void draw_text(const Vertex3d& v, QString text);
+	void draw_sphere();
 };
 
 #endif // GYRODATA_H

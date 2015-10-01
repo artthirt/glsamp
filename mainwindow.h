@@ -39,6 +39,7 @@ private slots:
 
 	void on_timeout();
 	void on_timeout_cfg();
+	void on_timeout_tmcalib();
 
 	void on_vs_power_valueChanged(int value);
 
@@ -92,6 +93,11 @@ private slots:
 
 	void on_chb_draw_lever_clicked(bool checked);
 
+	void on_pushButton_10_clicked(bool checked);
+
+	void on_put_data(const QString &name, const Vertex3i &value);
+	void on_put_data(const QString &name, double value);
+
 protected:
 	void init_list_objects();
 
@@ -100,6 +106,7 @@ private:
 
 	QTimer m_timer;
 	QTimer m_timer_cfg;
+	QTimer m_tmcalib;
 
 	QLabel *m_available_telemetry;
 

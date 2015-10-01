@@ -33,7 +33,8 @@ SOURCES += main.cpp\
     simple_xml.cpp \
     datachart.cpp \
     simplekalmanfilter.cpp \
-    writelog.cpp
+    writelog.cpp \
+    calibrateaccelerometer.cpp
 
 HEADERS  += mainwindow.h \
     virtglobject.h \
@@ -46,7 +47,8 @@ HEADERS  += mainwindow.h \
     global.h \
     simplekalmanfilter.h \
 	writelog.h \
-	submodules/struct_controls/struct_controls.h
+	submodules/struct_controls/struct_controls.h \
+    calibrateaccelerometer.h
 
 FORMS    += mainwindow.ui \
     glspace.ui

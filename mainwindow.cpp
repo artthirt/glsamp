@@ -30,6 +30,9 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(&m_timer_cfg, SIGNAL(timeout()), this, SLOT(on_timeout_cfg()));
 	m_timer_cfg.start(300);
 
+	connect(&m_tmcalib, SIGNAL(timeout()), this, SLOT(on_timeout_tmcalib()));
+	m_tmcalib.setInterval(50);
+
 	init_list_objects();
 
 	ui->lb_filename->setText(m_gyroData.fileName());
@@ -41,14 +44,13 @@ MainWindow::MainWindow(QWidget *parent) :
 	m_available_telemetry = new QLabel(this);
 	ui->statusBar->addWidget(m_available_telemetry);
 
-	connect(&m_gyroData, SIGNAL(get_data(QString,Vertex3i)), ui->widget_graph, SLOT(on_put_data(QString,Vertex3i)));
-	connect(&m_gyroData, SIGNAL(get_data(QString,double)), ui->widget_graph, SLOT(on_put_data(QString,double)));
-
-	ui->widget_graph->add_nowatch("accel");
-	ui->widget_graph->add_nowatch("kalman_accel");
+	connect(&m_gyroData, SIGNAL(get_data(QString,Vertex3i)), this, SLOT(on_put_data(QString,Vertex3i)));
+	connect(&m_gyroData, SIGNAL(get_data(QString,double)), this, SLOT(on_put_data(QString,double)));
 
 	ui->le_ip_gyro_data->setText(m_gyroData.addr().toString());
 	ui->sb_gyro_data->setValue(m_gyroData.port());
+
+	ui->widget_pass->setVisible(false);
 
 	setWindowState( Qt::WindowMaximized );
 }
@@ -140,6 +142,16 @@ void MainWindow::on_timeout_cfg()
 		ui->hs_playing_data->setValue(m_gyroData.percent_position());
 	}
 	ui->lb_count_value->setText("count: " + QString::number(m_gyroData.count_gyro_offset_data()));
+}
+
+void MainWindow::on_timeout_tmcalib()
+{
+	if(m_gyroData.calibrateAccelerometer().is_done()){
+		m_tmcalib.stop();
+		ui->widget_pass->setVisible(false);
+	}
+	ui->pb_calibrate->setValue(m_gyroData.calibrateAccelerometer().pass_part_evaluate() * 100.0);
+	ui->lb_pass->setText("pass: " + QString::number(m_gyroData.calibrateAccelerometer().pass()));
 }
 
 void MainWindow::on_vs_power_valueChanged(int value)
@@ -361,8 +373,10 @@ void MainWindow::on_pushButton_6_clicked(bool checked)
 {
 	if(checked){
 		m_gyroData.start_calc_offset_gyro();
+		ui->lb_count_value->setStyleSheet("background: lightgreen;");
 	}else{
 		m_gyroData.stop_calc_offset_gyro();
+		ui->lb_count_value->setStyleSheet("");
 	}
 }
 
@@ -375,10 +389,38 @@ void MainWindow::on_pb_reset_clicked()
 
 void MainWindow::on_pushButton_9_clicked()
 {
-	m_gyroData.set_zero_pos();
+	m_gyroData.set_init_position();
 }
 
 void MainWindow::on_chb_draw_lever_clicked(bool checked)
 {
 	m_model.set_draw_lever(checked);
+}
+
+void MainWindow::on_pushButton_10_clicked(bool checked)
+{
+	if(m_gyroData.calibrate()){
+		ui->widget_pass->setVisible(true);
+		ui->pb_calibrate->setValue(0);
+		ui->lb_pass->setText("pass: " + QString::number(m_gyroData.calibrateAccelerometer().pass()));
+		m_tmcalib.start();
+	}
+}
+
+void MainWindow::on_put_data(const QString& name , const Vertex3i& value)
+{
+	if(name.contains("accel")){
+		ui->widget_graph_accel->on_put_data(name, value);
+	}else{
+		ui->widget_graph_gyro->on_put_data(name, value);
+	}
+}
+
+void MainWindow::on_put_data(const QString &name, double value)
+{
+	if(name.contains("accel")){
+		ui->widget_graph_accel->on_put_data(name, value);
+	}else{
+		ui->widget_graph_gyro->on_put_data(name, value);
+	}
 }
