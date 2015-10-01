@@ -53,14 +53,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	ui->widget_pass->setVisible(false);
 
-	const StructMeanSphere& res = m_gyroData.mean_sphere();
-	if(!res.isNull()){
-		add_to_log("loaded. x=" + QString::number(res.cp.x(), 'f', 3) +
-				   ", y=" + QString::number(res.cp.y(), 'f', 3) +
-				   ", z=" + QString::number(res.cp.z(), 'f', 3) +
-				   "; R=" + QString::number(res.mean_radius, 'f', 3) +
-				   "; dev=" + QString::number(res.deviation, 'f', 3));
-	}
+	connect(&m_gyroData, SIGNAL(add_to_log(QString)), this, SLOT(add_to_log(QString)));
 
 	setWindowState( Qt::WindowMaximized );
 }
@@ -159,13 +152,6 @@ void MainWindow::on_timeout_tmcalib()
 	if(m_gyroData.calibrateAccelerometer().is_done()){
 		m_tmcalib.stop();
 		ui->widget_pass->setVisible(false);
-
-		const StructMeanSphere& res = m_gyroData.calibrateAccelerometer().result();
-		add_to_log("evaluate. x=" + QString::number(res.cp.x(), 'f', 3) +
-				   ", y=" + QString::number(res.cp.y(), 'f', 3) +
-				   ", z=" + QString::number(res.cp.z(), 'f', 3) +
-				   "; R=" + QString::number(res.mean_radius, 'f', 3) +
-				   "; dev=" + QString::number(res.deviation, 'f', 3));
 	}
 	ui->pb_calibrate->setValue(m_gyroData.calibrateAccelerometer().pass_part_evaluate() * 100.0);
 	ui->lb_pass->setText("pass: " + QString::number(m_gyroData.calibrateAccelerometer().pass()));

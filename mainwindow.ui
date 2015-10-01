@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1453</width>
-    <height>928</height>
+    <height>1129</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -89,14 +89,19 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionShow_settings"/>
+   <addaction name="actionShow_log"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QDockWidget" name="dw_settings">
    <property name="minimumSize">
     <size>
      <width>461</width>
-     <height>912</height>
+     <height>784</height>
     </size>
+   </property>
+   <property name="windowTitle">
+    <string>&amp;Settings</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
@@ -902,40 +907,6 @@ calc offsets</string>
           </spacer>
          </item>
          <item>
-          <widget class="QPlainTextEdit" name="pte_log">
-           <property name="verticalScrollBarPolicy">
-            <enum>Qt::ScrollBarAlwaysOn</enum>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_12">
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <item>
-            <spacer name="horizontalSpacer_2">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QPushButton" name="pb_clear_log">
-             <property name="text">
-              <string>clear</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
           <widget class="QWidget" name="widget_pass" native="true">
            <layout class="QVBoxLayout" name="verticalLayout">
             <item>
@@ -985,6 +956,52 @@ calc offsets</string>
     </layout>
    </widget>
   </widget>
+  <widget class="QDockWidget" name="dw_log">
+   <property name="windowTitle">
+    <string>&amp;Log</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents">
+    <layout class="QVBoxLayout" name="verticalLayout_12">
+     <item>
+      <widget class="QPlainTextEdit" name="pte_log">
+       <property name="verticalScrollBarPolicy">
+        <enum>Qt::ScrollBarAlwaysOn</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_12">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pb_clear_log">
+         <property name="text">
+          <string>clear</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </widget>
+  </widget>
   <action name="actionExit">
    <property name="text">
     <string>&amp;Exit</string>
@@ -993,6 +1010,28 @@ calc offsets</string>
   <action name="actionAbout">
    <property name="text">
     <string>&amp;About</string>
+   </property>
+  </action>
+  <action name="actionShow_log">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show log</string>
+   </property>
+  </action>
+  <action name="actionShow_settings">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show settings</string>
    </property>
   </action>
  </widget>
@@ -1026,6 +1065,38 @@ calc offsets</string>
     <hint type="destinationlabel">
      <x>726</x>
      <y>994</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionShow_log</sender>
+   <signal>triggered(bool)</signal>
+   <receiver>dw_log</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>726</x>
+     <y>971</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionShow_settings</sender>
+   <signal>triggered(bool)</signal>
+   <receiver>dw_settings</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1222</x>
+     <y>436</y>
     </hint>
    </hints>
   </connection>

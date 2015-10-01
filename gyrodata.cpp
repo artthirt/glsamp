@@ -283,6 +283,7 @@ void GyroData::openFile(const QString fileName)
 
 //	normalize_vector(m_accel_data);
 //	normalize_vector(m_gyro_data);
+	emit add_to_log("file loaded: \"" + m_fileName + "\"; count data: " + QString::number(m_downloaded_telemetries.size()));
 
 	file.close();
 }
@@ -325,6 +326,7 @@ void GyroData::send_start_to_net(const QHostAddress &host, ushort port)
 
 	m_addr = host;
 	m_port = port;
+	emit add_to_log("send start signal");
 }
 
 void GyroData::send_stop_to_net(const QHostAddress &host, ushort port)
@@ -338,6 +340,8 @@ void GyroData::send_stop_to_net(const QHostAddress &host, ushort port)
 
 	m_addr = host;
 	m_port = port;
+
+	emit add_to_log("send stop signal");
 }
 
 QHostAddress GyroData::addr() const
@@ -545,6 +549,13 @@ void GyroData::on_timeout_calibrate()
 	if(m_calibrate.is_done()){
 		m_timer_calibrate.stop();
 		m_sphere = m_calibrate.result();
+
+		emit add_to_log("evaluate. x=" + QString::number(m_sphere.cp.x(), 'f', 3) +
+				   ", y=" + QString::number(m_sphere.cp.y(), 'f', 3) +
+				   ", z=" + QString::number(m_sphere.cp.z(), 'f', 3) +
+				   "; R=" + QString::number(m_sphere.mean_radius, 'f', 3) +
+				   "; dev=" + QString::number(m_sphere.deviation, 'f', 3));
+
 		init_sphere();
 
 		save_calibrate();
@@ -582,6 +593,12 @@ void GyroData::init()
 	openFile(m_fileName);
 
 	init_sphere();
+
+	emit add_to_log("loaded. x=" + QString::number(m_sphere.cp.x(), 'f', 3) +
+			   ", y=" + QString::number(m_sphere.cp.y(), 'f', 3) +
+			   ", z=" + QString::number(m_sphere.cp.z(), 'f', 3) +
+			   "; R=" + QString::number(m_sphere.mean_radius, 'f', 3) +
+			   "; dev=" + QString::number(m_sphere.deviation, 'f', 3));
 }
 
 void GyroData::draw()
@@ -1039,9 +1056,9 @@ void GyroData::draw_text(const Vertex3d &v, QString text)
 template < typename T >
 inline T get_pt_sphere(double id, double jd, double R)
 {
-	double x = R * sin(id * 2 * M_PI) * cos(jd * 2 * M_PI);
-	double y = R * cos(id * 2 * M_PI) * cos(jd * 2 * M_PI);
-	double z = R * sin(jd * 2 * M_PI);
+	double x = R * sin(id * 2 * M_PI) * sin(jd * M_PI);
+	double y = R * cos(id * 2 * M_PI) * sin(jd * M_PI);
+	double z = R * cos(jd * M_PI);
 	return T(x, y, z);
 }
 
@@ -1058,9 +1075,9 @@ void GyroData::init_sphere()
 	m_inds_sphere.clear();
 
 	for(int i = 0; i < count; i++){
-		double id = (double)i / count;
+		double id = (double)i / (count - 1);
 		for(int j = 0; j < count; j++){
-			double jd = (double)j / count;
+			double jd = (double)j / (count - 1);
 			m_vecs_sphere.push_back(get_pt_sphere<Vertex3f>(id, jd, R));
 		}
 	}

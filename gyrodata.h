@@ -207,6 +207,7 @@ public:
 signals:
 	void get_data(const QString& name, const Vertex3i);
 	void get_data(const QString& name, double value);
+	void add_to_log(const QString& text);
 
 public slots:
 	void on_timeout();
