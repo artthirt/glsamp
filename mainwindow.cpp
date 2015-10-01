@@ -40,6 +40,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->dsb_div_gyro->setValue(m_gyroData.divider_gyro());
 	ui->cb_show_loaded->setChecked(m_gyroData.showing_downloaded_data());
 	ui->dsb_frequency_playing->setValue(m_gyroData.freq_playing());
+	ui->chb_calibrate_sphere->setChecked(m_gyroData.is_draw_mean_sphere());
 
 	m_available_telemetry = new QLabel(this);
 	ui->statusBar->addWidget(m_available_telemetry);
@@ -51,6 +52,15 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->sb_gyro_data->setValue(m_gyroData.port());
 
 	ui->widget_pass->setVisible(false);
+
+	const StructMeanSphere& res = m_gyroData.mean_sphere();
+	if(!res.isNull()){
+		add_to_log("loaded. x=" + QString::number(res.cp.x(), 'f', 3) +
+				   ", y=" + QString::number(res.cp.y(), 'f', 3) +
+				   ", z=" + QString::number(res.cp.z(), 'f', 3) +
+				   "; R=" + QString::number(res.mean_radius, 'f', 3) +
+				   "; dev=" + QString::number(res.deviation, 'f', 3));
+	}
 
 	setWindowState( Qt::WindowMaximized );
 }
@@ -149,6 +159,13 @@ void MainWindow::on_timeout_tmcalib()
 	if(m_gyroData.calibrateAccelerometer().is_done()){
 		m_tmcalib.stop();
 		ui->widget_pass->setVisible(false);
+
+		const StructMeanSphere& res = m_gyroData.calibrateAccelerometer().result();
+		add_to_log("evaluate. x=" + QString::number(res.cp.x(), 'f', 3) +
+				   ", y=" + QString::number(res.cp.y(), 'f', 3) +
+				   ", z=" + QString::number(res.cp.z(), 'f', 3) +
+				   "; R=" + QString::number(res.mean_radius, 'f', 3) +
+				   "; dev=" + QString::number(res.deviation, 'f', 3));
 	}
 	ui->pb_calibrate->setValue(m_gyroData.calibrateAccelerometer().pass_part_evaluate() * 100.0);
 	ui->lb_pass->setText("pass: " + QString::number(m_gyroData.calibrateAccelerometer().pass()));
@@ -423,4 +440,21 @@ void MainWindow::on_put_data(const QString &name, double value)
 	}else{
 		ui->widget_graph_gyro->on_put_data(name, value);
 	}
+}
+
+void MainWindow::on_pb_clear_log_clicked()
+{
+	ui->pte_log->clear();
+}
+
+void MainWindow::on_chb_calibrate_sphere_clicked(bool checked)
+{
+	m_gyroData.set_draw_mean_sphere(checked);
+}
+
+void MainWindow::add_to_log(const QString &text)
+{
+	QString line = "[" + QTime::currentTime().toString() + "]  " + text + "\r\n";
+	ui->pte_log->moveCursor(QTextCursor::Start);
+	ui->pte_log->insertPlainText(line);
 }

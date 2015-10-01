@@ -36,6 +36,7 @@
 Q_DECLARE_METATYPE(Vertex3i)
 
 const QString xml_config("gyro.xml");
+const QString xml_calibrate("calibrate.xml");
 
 ///////////////////////////////
 
@@ -131,6 +132,7 @@ GyroData::GyroData(QObject *parent) :
   , m_past_tick(0)
   , m_first_tick(0)
   , m_index(0)
+  , m_is_draw_mean_sphere(true)
 {
 	setType(GYRODATA);
 
@@ -148,6 +150,7 @@ GyroData::GyroData(QObject *parent) :
 	m_fileName = "../data/data.csv";
 
 	load_from_xml();
+	load_calibrate();
 }
 
 GyroData::~GyroData()
@@ -520,6 +523,16 @@ const CalibrateAccelerometer &GyroData::calibrateAccelerometer() const
 	return m_calibrate;
 }
 
+bool GyroData::is_draw_mean_sphere() const
+{
+	return m_is_draw_mean_sphere;
+}
+
+void GyroData::set_draw_mean_sphere(bool value)
+{
+	m_is_draw_mean_sphere = value;
+}
+
 void GyroData::on_timeout()
 {
 	if(m_telemetries.size() > 3){
@@ -532,6 +545,9 @@ void GyroData::on_timeout_calibrate()
 	if(m_calibrate.is_done()){
 		m_timer_calibrate.stop();
 		m_sphere = m_calibrate.result();
+		init_sphere();
+
+		save_calibrate();
 	}
 }
 
@@ -564,6 +580,8 @@ void GyroData::on_readyRead()
 void GyroData::init()
 {
 	openFile(m_fileName);
+
+	init_sphere();
 }
 
 void GyroData::draw()
@@ -715,7 +733,9 @@ void GyroData::draw()
 		glPopMatrix();
 	}
 
-	draw_sphere();
+	if(m_is_draw_mean_sphere){
+		draw_sphere();
+	}
 //	draw_line(p1, cp1m);
 //	draw_line(p2, cp1m);
 //	draw_line(p3, cp1m);
@@ -930,6 +950,8 @@ void GyroData::load_from_xml()
 	if(freq){
 		set_freq_playing(freq);
 	}
+
+	m_is_draw_mean_sphere = sxml.get_xml_int("draw_mean_sphere");
 }
 
 void GyroData::save_to_xml()
@@ -955,6 +977,50 @@ void GyroData::save_to_xml()
 
 	double freq = freq_playing();
 	sxml.set_dom_value_num("freq_playing", freq);
+	sxml.set_dom_value_num("draw_mean_sphere", m_is_draw_mean_sphere);
+
+	sxml.save();
+}
+
+void GyroData::load_calibrate()
+{
+	QString config_file = /*QDir::homePath() + */QApplication::applicationDirPath() + "/" + config_dir + xml_calibrate;
+
+	SimpleXML sxml(config_file);
+
+	if(!sxml.load())
+		return;
+
+	Vertex3d v;
+	v.setX(sxml.get_xml_double("x"));
+	v.setY(sxml.get_xml_double("y"));
+	v.setZ(sxml.get_xml_double("z"));
+	m_sphere.cp = v;
+	m_sphere.mean_radius = sxml.get_xml_double("mean_radius");
+	m_sphere.deviation = sxml.get_xml_double("deviation");
+}
+
+void GyroData::save_calibrate()
+{
+	if(m_sphere.isNull())
+		return;
+
+	QString config_file = /*QDir::homePath() + */QApplication::applicationDirPath() + "/" + config_dir;
+
+	QDir dir(QDir::homePath());
+
+	//if(!dir.exists(config_file))
+	dir.mkdir(config_file);
+
+	config_file += xml_calibrate;
+
+	SimpleXML sxml(config_file, true);
+
+	sxml.set_dom_value_num("x", m_sphere.cp.x());
+	sxml.set_dom_value_num("y", m_sphere.cp.y());
+	sxml.set_dom_value_num("z", m_sphere.cp.z());
+	sxml.set_dom_value_num("mean_radius", m_sphere.mean_radius);
+	sxml.set_dom_value_num("deviation", m_sphere.deviation);
 
 	sxml.save();
 }
@@ -968,17 +1034,50 @@ void GyroData::draw_text(const Vertex3d &v, QString text)
 	}
 }
 
-inline Vertex3d get_pt_sphere(double id, double jd, double R)
+template < typename T >
+inline T get_pt_sphere(double id, double jd, double R)
 {
 	double x = R * sin(id * 2 * M_PI) * cos(jd * 2 * M_PI);
 	double y = R * cos(id * 2 * M_PI) * cos(jd * 2 * M_PI);
 	double z = R * sin(jd * 2 * M_PI);
-	return Vertex3d(x, y, z);
+	return T(x, y, z);
+}
+
+
+void GyroData::init_sphere()
+{
+	if(m_sphere.isNull())
+		return;
+
+	const int count = 32;
+	double R = m_sphere.mean_radius / m_divider_accel;
+
+	m_vecs_sphere.clear();
+	m_inds_sphere.clear();
+
+	for(int i = 0; i < count; i++){
+		double id = (double)i / count;
+		for(int j = 0; j < count; j++){
+			double jd = (double)j / count;
+			m_vecs_sphere.push_back(get_pt_sphere<Vertex3f>(id, jd, R));
+		}
+	}
+
+	for(int i = 0; i < count - 1; i++){
+		for(int j = 0; j < count - 1; j++){
+			int A = i * count + j;
+			int B = (i + 1) * count + j;
+			int C = i * count + j + 1;
+			m_inds_sphere.push_back(Vertex3i(A, B, C));
+		}
+	}
+
+	glVertexPointer(3, GL_FLOAT, sizeof(Vertex3f), m_vecs_sphere.data()->data);
 }
 
 void GyroData::draw_sphere()
 {
-	if(m_sphere.isNull())
+	if(!m_inds_sphere.size())
 		return;
 
 	glPushMatrix();
@@ -988,32 +1087,14 @@ void GyroData::draw_sphere()
 
 	glTranslated(cp.x(), cp.y(), cp.z());
 
-	const int count = 32;
-
 	glColor3f(1, 1, 1);
 
-	double R = m_sphere.mean_radius / m_divider_accel;
-	for(int i = 0; i < count; i++){
-		double id = (double)i / count;
-		double id1 = (double)(i + 1) / count;
-		for(int j = 0; j < count; j++){
-			double jd = (double)j / count;
-			double jd1 = (double)(j + 1)/ count;
-
-			Vertex3d v1 = get_pt_sphere(id, jd, R);
-			Vertex3d v2 = get_pt_sphere(id1, jd, R);
-			Vertex3d v3 = get_pt_sphere(id1, jd1, R);
-			Vertex3d v4 = get_pt_sphere(id, jd1, R);
-
-			glBegin(GL_LINE_LOOP);
-			glVertex3dv(v1.data);
-			glVertex3dv(v2.data);
-			glVertex3dv(v3.data);
-			glVertex3dv(v4.data);
-			glEnd();
-		}
-	}
-
+	int cnt = m_inds_sphere.size() * 3;
+	glEnableClientState(GL_VERTEX_ARRAY);
+	//glDrawRangeElements(GL_LINE_LOOP, 0, cnt, cnt, GL_INT, m_inds_sphere.data());
+//	glDrawArrays(GL_LINE_STRIP, 0, 40);
+	glDrawElements(GL_LINE_STRIP, cnt, GL_UNSIGNED_INT, m_inds_sphere.data());
+	glDisableClientState(GL_VERTEX_ARRAY);
 
 	glPopMatrix();
 }

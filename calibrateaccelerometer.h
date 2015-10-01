@@ -15,7 +15,7 @@ struct StructMeanSphere{
 		deviation = 0;
 	}
 
-	bool isNull(){
+	bool isNull() const{
 		return qAbs(mean_radius) < epsilon;
 	}
 

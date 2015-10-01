@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1453</width>
-    <height>729</height>
+    <height>928</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -69,18 +69,18 @@
      <x>0</x>
      <y>0</y>
      <width>1453</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
-     <string>File</string>
+     <string>&amp;File</string>
     </property>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuHel">
     <property name="title">
-     <string>Help</string>
+     <string>&amp;Help</string>
     </property>
     <addaction name="actionAbout"/>
    </widget>
@@ -99,8 +99,8 @@
   <widget class="QDockWidget" name="dw_settings">
    <property name="minimumSize">
     <size>
-     <width>407</width>
-     <height>676</height>
+     <width>461</width>
+     <height>912</height>
     </size>
    </property>
    <attribute name="dockWidgetArea">
@@ -472,6 +472,13 @@
              <widget class="QCheckBox" name="cb_show_loaded">
               <property name="text">
                <string>show loaded data</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chb_calibrate_sphere">
+              <property name="text">
+               <string>show calibrate sphere</string>
               </property>
              </widget>
             </item>
@@ -900,6 +907,40 @@ calc offsets</string>
           </spacer>
          </item>
          <item>
+          <widget class="QPlainTextEdit" name="pte_log">
+           <property name="verticalScrollBarPolicy">
+            <enum>Qt::ScrollBarAlwaysOn</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_12">
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <spacer name="horizontalSpacer_2">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pb_clear_log">
+             <property name="text">
+              <string>clear</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
           <widget class="QWidget" name="widget_pass" native="true">
            <layout class="QVBoxLayout" name="verticalLayout">
             <item>
@@ -951,12 +992,12 @@ calc offsets</string>
   </widget>
   <action name="actionExit">
    <property name="text">
-    <string>Exit</string>
+    <string>&amp;Exit</string>
    </property>
   </action>
   <action name="actionAbout">
    <property name="text">
-    <string>About</string>
+    <string>&amp;About</string>
    </property>
   </action>
  </widget>

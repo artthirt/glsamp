@@ -98,6 +98,12 @@ private slots:
 	void on_put_data(const QString &name, const Vertex3i &value);
 	void on_put_data(const QString &name, double value);
 
+	void on_pb_clear_log_clicked();
+
+	void on_chb_calibrate_sphere_clicked(bool checked);
+
+	void add_to_log(const QString& text);
+
 protected:
 	void init_list_objects();
 

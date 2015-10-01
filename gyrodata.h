@@ -199,6 +199,11 @@ public:
 
 	const CalibrateAccelerometer &calibrateAccelerometer() const;
 
+	bool is_draw_mean_sphere() const;
+	void set_draw_mean_sphere(bool value);
+
+	const StructMeanSphere& mean_sphere() const { return m_sphere; }
+
 signals:
 	void get_data(const QString& name, const Vertex3i);
 	void get_data(const QString& name, double value);
@@ -268,11 +273,18 @@ private:
 
 	StructMeanSphere m_sphere;
 	CalibrateAccelerometer m_calibrate;
+	bool m_is_draw_mean_sphere;
+	QVector< Vertex3f > m_vecs_sphere;
+	QVector< Vertex3i > m_inds_sphere;
+
+	void init_sphere();
 
 	void calc_offsets(Vertex3i &gyro, Vertex3i &accel);
 	void clear_data();
 	void load_from_xml();
 	void save_to_xml();
+	void load_calibrate();
+	void save_calibrate();
 
 	void draw_text(const Vertex3d& v, QString text);
 	void draw_sphere();
