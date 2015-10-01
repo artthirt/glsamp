@@ -48,16 +48,11 @@
        <attribute name="title">
         <string>accelerometer</string>
        </attribute>
-       <widget class="DataChart" name="widget_graph_accel" native="true">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>0</y>
-          <width>1003</width>
-          <height>614</height>
-         </rect>
-        </property>
-       </widget>
+       <layout class="QVBoxLayout" name="verticalLayout_11">
+        <item>
+         <widget class="DataChart" name="widget_graph_accel" native="true"/>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>

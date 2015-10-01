@@ -847,6 +847,8 @@ const int min_threshold_accel = 200;
 
 void GyroData::analyze_telemetry(StructTelemetry &st)
 {
+	st.accel -= m_sphere.cp;
+
 	emit get_data("gyro", st.gyro);
 	emit get_data("accel", st.accel);
 
