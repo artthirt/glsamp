@@ -14,6 +14,8 @@
 
 #include "math.h"
 
+#include "global.h"
+
 const double wd_lv = 0.05;
 
 const int delta_time = 200;

@@ -204,6 +204,9 @@ public:
 
 	const StructMeanSphere& mean_sphere() const { return m_sphere; }
 
+	bool is_show_calibrated_data() const { return m_showing_downloaded_data; }
+	void set_show_calibrated_data(bool value);
+
 signals:
 	void get_data(const QString& name, const Vertex3i);
 	void get_data(const QString& name, double value);
@@ -260,6 +263,7 @@ private:
 	Vertex3d m_mean_accel;
 	Vertex3d m_tmp_accel;
 
+	QQuaternion m_rotate_quaternion;
 	Vertex3d m_rotate_pos;
 	Vertex3d m_translate_pos;
 	Vertex3d m_translate_speed;
@@ -277,6 +281,9 @@ private:
 	bool m_is_draw_mean_sphere;
 	QVector< Vertex3f > m_vecs_sphere;
 	QVector< Vertex3i > m_inds_sphere;
+	bool m_show_calibrated_data;
+
+	QVector < Vertex3f > m_trajectory;
 
 	void init_sphere();
 

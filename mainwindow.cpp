@@ -50,6 +50,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	ui->le_ip_gyro_data->setText(m_gyroData.addr().toString());
 	ui->sb_gyro_data->setValue(m_gyroData.port());
+	ui->chb_calibratd_data->setChecked(m_gyroData.is_show_calibrated_data());
 
 	ui->widget_pass->setVisible(false);
 
@@ -443,4 +444,9 @@ void MainWindow::add_to_log(const QString &text)
 	QString line = "[" + QTime::currentTime().toString() + "]  " + text + "\r\n";
 	ui->pte_log->moveCursor(QTextCursor::Start);
 	ui->pte_log->insertPlainText(line);
+}
+
+void MainWindow::on_chb_calibratd_data_clicked(bool checked)
+{
+	m_gyroData.set_show_calibrated_data(checked);
 }
