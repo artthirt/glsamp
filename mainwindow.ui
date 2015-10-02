@@ -64,7 +64,7 @@
      <x>0</x>
      <y>0</y>
      <width>1453</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -97,7 +97,7 @@
    <property name="minimumSize">
     <size>
      <width>461</width>
-     <height>784</height>
+     <height>845</height>
     </size>
    </property>
    <property name="windowTitle">
@@ -638,6 +638,23 @@
                <widget class="QPushButton" name="pushButton_10">
                 <property name="text">
                  <string>calibrate</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QPushButton" name="pushButton_11">
+                <property name="text">
+                 <string>write data</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QLabel" name="lb_write_data">
+                <property name="text">
+                 <string/>
                 </property>
                </widget>
               </item>

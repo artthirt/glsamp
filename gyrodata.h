@@ -207,6 +207,10 @@ public:
 	bool is_show_calibrated_data() const { return m_showing_downloaded_data; }
 	void set_show_calibrated_data(bool value);
 
+	bool is_write_data() const { return m_write_data; }
+	void set_write_data(bool value);
+	int count_write_data() const { return m_writed_telemetries.size(); }
+
 signals:
 	void get_data(const QString& name, const Vertex3i);
 	void get_data(const QString& name, double value);
@@ -247,12 +251,14 @@ private:
 	QTimer m_timer_playing;
 	QTimer m_timer_calibrate;
 
+	QVector <StructTelemetry > m_writed_telemetries;
 	QVector< StructTelemetry > m_telemetries;
 	QTime m_time_waiting_telemetry;
 	QElapsedTimer m_tick_telemetry;
 	double m_part_of_time;
 	long long m_past_tick;
 	long long m_first_tick;
+	bool m_write_data;
 
 	Vertex3d m_offset_gyro;
 	bool m_is_calc_offset_gyro;

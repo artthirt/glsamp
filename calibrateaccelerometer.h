@@ -18,6 +18,11 @@ struct StructMeanSphere{
 	bool isNull() const{
 		return qAbs(mean_radius) < epsilon;
 	}
+	void reset(){
+		cp = Vertex3d();
+		mean_radius = 0;
+		deviation = 0;
+	}
 
 	Vertex3d cp;
 	double mean_radius;

@@ -106,6 +106,8 @@ private slots:
 
 	void on_chb_calibratd_data_clicked(bool checked);
 
+	void on_pushButton_11_clicked(bool checked);
+
 protected:
 	void init_list_objects();
 

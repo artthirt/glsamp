@@ -146,6 +146,7 @@ void MainWindow::on_timeout_cfg()
 		ui->hs_playing_data->setValue(m_gyroData.percent_position());
 	}
 	ui->lb_count_value->setText("count: " + QString::number(m_gyroData.count_gyro_offset_data()));
+	ui->lb_write_data->setText("count: " + QString::number(m_gyroData.count_write_data()));
 }
 
 void MainWindow::on_timeout_tmcalib()
@@ -449,4 +450,16 @@ void MainWindow::add_to_log(const QString &text)
 void MainWindow::on_chb_calibratd_data_clicked(bool checked)
 {
 	m_gyroData.set_show_calibrated_data(checked);
+}
+
+void MainWindow::on_pushButton_11_clicked(bool checked)
+{
+	m_gyroData.set_write_data(checked);
+	if(checked){
+		ui->lb_write_data->setText("write data...");
+		ui->lb_write_data->setStyleSheet("background: lightgreen;");
+	}else{
+		ui->lb_write_data->setStyleSheet("");
+
+	}
 }
