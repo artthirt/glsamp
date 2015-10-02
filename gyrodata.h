@@ -201,6 +201,7 @@ public:
 
 	bool is_draw_mean_sphere() const;
 	void set_draw_mean_sphere(bool value);
+	void reset_mean_sphere();
 
 	const StructMeanSphere& mean_sphere() const { return m_sphere; }
 

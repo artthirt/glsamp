@@ -643,6 +643,9 @@
               </item>
               <item row="1" column="0">
                <widget class="QPushButton" name="pushButton_11">
+                <property name="toolTip">
+                 <string>write real time telemetry for calibrate</string>
+                </property>
                 <property name="text">
                  <string>write data</string>
                 </property>
@@ -655,6 +658,13 @@
                <widget class="QLabel" name="lb_write_data">
                 <property name="text">
                  <string/>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="2">
+               <widget class="QPushButton" name="pushButton_12">
+                <property name="text">
+                 <string>reset sphere</string>
                 </property>
                </widget>
               </item>

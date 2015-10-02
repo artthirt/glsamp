@@ -463,3 +463,8 @@ void MainWindow::on_pushButton_11_clicked(bool checked)
 
 	}
 }
+
+void MainWindow::on_pushButton_12_clicked()
+{
+
+}

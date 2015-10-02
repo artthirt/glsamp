@@ -588,6 +588,11 @@ void GyroData::set_draw_mean_sphere(bool value)
 	m_is_draw_mean_sphere = value;
 }
 
+void GyroData::reset_mean_sphere()
+{
+	m_sphere.reset();
+}
+
 void GyroData::set_show_calibrated_data(bool value)
 {
 	m_show_calibrated_data = value;
@@ -898,7 +903,6 @@ void GyroData::clear_data()
 	m_translate_pos = Vertex3d();
 	m_translate_speed = Vertex3d();
 	m_rotate_quaternion = QQuaternion();
-	m_sphere.reset();
 	m_write_data = false;
 	m_writed_telemetries.clear();
 }
