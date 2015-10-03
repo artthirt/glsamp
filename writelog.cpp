@@ -5,6 +5,8 @@
 #include <QDir>
 #include <QApplication>
 
+using namespace sc;
+
 LogFile::LogFile()
 {
 	max_line_in_buffer = 1000;

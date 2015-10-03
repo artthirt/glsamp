@@ -52,7 +52,7 @@ public:
 
 	void createLog(const QString& name);
 	void add_data(const QString & name, const QString &data);
-	void add_data(const QString & name, const StructTelemetry &data);
+	void add_data(const QString & name, const sc::StructTelemetry &data);
 signals:
 
 public slots:

@@ -16,15 +16,15 @@ struct StructMeanSphere{
 	}
 
 	bool isNull() const{
-		return qAbs(mean_radius) < epsilon;
+		return qAbs(mean_radius) < sc::epsilon;
 	}
 	void reset(){
-		cp = Vector3d();
+		cp = sc::Vector3d();
 		mean_radius = 0;
 		deviation = 0;
 	}
 
-	Vector3d cp;
+	sc::Vector3d cp;
 	double mean_radius;
 	double deviation;
 };
@@ -56,20 +56,20 @@ public:
 	double threshold() const;
 	StructMeanSphere result() const;
 	void evaluate();
-	bool set_parameters(const QVector<StructTelemetry> *sts, int max_pass = 100, double threshold = 1e-6);
+	bool set_parameters(const QVector< sc::StructTelemetry > *sts, int max_pass = 100, double threshold = 1e-6);
 signals:
 
 public slots:
 
 
 private:
-	const QVector< StructTelemetry > *m_telemetry;
+	const QVector< sc::StructTelemetry > *m_telemetry;
 
-	int m_pass;
 	int m_max_pass;
+	int m_pass;
 	double m_pass_part_evaluate;
-	double m_threshold;
 	STATE_EVALUATE m_state;
+	double m_threshold;
 	StructMeanSphere m_result;
 
 	/**
@@ -79,15 +79,15 @@ private:
 	 * @param max
 	 * @return
 	 */
-	bool search_minmax(const QVector< StructTelemetry >& data, Vector3i& min, Vector3i& max);
+	bool search_minmax(const QVector< sc::StructTelemetry >& data, sc::Vector3i& min, sc::Vector3i& max);
 	/**
 	 * @brief calc_radius
 	 * @param sts
 	 * @param p
 	 * @param sp
 	 */
-	void calc_radius(const QVector< StructTelemetry >& sts, const Vector3d& p, StructMeanSphere& sp);
-	StructMeanSphere circumscribed_sphere_search(const QVector< StructTelemetry >& sts, const Vector3d& p1, const Vector3d& p2,
+	void calc_radius(const QVector< sc::StructTelemetry >& sts, const sc::Vector3d& p, StructMeanSphere& sp);
+	StructMeanSphere circumscribed_sphere_search(const QVector< sc::StructTelemetry >& sts, const sc::Vector3d& p1, const sc::Vector3d& p2,
 												 double& dx, double& dy, double& dz);
 
 };

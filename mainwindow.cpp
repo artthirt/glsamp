@@ -7,6 +7,8 @@
 #include <global.h>
 #include <simple_xml.hpp>
 
+using namespace sc;
+
 //////////////////////////////////
 
 const QString xml_config("main.xml");

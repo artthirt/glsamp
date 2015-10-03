@@ -1,6 +1,8 @@
 #include "calibrateaccelerometer.h"
 #include <QDebug>
 
+using namespace sc;
+
 CalibrateAccelerometer::CalibrateAccelerometer(QObject *parent) :
 	QObject(parent)
   , m_max_pass(100)

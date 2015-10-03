@@ -16,6 +16,8 @@
 
 #include "global.h"
 
+using namespace sc;
+
 const double wd_lv = 0.05;
 
 const int delta_time = 200;

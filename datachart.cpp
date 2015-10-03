@@ -6,6 +6,8 @@
 #include <QFontMetrics>
 #include <QPointF>
 
+using namespace sc;
+
 DataChart::DataChart(QWidget *parent)
 	: QWidget(parent)
 {

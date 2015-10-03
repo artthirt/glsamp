@@ -146,13 +146,13 @@ public:
 	 * for control model
 	 * @param control
 	 */
-	void setControl(const StructControls& control);
+	void setControl(const sc::StructControls& control);
 	/**
 	 * @brief telemetry
 	 * return current telemetry
 	 * @return
 	 */
-	StructTelemetry telemetry() const;
+	sc::StructTelemetry telemetry() const;
 
 	/**
 	 * @brief is_draw_lever
@@ -199,8 +199,8 @@ private:
 	int m_time_noise_start;
 	int m_delta_time;
 
-	StructControls m_controls;
-	StructTelemetry m_telemetry;
+	sc::StructControls m_controls;
+	sc::StructTelemetry m_telemetry;
 
 	bool m_is_draw_telemetry;
 

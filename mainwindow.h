@@ -95,7 +95,7 @@ private slots:
 
 	void on_pushButton_10_clicked(bool checked);
 
-	void on_put_data(const QString &name, const Vector3i &value);
+	void on_put_data(const QString &name, const sc::Vector3i &value);
 	void on_put_data(const QString &name, double value);
 
 	void on_pb_clear_log_clicked();

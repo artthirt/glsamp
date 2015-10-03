@@ -43,12 +43,6 @@ public:
 	 */
 	void openFile(const QString fileName);
 	/**
-	 * @brief recalc_accel
-	 * @param threshold
-	 */
-	void recalc_accel(double threshold, double threshold_deriv = 0.01);
-
-	/**
 	 * @brief send_start_to_net
 	 * signal for start send data from device
 	 * @param host
@@ -211,7 +205,7 @@ public:
 	int count_write_data() const { return m_writed_telemetries.size(); }
 
 signals:
-	void get_data(const QString& name, const Vector3i);
+	void get_data(const QString& name, const sc::Vector3i);
 	void get_data(const QString& name, double value);
 	void add_to_log(const QString& text);
 
@@ -223,7 +217,7 @@ public slots:
 
 protected:
 	void tryParseData(const QByteArray& data);
-	void analyze_telemetry(StructTelemetry& st);
+	void analyze_telemetry(sc::StructTelemetry& st);
 
 	// VirtGLObject interface
 public:
@@ -234,24 +228,28 @@ public:
 
 private:
 	QString m_fileName;
-	QVector< StructTelemetry > m_downloaded_telemetries;
+	QVector< sc::StructTelemetry > m_downloaded_telemetries;
 	QUdpSocket *m_socket;
-	double m_divider_gyro;
 	double m_divider_accel;
+	double m_divider_gyro;
+	double m_percent_downloaded_data;
 	long long m_index;
 
 	bool m_showing_downloaded_data;
 	bool m_is_play;
 	int m_current_playing_pos;
 
-	double m_percent_downloaded_data;
 
 	QTimer m_timer;
 	QTimer m_timer_playing;
 	QTimer m_timer_calibrate;
 
-	QVector <StructTelemetry > m_writed_telemetries;
-	QVector< StructTelemetry > m_telemetries;
+	bool m_is_calc_offset_gyro;
+	int m_count_gyro_offset_data;
+	bool m_is_calculated;
+
+	QVector< sc::StructTelemetry > m_writed_telemetries;
+	QVector< sc::StructTelemetry > m_telemetries;
 	QTime m_time_waiting_telemetry;
 	QElapsedTimer m_tick_telemetry;
 	double m_part_of_time;
@@ -259,23 +257,19 @@ private:
 	long long m_first_tick;
 	bool m_write_data;
 
-	Vector3d m_offset_gyro;
-	bool m_is_calc_offset_gyro;
-	bool m_is_calculated;
-	int m_count_gyro_offset_data;
-	Vector3d m_tmp_axes;
+	sc::Vector3d m_offset_gyro;
+	sc::Vector3d m_tmp_axis;
 	double m_tmp_angle;
-	Vector3d m_mean_accel;
-	Vector3d m_tmp_accel;
+	sc::Vector3d m_mean_accel;
+	sc::Vector3d m_tmp_accel;
 
-	Quaternion m_rotate_quaternion;
-	Quaternion m_result_quaternion;
-	Vector3d m_rotate_pos;
-	Vector3d m_translate_pos;
-	Vector3d m_translate_speed;
-	Vector3d m_mean_Gaccel;
+	sc::Quaternion m_rotate_quaternion;
+	sc::Vector3d m_rotate_pos;
+	sc::Vector3d m_translate_pos;
+	sc::Vector3d m_translate_speed;
+	sc::Vector3d m_mean_Gaccel;
 	double m_len_Gaccel;
-	Vector3i m_past_accel;
+	sc::Vector3i m_past_accel;
 
 	QHostAddress m_addr;
 	ushort m_port;
@@ -285,22 +279,22 @@ private:
 	StructMeanSphere m_sphere;
 	CalibrateAccelerometer m_calibrate;
 	bool m_is_draw_mean_sphere;
-	QVector< Vector3f > m_vecs_sphere;
-	QVector< Vector3i > m_inds_sphere;
+	QVector< sc::Vector3f > m_vecs_sphere;
+	QVector< sc::Vector3i > m_inds_sphere;
 	bool m_show_calibrated_data;
 
-	QVector < Vector3f > m_trajectory;
+	QVector < sc::Vector3f > m_trajectory;
 
 	void init_sphere();
 
-	void calc_offsets(Vector3i &gyro, Vector3i &accel);
+	void calc_offsets(sc::Vector3i &gyro, sc::Vector3i &accel);
 	void clear_data();
 	void load_from_xml();
 	void save_to_xml();
 	void load_calibrate();
 	void save_calibrate();
 
-	void draw_text(const Vector3d& v, QString text);
+	void draw_text(const sc::Vector3d& v, QString text);
 	void draw_sphere();
 };
 
