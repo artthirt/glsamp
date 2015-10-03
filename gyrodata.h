@@ -9,8 +9,6 @@
 #include <QTime>
 #include <QElapsedTimer>
 
-#include <QQuaternion>
-
 #include "struct_controls.h"
 #include "simplekalmanfilter.h"
 #include "calibrateaccelerometer.h"
@@ -213,7 +211,7 @@ public:
 	int count_write_data() const { return m_writed_telemetries.size(); }
 
 signals:
-	void get_data(const QString& name, const Vertex3i);
+	void get_data(const QString& name, const Vector3i);
 	void get_data(const QString& name, double value);
 	void add_to_log(const QString& text);
 
@@ -261,22 +259,23 @@ private:
 	long long m_first_tick;
 	bool m_write_data;
 
-	Vertex3d m_offset_gyro;
+	Vector3d m_offset_gyro;
 	bool m_is_calc_offset_gyro;
 	bool m_is_calculated;
 	int m_count_gyro_offset_data;
-	Vertex3d m_tmp_axes;
+	Vector3d m_tmp_axes;
 	double m_tmp_angle;
-	Vertex3d m_mean_accel;
-	Vertex3d m_tmp_accel;
+	Vector3d m_mean_accel;
+	Vector3d m_tmp_accel;
 
-	QQuaternion m_rotate_quaternion;
-	Vertex3d m_rotate_pos;
-	Vertex3d m_translate_pos;
-	Vertex3d m_translate_speed;
-	Vertex3d m_mean_Gaccel;
+	Quaternion m_rotate_quaternion;
+	Quaternion m_result_quaternion;
+	Vector3d m_rotate_pos;
+	Vector3d m_translate_pos;
+	Vector3d m_translate_speed;
+	Vector3d m_mean_Gaccel;
 	double m_len_Gaccel;
-	Vertex3i m_past_accel;
+	Vector3i m_past_accel;
 
 	QHostAddress m_addr;
 	ushort m_port;
@@ -286,22 +285,22 @@ private:
 	StructMeanSphere m_sphere;
 	CalibrateAccelerometer m_calibrate;
 	bool m_is_draw_mean_sphere;
-	QVector< Vertex3f > m_vecs_sphere;
-	QVector< Vertex3i > m_inds_sphere;
+	QVector< Vector3f > m_vecs_sphere;
+	QVector< Vector3i > m_inds_sphere;
 	bool m_show_calibrated_data;
 
-	QVector < Vertex3f > m_trajectory;
+	QVector < Vector3f > m_trajectory;
 
 	void init_sphere();
 
-	void calc_offsets(Vertex3i &gyro, Vertex3i &accel);
+	void calc_offsets(Vector3i &gyro, Vector3i &accel);
 	void clear_data();
 	void load_from_xml();
 	void save_to_xml();
 	void load_calibrate();
 	void save_calibrate();
 
-	void draw_text(const Vertex3d& v, QString text);
+	void draw_text(const Vector3d& v, QString text);
 	void draw_sphere();
 };
 

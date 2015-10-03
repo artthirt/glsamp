@@ -51,7 +51,7 @@ void DataChart::on_put_data(const QString &chart, double value)
 	m_charts[chart].add_value(value);
 }
 
-void DataChart::on_put_data(const QString &chart, Vertex3i value)
+void DataChart::on_put_data(const QString &chart, Vector3i value)
 {
 	if(m_nowatch.contains(chart))
 		return;

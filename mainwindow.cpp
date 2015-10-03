@@ -45,7 +45,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	m_available_telemetry = new QLabel(this);
 	ui->statusBar->addWidget(m_available_telemetry);
 
-	connect(&m_gyroData, SIGNAL(get_data(QString,Vertex3i)), this, SLOT(on_put_data(QString,Vertex3i)));
+	connect(&m_gyroData, SIGNAL(get_data(QString,Vector3i)), this, SLOT(on_put_data(QString,Vector3i)));
 	connect(&m_gyroData, SIGNAL(get_data(QString,double)), this, SLOT(on_put_data(QString,double)));
 
 	ui->le_ip_gyro_data->setText(m_gyroData.addr().toString());
@@ -412,7 +412,7 @@ void MainWindow::on_pushButton_10_clicked(bool checked)
 	}
 }
 
-void MainWindow::on_put_data(const QString& name , const Vertex3i& value)
+void MainWindow::on_put_data(const QString& name , const Vector3i& value)
 {
 	if(name.contains("accel")){
 		ui->widget_graph_accel->on_put_data(name, value);

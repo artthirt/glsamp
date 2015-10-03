@@ -19,12 +19,12 @@ struct StructMeanSphere{
 		return qAbs(mean_radius) < epsilon;
 	}
 	void reset(){
-		cp = Vertex3d();
+		cp = Vector3d();
 		mean_radius = 0;
 		deviation = 0;
 	}
 
-	Vertex3d cp;
+	Vector3d cp;
 	double mean_radius;
 	double deviation;
 };
@@ -79,15 +79,15 @@ private:
 	 * @param max
 	 * @return
 	 */
-	bool search_minmax(const QVector< StructTelemetry >& data, Vertex3i& min, Vertex3i& max);
+	bool search_minmax(const QVector< StructTelemetry >& data, Vector3i& min, Vector3i& max);
 	/**
 	 * @brief calc_radius
 	 * @param sts
 	 * @param p
 	 * @param sp
 	 */
-	void calc_radius(const QVector< StructTelemetry >& sts, const Vertex3d& p, StructMeanSphere& sp);
-	StructMeanSphere circumscribed_sphere_search(const QVector< StructTelemetry >& sts, const Vertex3d& p1, const Vertex3d& p2,
+	void calc_radius(const QVector< StructTelemetry >& sts, const Vector3d& p, StructMeanSphere& sp);
+	StructMeanSphere circumscribed_sphere_search(const QVector< StructTelemetry >& sts, const Vector3d& p1, const Vector3d& p2,
 												 double& dx, double& dy, double& dz);
 
 };
