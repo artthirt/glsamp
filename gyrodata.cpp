@@ -808,6 +808,7 @@ void GyroData::draw()
 		glPushMatrix();
 
 		draw_line(Vector3d(), tmp, Qt::green);
+		draw_text(tmp, "accel. " + QString::number(m_telemetries[0].accel.length()));
 
 		glLineWidth(1);
 		glBegin(GL_LINE_STRIP);
