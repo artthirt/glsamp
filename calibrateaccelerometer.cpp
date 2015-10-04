@@ -53,7 +53,10 @@ bool CalibrateAccelerometer::set_parameters(const QVector<StructTelemetry> *sts,
 	if(is_progress())
 		return false;
 
-	m_telemetry = sts;
+	m_analyze_data.clear();
+	foreach (StructTelemetry st, *sts) {
+		m_analyze_data.push_back(st.accel);
+	}
 	m_max_pass = max_pass;
 	m_threshold = threshold;
 	m_state = none;
@@ -65,19 +68,17 @@ void CalibrateAccelerometer::evaluate()
 {
 	m_state = none;
 
-	if(!m_telemetry->size()){
+	if(!m_analyze_data.size()){
 		return;
 	}
 
-	Vector3i min_pt, max_pt;
-	bool res = search_minmax(*m_telemetry, min_pt, max_pt);
+	Vector3d p1, p2;
+	bool res = search_minmax(m_analyze_data, p1, p2);
 	if(!res){
 		return;
 	}
 
 	m_state = begin;
-
-	Vector3d p1(min_pt), p2(max_pt);
 
 	StructMeanSphere sphere;
 
@@ -88,7 +89,7 @@ void CalibrateAccelerometer::evaluate()
 
 		m_state = newpass;
 
-		StructMeanSphere p = circumscribed_sphere_search(*m_telemetry, p1, p2, dx, dy, dz);
+		StructMeanSphere p = circumscribed_sphere_search(m_analyze_data, p1, p2, dx, dy, dz);
 		double delta = qAbs(p.deviation - sphere.deviation);
 		if(delta < m_threshold){
 			loop = false;
@@ -110,16 +111,16 @@ void CalibrateAccelerometer::evaluate()
 	m_state = end;
 }
 
-bool CalibrateAccelerometer::search_minmax(const QVector< StructTelemetry >& data, Vector3i& min, Vector3i& max)
+bool CalibrateAccelerometer::search_minmax(const QVector< Vector3d >& data, Vector3d& min, Vector3d& max)
 {
 	if(!data.size())
 		return false;
-	 Vector3i res_min = data[0].accel;
-	 Vector3i res_max = res_min;
+	 Vector3d res_min = data[0];
+	 Vector3d res_max = res_min;
 
-	 foreach (StructTelemetry it, data) {
-		res_min = min_v(res_min, it.accel);
-		res_max = max_v(res_max, it.accel);
+	 foreach (Vector3d it, data) {
+		res_min = min_v(res_min, it);
+		res_max = max_v(res_max, it);
 	 }
 	 min = res_min;
 	 max = res_max;
@@ -127,14 +128,14 @@ bool CalibrateAccelerometer::search_minmax(const QVector< StructTelemetry >& dat
 	 return true;
 }
 
-void CalibrateAccelerometer::calc_radius(const QVector< StructTelemetry >& sts, const Vector3d& p, StructMeanSphere& sp)
+void CalibrateAccelerometer::calc_radius(const QVector< Vector3d >& sts, const Vector3d& p, StructMeanSphere& sp)
 {
 	m_state = evaluate_mean_radius;
 
 	sp.cp = p;
 	QVector< double > radiuses;
 	for(int i = 0; i < sts.size(); i++) {
-		Vector3d ad(sts[i].accel);
+		Vector3d ad(sts[i]);
 		ad -= p;
 		radiuses.push_back(ad.length());
 	}
@@ -156,7 +157,7 @@ void CalibrateAccelerometer::calc_radius(const QVector< StructTelemetry >& sts, 
 	sp.deviation = sqrt(deviation);
 }
 
-StructMeanSphere CalibrateAccelerometer::circumscribed_sphere_search(const QVector< StructTelemetry >& sts, const Vector3d& p1, const Vector3d& p2,
+StructMeanSphere CalibrateAccelerometer::circumscribed_sphere_search(const QVector< Vector3d >& sts, const Vector3d& p1, const Vector3d& p2,
 											 double& dx, double& dy, double& dz)
 {
 	const int count_side = 10;
@@ -198,6 +199,14 @@ StructMeanSphere CalibrateAccelerometer::circumscribed_sphere_search(const QVect
 	}
 
 	res = pts[sid];
+	double deviat_great_cnt = 0;
+	for(int j = 0; j < sts.size(); j++){
+		Vector3d rd = Vector3d(sts[j]) - pts[sid].cp;
+		if(fabs(rd.length() - pts[sid].mean_radius) > 3.0 * pts[sid].deviation){
+			deviat_great_cnt++;
+		}
+	}
+	qDebug() << "outlers =" << deviat_great_cnt << "; all =" << sts.size();
 
 	return res;
 }

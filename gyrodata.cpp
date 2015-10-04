@@ -68,7 +68,7 @@ void draw_line(const QVector3D& v1, const QVector3D& v2, const QColor& col = Qt:
 	glEnd();
 }
 
-void draw_line(const Vector3d& v1, const Vector3d& v2, const QColor& col = Qt::white)
+void draw_line(const Vector3d& v1, const Vector3d& v2 = Vector3d(), const QColor& col = Qt::white)
 {
 	glColor3ub(col.red(), col.green(), col.blue());
 
@@ -169,6 +169,8 @@ GyroData::GyroData(QObject *parent) :
   , m_is_draw_mean_sphere(true)
   , m_show_calibrated_data(true)
   , m_write_data(false)
+  , m_threshold_correction(3)
+  , m_multiply_correction(0.1)
 {
 	setType(GYRODATA);
 
@@ -689,6 +691,33 @@ void draw_axes(const Vector3d& offset = Vector3d())
 	glPopMatrix();
 }
 
+/// @test code
+void draw_process_rotate(const Quaternion& q1, const Quaternion& q2, double mult)
+{
+	if(q1.isNull() && q2.isNull())
+		return;
+
+	Vector3d v1(1, 0, 0), v2(0, 1, 0), v3(0, 0, 1);
+
+	const int cnt = 40;
+	for(int i = 0; i < cnt; i++){
+		double t = (double)i / cnt;
+		double t1 = 1-t;
+
+		Vector3d v11, v12, v13;
+		Quaternion q;
+
+		q = Quaternion::slerp(q1, q2, t);
+		v11 = q.rotatedVector(v1) * mult;
+		v12 = q.rotatedVector(v2) * mult;
+		v13 = q.rotatedVector(v3) * mult;
+
+		draw_line(v11, Vector3d(), QColor(32 + 223 * t1, 0, 0));
+		draw_line(v12, Vector3d(), QColor(0, 32 + 223 * t1, 0));
+		draw_line(v13, Vector3d(), QColor(0, 0, 32 + 223 * t1));
+	}
+}
+
 void GyroData::draw()
 {
 	double div_gyro = 1.0 / m_divider_gyro;
@@ -741,6 +770,7 @@ void GyroData::draw()
 
 	glPopMatrix();
 
+	draw_process_rotate(m_rotate_quaternion, m_accel_quat, 0.3);
 ////////////////////
 
 //	glPushMatrix();
@@ -1058,6 +1088,17 @@ void GyroData::analyze_telemetry(StructTelemetry &st)
 
 		Quaternion quat_speed = fromAnglesAxes(rotate_speed);
 		m_rotate_quaternion *= quat_speed;
+
+		Vector3d vga = m_rotate_quaternion.rotatedVector(m_mean_Gaccel).normalized();
+		Vector3d va = m_mean_accel.normalized();
+		Vector3d ax = Vector3d::cross(va, vga).normalized();
+		double an = Vector3d::dot(vga, va);
+		an = rad2angle(acos(an));
+		m_accel_quat = Quaternion::fromAxisAndAngle(ax, -an) * m_rotate_quaternion;
+		m_accel_quat.normalize();
+
+		if(fabs(an) > m_threshold_correction)
+			m_rotate_quaternion = Quaternion::slerp(m_rotate_quaternion, m_accel_quat, m_multiply_correction);
 	}
 
 	m_telemetries.push_front(st);
@@ -1092,6 +1133,15 @@ void GyroData::load_from_xml()
 	}
 
 	m_is_draw_mean_sphere = sxml.get_xml_int("draw_mean_sphere");
+
+	m_show_calibrated_data = sxml.get_xml_int("show_calibrated_data");
+
+	double v1 = sxml.get_xml_double("threshold_correction");
+	if(v1)
+		m_threshold_correction = v1;
+	v1 = sxml.get_xml_double("multiply_correction");
+	if(v1)
+		m_multiply_correction = v1;
 }
 
 void GyroData::save_to_xml()
@@ -1119,6 +1169,10 @@ void GyroData::save_to_xml()
 	sxml.set_dom_value_num("freq_playing", freq);
 	sxml.set_dom_value_num("draw_mean_sphere", m_is_draw_mean_sphere);
 
+	sxml.set_dom_value_num("threshold_correction", m_threshold_correction);
+	sxml.set_dom_value_num("multiply_correction", m_multiply_correction);
+	sxml.set_dom_value_num("show_calibrated_data", m_show_calibrated_data);
+
 	sxml.save();
 }
 
@@ -1132,13 +1186,21 @@ void GyroData::load_calibrate()
 		return;
 
 	Vector3d v;
-	v.setX(sxml.get_xml_double("x"));
-	v.setY(sxml.get_xml_double("y"));
-	v.setZ(sxml.get_xml_double("z"));
+	QDomNode node = sxml.get_node(sxml.tree_node, "acceleration");
+	v.setX(sxml.get_xml_double("x_corr", &node));
+	v.setY(sxml.get_xml_double("y_corr", &node));
+	v.setZ(sxml.get_xml_double("z_corr", &node));
 	m_sphere.cp = v;
-	m_sphere.mean_radius = sxml.get_xml_double("mean_radius");
-	m_sphere.deviation = sxml.get_xml_double("deviation");
-	m_show_calibrated_data = sxml.get_xml_int("show_calibrated_data");
+	m_sphere.mean_radius = sxml.get_xml_double("mean_radius", &node);
+	m_sphere.deviation = sxml.get_xml_double("deviation", &node);
+
+	node = sxml.get_node(sxml.tree_node, "gyroscope");
+	v.setX(sxml.get_xml_double("x_corr", &node));
+	v.setY(sxml.get_xml_double("y_corr", &node));
+	v.setZ(sxml.get_xml_double("z_corr", &node));
+
+	if(!v.isNull())
+		m_offset_gyro = v;
 }
 
 void GyroData::save_calibrate()
@@ -1157,12 +1219,19 @@ void GyroData::save_calibrate()
 
 	SimpleXML sxml(config_file, true);
 
-	sxml.set_dom_value_num("x", m_sphere.cp.x());
-	sxml.set_dom_value_num("y", m_sphere.cp.y());
-	sxml.set_dom_value_num("z", m_sphere.cp.z());
-	sxml.set_dom_value_num("mean_radius", m_sphere.mean_radius);
-	sxml.set_dom_value_num("deviation", m_sphere.deviation);
-	sxml.set_dom_value_num("show_calibrated_data", m_show_calibrated_data);
+	QDomNode node = sxml.get_node(sxml.tree_node, "acceleration");
+	sxml.set_dom_value_num(node, "x_corr", m_sphere.cp.x());
+	sxml.set_dom_value_num(node, "y_corr", m_sphere.cp.y());
+	sxml.set_dom_value_num(node, "z_corr", m_sphere.cp.z());
+	sxml.set_dom_value_num(node, "mean_radius", m_sphere.mean_radius);
+	sxml.set_dom_value_num(node, "deviation", m_sphere.deviation);
+
+	if(!m_offset_gyro.isNull()){
+		node = sxml.get_node(sxml.tree_node, "gyroscope");
+		sxml.set_dom_value_num(node, "x_corr", m_offset_gyro.x());
+		sxml.set_dom_value_num(node, "y_corr", m_offset_gyro.y());
+		sxml.set_dom_value_num(node, "z_corr", m_offset_gyro.z());
+	}
 
 	sxml.save();
 }

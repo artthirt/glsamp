@@ -264,6 +264,7 @@ private:
 	sc::Vector3d m_tmp_accel;
 
 	sc::Quaternion m_rotate_quaternion;
+	sc::Quaternion m_accel_quat;
 	sc::Vector3d m_rotate_pos;
 	sc::Vector3d m_translate_pos;
 	sc::Vector3d m_translate_speed;
@@ -284,6 +285,9 @@ private:
 	bool m_show_calibrated_data;
 
 	QVector < sc::Vector3f > m_trajectory;
+
+	double m_threshold_correction;
+	double m_multiply_correction;
 
 	void init_sphere();
 

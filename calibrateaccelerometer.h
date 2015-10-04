@@ -63,7 +63,7 @@ public slots:
 
 
 private:
-	const QVector< sc::StructTelemetry > *m_telemetry;
+	QVector< sc::Vector3d > m_analyze_data;
 
 	int m_max_pass;
 	int m_pass;
@@ -79,15 +79,15 @@ private:
 	 * @param max
 	 * @return
 	 */
-	bool search_minmax(const QVector< sc::StructTelemetry >& data, sc::Vector3i& min, sc::Vector3i& max);
+	bool search_minmax(const QVector< sc::Vector3d >& data, sc::Vector3d &min, sc::Vector3d &max);
 	/**
 	 * @brief calc_radius
 	 * @param sts
 	 * @param p
 	 * @param sp
 	 */
-	void calc_radius(const QVector< sc::StructTelemetry >& sts, const sc::Vector3d& p, StructMeanSphere& sp);
-	StructMeanSphere circumscribed_sphere_search(const QVector< sc::StructTelemetry >& sts, const sc::Vector3d& p1, const sc::Vector3d& p2,
+	void calc_radius(const QVector<sc::Vector3d> &sts, const sc::Vector3d& p, StructMeanSphere& sp);
+	StructMeanSphere circumscribed_sphere_search(const QVector<sc::Vector3d> &sts, const sc::Vector3d& p1, const sc::Vector3d& p2,
 												 double& dx, double& dy, double& dz);
 
 };
