@@ -14,4 +14,9 @@ typedef qreal mat_type;
 typedef float mat_type;
 #endif
 
+const int hi_version			= 0;
+const int lo_version			= 1;
+
+const QString version_string = QString("%1.%2").arg(hi_version).arg(lo_version);
+
 #endif // GLOBAL_H

@@ -1026,7 +1026,7 @@ double rnd_a(){
 /// @test code
 bool test_data()
 {
-	srand(QTime::currentTime().msecsSinceStartOfDay());
+	srand(QDateTime::currentMSecsSinceEpoch());
 	double ll = 0;
 	for(int i = 0; i < 1000; i++){
 		Vector3d v(rnd_a(), rnd_a(), rnd_a());
@@ -1048,6 +1048,8 @@ bool test_data()
 		qDebug() << (double)i / 1000.0 << "q=" << q;
 	}
 	qDebug() << q1 << q2;
+
+	return true;
 }
 
 /// @test code

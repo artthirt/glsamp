@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include "dialogabout.h"
+
 #include <QFileDialog>
 #include "QListWidgetItem"
 
@@ -469,4 +471,10 @@ void MainWindow::on_pushButton_11_clicked(bool checked)
 void MainWindow::on_pushButton_12_clicked()
 {
 
+}
+
+void MainWindow::on_actionAbout_triggered()
+{
+	DialogAbout dlg;
+	dlg.exec();
 }

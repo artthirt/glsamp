@@ -110,6 +110,8 @@ private slots:
 
 	void on_pushButton_12_clicked();
 
+	void on_actionAbout_triggered();
+
 protected:
 	void init_list_objects();
 

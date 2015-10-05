@@ -24,6 +24,14 @@ DEFINES += _USE_MATH_DEFINES
 INCLUDEPATH += . \
 				$$PWD/submodules/struct_controls
 
+VERSION_BUILD = $$system("git rev-parse HEAD")
+isEmpty(VERSION_BUILD){
+	VERSION_BUILD = 1
+}
+
+VERBUILDSTR = '$${VERSION_BUILD}'
+DEFINES += VERBUILD=\\\"$$VERBUILDSTR\\\"
+
 SOURCES += main.cpp\
         mainwindow.cpp \
     glspace.cpp \
@@ -34,7 +42,8 @@ SOURCES += main.cpp\
     datachart.cpp \
     simplekalmanfilter.cpp \
     writelog.cpp \
-    calibrateaccelerometer.cpp
+    calibrateaccelerometer.cpp \
+    dialogabout.cpp
 
 HEADERS  += mainwindow.h \
     virtglobject.h \
@@ -48,10 +57,12 @@ HEADERS  += mainwindow.h \
     simplekalmanfilter.h \
 	writelog.h \
 	submodules/struct_controls/struct_controls.h \
-    calibrateaccelerometer.h
+    calibrateaccelerometer.h \
+    dialogabout.h
 
 FORMS    += mainwindow.ui \
-    glspace.ui
+    glspace.ui \
+    dialogabout.ui
 
 UI_DIR = $$DST_DIR/tmp/ui
 OBJECTS_DIR = $$DST_DIR/obj
