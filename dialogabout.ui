@@ -96,7 +96,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Designed by artthirt (artthirt@gmail.com) 2015</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Designed by artthirt (&lt;a href=&quot;mailto:artthirt@gmail.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;artthirt@gmail.com&lt;/span&gt;&lt;/a&gt;) 2015&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
  </widget>
