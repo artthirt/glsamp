@@ -7,14 +7,53 @@
 #include <QDomNodeList>
 #include <QDomNode>
 
+class SimpleXML;
+
+/////////////////////////////
+/// \brief The SimpleXMLNode class
+/// uses to create tree xml parameters
+class SimpleXMLNode{
+public:
+	SimpleXMLNode(SimpleXML& sxml, const QString &tag);
+	SimpleXMLNode(SimpleXMLNode &parent_node, const QString& tag);
+
+	/// \brief simple iterfaces to write data
+ /// @example
+ ///  node << tag << value << tag2 << value2
+ ///  first string value is tag, second parameter - value
+	SimpleXMLNode &operator <<(const QString& value);
+	SimpleXMLNode &operator <<(double value);
+	SimpleXMLNode &operator <<(float value);
+	SimpleXMLNode &operator <<(int value);
+	SimpleXML &sxml();
+	QDomNode &node();
+	SimpleXMLNode operator[] (const QString& tag);
+	SimpleXMLNode operator[] (const char *val);
+
+	/// \brief simple interfaces for reading data
+	bool empty() const;
+	operator QString() const;
+	operator double() const;
+	operator float() const;
+	operator int() const;
+	operator bool() const;
+	operator ushort() const;
+
+
+private:
+	SimpleXML* m_sxml;
+	QString m_tag;
+	QDomNode m_node;
+	QString m_current_tag;
+};
+
 class SimpleXML{
 public:
-	QString m_fileName;
-	QDomDocument dom;
-	QDomNodeList dom_list;
-	/// \brief parent node tree with tag
-	QDomNode tree_node;
-	QString tree_tag;
+	enum State{
+		NONE,
+		READ,
+		WRITE
+	};
 
 	/**
 	 * @brief SimpleXML
@@ -24,6 +63,8 @@ public:
 	 *						then create being xml with tree tag
 	 */
 	SimpleXML(const QString& filename, bool forSave = false, const QString& tag = "tree");
+	SimpleXML(const QString& filename, State state, const QString& tag = "tree");
+	~SimpleXML();
 	/// \brief load from file
 	bool load();
 	/// \brief save to file
@@ -94,6 +135,38 @@ public:
 	 * @return
 	 */
 	QDomNode get_node(QDomNode& parent_node, const QString& tag);
+
+	/// \brief simple iterfaces to write data
+ /// @example
+ ///  node << tag << value << tag2 << value2
+ ///  first string value is tag, second parameter - value
+	SimpleXML &operator <<(const QString& value);
+	SimpleXML &operator <<(double value);
+	SimpleXML &operator <<(float value);
+	SimpleXML &operator <<(int value);
+	/**
+	 * @brief operator []
+	 * to create tree node
+	 * @param tag
+	 * @return
+	 */
+	SimpleXMLNode operator[] (const QString& tag);
+
+	bool isLoaded() const;
+
+	friend class SimpleXMLNode;
+
+private:
+	QString m_current_tag;
+	State m_state;
+	bool m_is_loaded;
+
+	QString m_fileName;
+	QDomDocument dom;
+	QDomNodeList dom_list;
+	/// \brief parent node tree with tag
+	QDomNode tree_node;
+	QString tree_tag;
 
 protected:
 	/**

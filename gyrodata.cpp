@@ -185,10 +185,7 @@ GyroData::GyroData(QObject *parent) :
 
 	m_time_waiting_telemetry.start();
 
-	m_fileName = "../data/data.csv";
-
 	load_from_xml();
-	load_calibrate();
 }
 
 GyroData::~GyroData()
@@ -637,6 +634,8 @@ void GyroData::on_readyRead()
 void GyroData::init()
 {
 	openFile(m_fileName);
+
+	load_calibrate();
 
 	init_sphere();
 
@@ -1115,13 +1114,13 @@ void GyroData::load_from_xml()
 	if(!sxml.load())
 		return;
 
-	set_end_pos_downloaded_data(sxml.get_xml_double("end_position") * 100.0);
-	m_divider_accel = sxml.get_xml_double("divider_accel");
-	m_divider_gyro = sxml.get_xml_double("divider_gyro");
-	m_fileName = sxml.get_xml_string("filename");
-	m_showing_downloaded_data = sxml.get_xml_int("showing_downloaded_data");
-	m_addr = QHostAddress(sxml.get_xml_string("ip"));
-	ushort port = sxml.get_xml_int("port");
+	set_end_pos_downloaded_data((double)sxml["end_position"] * 100.0);
+	m_divider_accel = sxml["divider_accel"];
+	m_divider_gyro = sxml["divider_gyro"];
+	m_fileName = sxml["filename"];
+	m_showing_downloaded_data = sxml["showing_downloaded_data"];
+	m_addr = QHostAddress(sxml["ip"]);
+	ushort port = sxml["port"];
 
 	if(m_addr.isNull()){
 		m_addr = QHostAddress("192.168.0.200");
@@ -1129,21 +1128,24 @@ void GyroData::load_from_xml()
 	if(port)
 		m_port = port;
 
-	double freq = sxml.get_xml_double("freq_playing");
+	double freq = sxml["freq_playing"];
 	if(freq){
 		set_freq_playing(freq);
 	}
 
-	m_is_draw_mean_sphere = sxml.get_xml_int("draw_mean_sphere");
+	m_is_draw_mean_sphere = sxml["draw_mean_sphere"];
 
-	m_show_calibrated_data = sxml.get_xml_int("show_calibrated_data");
+	m_show_calibrated_data = sxml["show_calibrated_data"];
 
-	double v1 = sxml.get_xml_double("threshold_correction");
+	double v1 = sxml["threshold_correction"];
 	if(v1)
 		m_threshold_correction = v1;
-	v1 = sxml.get_xml_double("multiply_correction");
+	v1 = sxml["multiply_correction"];
 	if(v1)
 		m_multiply_correction = v1;
+
+	if(!QFile::exists(m_fileName))
+		m_fileName.clear();
 }
 
 void GyroData::save_to_xml()
@@ -1157,49 +1159,47 @@ void GyroData::save_to_xml()
 
 	config_file += xml_config;
 
-	SimpleXML sxml(config_file, true);
+	SimpleXML sxml(config_file, SimpleXML::WRITE);
 
-	sxml.set_dom_value_num("end_position", m_percent_downloaded_data);
-	sxml.set_dom_value_num("divider_accel", m_divider_accel);
-	sxml.set_dom_value_num("divider_gyro", m_divider_gyro);
-	sxml.set_dom_value_s("filename", m_fileName);
-	sxml.set_dom_value_num("showing_downloaded_data", m_showing_downloaded_data);
-	sxml.set_dom_value_s("ip", m_addr.toString());
-	sxml.set_dom_value_num("port", m_port);
+	sxml << "end_position" << m_percent_downloaded_data;
+	sxml << "divider_accel" << m_divider_accel;
+	sxml << "divider_gyro" << m_divider_gyro;
+	sxml << "filename" << m_fileName;
+	sxml << "showing_downloaded_data" << m_showing_downloaded_data;
+	sxml << "ip" << m_addr.toString();
+	sxml << "port" << m_port;
 
 	double freq = freq_playing();
-	sxml.set_dom_value_num("freq_playing", freq);
-	sxml.set_dom_value_num("draw_mean_sphere", m_is_draw_mean_sphere);
+	sxml << "freq_playing" << freq;
+	sxml << "draw_mean_sphere" << m_is_draw_mean_sphere;
 
-	sxml.set_dom_value_num("threshold_correction", m_threshold_correction);
-	sxml.set_dom_value_num("multiply_correction", m_multiply_correction);
-	sxml.set_dom_value_num("show_calibrated_data", m_show_calibrated_data);
-
-	sxml.save();
+	sxml << "threshold_correction" << m_threshold_correction;
+	sxml << "multiply_correction" << m_multiply_correction;
+	sxml << "show_calibrated_data" << m_show_calibrated_data;
 }
 
 void GyroData::load_calibrate()
 {
 	QString config_file = /*QDir::homePath() + */QApplication::applicationDirPath() + "/" + config_dir + xml_calibrate;
 
-	SimpleXML sxml(config_file);
+	SimpleXML sxml(config_file, SimpleXML::READ);
 
-	if(!sxml.load())
+	if(!sxml.isLoaded())
 		return;
 
 	Vector3d v;
-	QDomNode node = sxml.get_node(sxml.tree_node, "acceleration");
-	v.setX(sxml.get_xml_double("x_corr", &node));
-	v.setY(sxml.get_xml_double("y_corr", &node));
-	v.setZ(sxml.get_xml_double("z_corr", &node));
+	SimpleXMLNode node = sxml["acceleration"];
+	v.setX((double)node["x_corr"]);
+	v.setY(node["y_corr"]);
+	v.setZ(node["z_corr"]);
 	m_sphere.cp = v;
-	m_sphere.mean_radius = sxml.get_xml_double("mean_radius", &node);
-	m_sphere.deviation = sxml.get_xml_double("deviation", &node);
+	m_sphere.mean_radius = node["mean_radius"];
+	m_sphere.deviation = node["deviation"];
 
-	node = sxml.get_node(sxml.tree_node, "gyroscope");
-	v.setX(sxml.get_xml_double("x_corr", &node));
-	v.setY(sxml.get_xml_double("y_corr", &node));
-	v.setZ(sxml.get_xml_double("z_corr", &node));
+	node = sxml["gyroscope"];
+	v.setX(node["x_corr"]);
+	v.setY(node["y_corr"]);
+	v.setZ(node["z_corr"]);
 
 	if(!v.isNull())
 		m_offset_gyro = v;
@@ -1221,18 +1221,16 @@ void GyroData::save_calibrate()
 
 	SimpleXML sxml(config_file, true);
 
-	QDomNode node = sxml.get_node(sxml.tree_node, "acceleration");
-	sxml.set_dom_value_num(node, "x_corr", m_sphere.cp.x());
-	sxml.set_dom_value_num(node, "y_corr", m_sphere.cp.y());
-	sxml.set_dom_value_num(node, "z_corr", m_sphere.cp.z());
-	sxml.set_dom_value_num(node, "mean_radius", m_sphere.mean_radius);
-	sxml.set_dom_value_num(node, "deviation", m_sphere.deviation);
+	SimpleXMLNode node = sxml["acceleration"];
+	node << "x_corr" <<  m_sphere.cp.x() << "y_corr" <<  m_sphere.cp.y() << "z_corr" << m_sphere.cp.z();
+	node << "mean_radius" << m_sphere.mean_radius;
+	sxml << "deviation" << m_sphere.deviation;
 
 	if(!m_offset_gyro.isNull()){
-		node = sxml.get_node(sxml.tree_node, "gyroscope");
-		sxml.set_dom_value_num(node, "x_corr", m_offset_gyro.x());
-		sxml.set_dom_value_num(node, "y_corr", m_offset_gyro.y());
-		sxml.set_dom_value_num(node, "z_corr", m_offset_gyro.z());
+		node = sxml["gyroscope"];
+		node << "x_corr" << m_offset_gyro.x() <<
+		"y_corr" << m_offset_gyro.y() <<
+		"z_corr" << m_offset_gyro.z();
 	}
 
 	sxml.save();

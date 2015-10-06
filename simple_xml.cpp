@@ -2,9 +2,133 @@
 
 #include <QFile>
 
+/////////////////////////////////////////
+
+SimpleXMLNode::SimpleXMLNode(SimpleXML& sxml, const QString &tag)
+{
+	m_sxml = &sxml;
+	m_tag = tag;
+	m_node = sxml.get_node(sxml.tree_node, tag);
+}
+
+SimpleXMLNode::SimpleXMLNode(SimpleXMLNode& parent_node, const QString& tag)
+{
+	m_tag = tag;
+	m_sxml = &parent_node.sxml();
+	m_node = parent_node.sxml().get_node(parent_node.node(), tag);
+}
+
+SimpleXMLNode &SimpleXMLNode::operator <<(const QString& value)
+{
+	if(value.isEmpty())
+		return *this;
+	if(m_current_tag.isEmpty()){
+		m_current_tag = value;
+	}else{
+		m_sxml->set_dom_value_s(m_node, m_current_tag, value);
+		m_current_tag.clear();
+	}
+	return *this;
+}
+
+SimpleXMLNode &SimpleXMLNode::operator <<(double value)
+{
+	*this << QString::number(value);
+	return *this;
+}
+
+SimpleXMLNode &SimpleXMLNode::operator <<(float value)
+{
+	*this << QString::number(value);
+	return *this;
+}
+
+SimpleXMLNode &SimpleXMLNode::operator <<(int value)
+{
+	*this << QString::number(value);
+	return *this;
+}
+SimpleXML &SimpleXMLNode::sxml()
+{
+	return *m_sxml;
+}
+QDomNode &SimpleXMLNode::node()
+{
+	return m_node;
+}
+
+SimpleXMLNode SimpleXMLNode::operator[] (const QString& tag)
+{
+	SimpleXMLNode snode(*this, tag);
+	return snode;
+}
+
+SimpleXMLNode SimpleXMLNode::operator[](const char *val)
+{
+	SimpleXMLNode snode(*this, val);
+	return snode;
+}
+
+bool SimpleXMLNode::empty() const
+{
+	return m_node.childNodes().size() == 0;
+}
+
+SimpleXMLNode::operator ushort() const
+{
+	if(empty())
+		return 0;
+	QString txt = m_node.firstChild().toText().data();
+	return txt.toUShort();
+}
+
+SimpleXMLNode::operator bool() const
+{
+	if(empty())
+		return 0;
+	QString txt = m_node.firstChild().toText().data();
+	return txt.toInt();
+}
+
+SimpleXMLNode::operator int() const
+{
+	if(empty())
+		return 0;
+	QString txt = m_node.firstChild().toText().data();
+	return txt.toInt();
+}
+
+SimpleXMLNode::operator float() const
+{
+	if(empty())
+		return 0;
+	QString txt = m_node.firstChild().toText().data();
+	return txt.toFloat();
+}
+
+SimpleXMLNode::operator double() const
+{
+	if(empty())
+		return 0;
+	QString txt = m_node.firstChild().toText().data();
+	return txt.toDouble();
+}
+
+SimpleXMLNode::operator QString() const
+{
+	if(empty())
+		return "";
+	return m_node.firstChild().toText().data();
+}
+
+/////////////////////////////////////////
+/////////////////////////////////////////
+
 SimpleXML::SimpleXML(const QString& filename, bool forSave, const QString &tag)
 {
+	m_state = NONE;
 	m_fileName = filename;
+	m_is_loaded = false;
 	if(forSave)
 		if(!load()){
 			create_processing_instruction();
@@ -13,6 +137,27 @@ SimpleXML::SimpleXML(const QString& filename, bool forSave, const QString &tag)
 			tree_node = dom.elementsByTagName("tree").item(0);
 		}
 	else{
+	}
+}
+
+SimpleXML::SimpleXML(const QString &filename, SimpleXML::State state, const QString& tag)
+{
+	m_fileName = filename;
+	m_state = state;
+	m_is_loaded = false;
+	if(state == WRITE){
+		create_processing_instruction();
+		tree_node = create_tree(tag);
+	}else{
+		if(state == READ)
+			m_is_loaded = load();
+	}
+}
+
+SimpleXML::~SimpleXML()
+{
+	if(m_state == WRITE){
+		save();
 	}
 }
 
@@ -223,6 +368,48 @@ QDomNode SimpleXML::get_node(QDomNode &parent_node, const QString &tag)
 		}
 	}
 	return node;
+}
+
+SimpleXML &SimpleXML::operator <<(const QString &value)
+{
+	if(value.isEmpty())
+		return *this;
+	if(m_current_tag.isEmpty()){
+		m_current_tag = value;
+	}else{
+		set_dom_value_s(m_current_tag, value);
+		m_current_tag.clear();
+	}
+	return *this;
+}
+
+SimpleXML &SimpleXML::operator <<(double value)
+{
+	*this << QString::number(value);
+	return *this;
+}
+
+SimpleXML &SimpleXML::operator <<(float value)
+{
+	*this << QString::number(value);
+	return *this;
+}
+
+SimpleXML &SimpleXML::operator <<(int value)
+{
+	*this << QString::number(value);
+	return *this;
+}
+
+SimpleXMLNode SimpleXML::operator[](const QString &tag)
+{
+	SimpleXMLNode snode(*this, tag);
+	return snode;
+}
+
+bool SimpleXML::isLoaded() const
+{
+	return m_is_loaded;
 }
 
 void SimpleXML::set_tag_value(const QString &tag, const QString &value, QDomNode* parent, int index)

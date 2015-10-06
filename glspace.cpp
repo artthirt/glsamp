@@ -36,7 +36,6 @@ GLSpace::~GLSpace()
 void GLSpace::add_object(VirtGLObject *obj)
 {
 	if(!m_objects.contains(obj)){
-		obj->init();
 		obj->setParent(this);
 		m_objects.push_back(obj);
 	}
