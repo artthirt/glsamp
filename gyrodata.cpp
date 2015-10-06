@@ -913,7 +913,6 @@ void GyroData::clear_data()
 	m_percent_downloaded_data = 1;
 	m_offset_gyro = Vector3d();
 	m_rotate_pos = Vector3d();
-	m_mean_Gaccel = Vector3d();
 	m_tmp_axis = Vector3f(1, 0, 0);
 	m_tmp_angle = 0;
 	m_mean_accel = Vector3d();
@@ -1117,9 +1116,9 @@ void GyroData::load_from_xml()
 	set_end_pos_downloaded_data((double)sxml["end_position"] * 100.0);
 	m_divider_accel = sxml["divider_accel"];
 	m_divider_gyro = sxml["divider_gyro"];
-	m_fileName = sxml["filename"];
+	m_fileName = (QString)sxml["filename"];
 	m_showing_downloaded_data = sxml["showing_downloaded_data"];
-	m_addr = QHostAddress(sxml["ip"]);
+	m_addr = QHostAddress((QString)sxml["ip"]);
 	ushort port = sxml["port"];
 
 	if(m_addr.isNull()){
@@ -1201,8 +1200,25 @@ void GyroData::load_calibrate()
 	v.setY(node["y_corr"]);
 	v.setZ(node["z_corr"]);
 
-	if(!v.isNull())
+	bool fl = false;
+	if(!v.isNull()){
 		m_offset_gyro = v;
+		fl = true;
+	}
+
+	node = sxml["mean_g_accel"];
+	if(!node.empty()){
+		v.setX(node["x_corr"]);
+		v.setY(node["y_corr"]);
+		v.setZ(node["z_corr"]);
+		m_mean_Gaccel = v;
+	}else
+		fl = false;
+
+	if(fl){
+		m_is_calculated = true;
+		m_is_calc_offset_gyro = false;
+	}
 }
 
 void GyroData::save_calibrate()
@@ -1231,6 +1247,13 @@ void GyroData::save_calibrate()
 		node << "x_corr" << m_offset_gyro.x() <<
 		"y_corr" << m_offset_gyro.y() <<
 		"z_corr" << m_offset_gyro.z();
+	}
+
+	if(!m_mean_Gaccel.isNull()){
+		node = sxml["mean_g_accel"];
+		node << "x_corr" << m_mean_Gaccel.x() <<
+		"y_corr" << m_mean_Gaccel.y() <<
+		"z_corr" << m_mean_Gaccel.z();
 	}
 }
 
