@@ -250,20 +250,23 @@ void MainWindow::load_from_xml()
 {
 	QString config_file = /*QDir::homePath() + */QApplication::applicationDirPath() + "/" + config_dir + xml_config;
 
-	SimpleXML sxml(config_file);
+	SimpleXML sxml(config_file, SimpleXML::READ);
 
-	if(!sxml.load())
+	if(!sxml.isLoaded())
 		return;
 
-	QString str = sxml.get_xml_string("state");
+	QString str = sxml["state"];
 	QByteArray state = QByteArray::fromBase64(str.toLatin1());
 	restoreState(state);
 
-	m_model.set_is_enable(sxml.get_xml_int("quadmodel"));
-	m_model.set_draw_lever(sxml.get_xml_int("drawlever"));
-	m_gyroData.set_is_enable(sxml.get_xml_int("gyrodata"));
+	ui->actionShow_log->setChecked(!ui->dw_log->isHidden());
+	ui->actionShow_settings->setChecked(!ui->dw_settings->isHidden());
 
-	ui->tw_settings->setCurrentIndex(sxml.get_xml_int("tab_index"));
+	m_model.set_is_enable(sxml["quadmodel"]);
+	m_model.set_draw_lever(sxml["drawlever"]);
+	m_gyroData.set_is_enable(sxml["gyrodata"]);
+
+	ui->tw_settings->setCurrentIndex(sxml["tab_index"]);
 
 	ui->chb_draw_lever->setChecked(m_model.is_draw_lever());
 }
@@ -279,17 +282,13 @@ void MainWindow::save_to_xml()
 
 	config_file += xml_config;
 
-	SimpleXML sxml(config_file, true);
+	SimpleXML sxml(config_file, SimpleXML::WRITE);
 
 	QByteArray state = saveState();
-	sxml.set_dom_value_s("state", state.toBase64());
-	sxml.set_dom_value_num("quadmodel", m_model.is_enable());
-	sxml.set_dom_value_num("gyrodata", m_gyroData.is_enable());
-	sxml.set_dom_value_num("drawlever", m_model.is_draw_lever());
-	sxml.set_dom_value_num("tab_index", ui->tw_settings->currentIndex());
-
-	sxml.save();
-
+	sxml << "state" << state.toBase64();
+	sxml << "quadmodel" << m_model.is_enable();
+	sxml << "gyrodata" << m_gyroData.is_enable() << "drawlever" << m_model.is_draw_lever();
+	sxml << "tab_index" << ui->tw_settings->currentIndex();
 }
 
 void MainWindow::on_lw_objects_itemChanged(QListWidgetItem *item)

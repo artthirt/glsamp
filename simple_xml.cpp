@@ -48,10 +48,24 @@ SimpleXMLNode &SimpleXMLNode::operator <<(int value)
 	*this << QString::number(value);
 	return *this;
 }
+
+SimpleXMLNode &SimpleXMLNode::operator <<(const QByteArray &value)
+{
+	*this << QString(value);
+	return *this;
+}
+
+SimpleXMLNode &SimpleXMLNode::operator <<(const char* value)
+{
+	*this << QString(value);
+	return *this;
+}
+
 SimpleXML &SimpleXMLNode::sxml()
 {
 	return *m_sxml;
 }
+
 QDomNode &SimpleXMLNode::node()
 {
 	return m_node;
@@ -383,6 +397,12 @@ SimpleXML &SimpleXML::operator <<(const QString &value)
 	return *this;
 }
 
+SimpleXML &SimpleXML::operator <<(const char *value)
+{
+	*this << QString(value);
+	return *this;
+}
+
 SimpleXML &SimpleXML::operator <<(double value)
 {
 	*this << QString::number(value);
@@ -401,11 +421,19 @@ SimpleXML &SimpleXML::operator <<(int value)
 	return *this;
 }
 
+
+SimpleXML &SimpleXML::operator <<(const QByteArray &value)
+{
+	*this << QString(value);
+	return *this;
+}
+
 SimpleXMLNode SimpleXML::operator[](const QString &tag)
 {
 	SimpleXMLNode snode(*this, tag);
 	return snode;
 }
+
 
 bool SimpleXML::isLoaded() const
 {

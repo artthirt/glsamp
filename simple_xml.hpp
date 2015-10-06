@@ -22,6 +22,8 @@ public:
  ///  node << tag << value << tag2 << value2
  ///  first string value is tag, second parameter - value
 	SimpleXMLNode &operator <<(const QString& value);
+	SimpleXMLNode &operator <<(const QByteArray& value);
+	SimpleXMLNode &operator <<(const char* value);
 	SimpleXMLNode &operator <<(double value);
 	SimpleXMLNode &operator <<(float value);
 	SimpleXMLNode &operator <<(int value);
@@ -55,6 +57,44 @@ public:
 		WRITE
 	};
 
+	SimpleXML(const QString& filename, State state, const QString& tag = "tree");
+	~SimpleXML();
+
+	/// \brief simple iterfaces to write data
+ /// @example
+ ///  node << tag << value << tag2 << value2
+ ///  first string value is tag, second parameter - value
+	SimpleXML &operator <<(const QByteArray& value);
+	SimpleXML &operator <<(const QString& value);
+	SimpleXML &operator <<(const char* value);
+	SimpleXML &operator <<(double value);
+	SimpleXML &operator <<(float value);
+	SimpleXML &operator <<(int value);
+	/**
+	 * @brief operator []
+	 * to create tree node
+	 * @param tag
+	 * @return
+	 */
+	SimpleXMLNode operator[] (const QString& tag);
+
+	bool isLoaded() const;
+
+	friend class SimpleXMLNode;
+
+private:
+	QString m_current_tag;
+	State m_state;
+	bool m_is_loaded;
+
+	QString m_fileName;
+	QDomDocument dom;
+	QDomNodeList dom_list;
+	/// \brief parent node tree with tag
+	QDomNode tree_node;
+	QString tree_tag;
+
+protected:
 	/**
 	 * @brief SimpleXML
 	 * @param filename
@@ -63,8 +103,17 @@ public:
 	 *						then create being xml with tree tag
 	 */
 	SimpleXML(const QString& filename, bool forSave = false, const QString& tag = "tree");
-	SimpleXML(const QString& filename, State state, const QString& tag = "tree");
-	~SimpleXML();
+
+	/**
+	 * @brief set_tag_value
+	 * set value to node with tag. if node not exists then it created
+	 * @param tag
+	 * @param value
+	 * @param parent
+	 * @param index
+	 */
+	void set_tag_value(const QString& tag, const QString& value, QDomNode* parent = NULL, int index = 0);
+
 	/// \brief load from file
 	bool load();
 	/// \brief save to file
@@ -135,49 +184,6 @@ public:
 	 * @return
 	 */
 	QDomNode get_node(QDomNode& parent_node, const QString& tag);
-
-	/// \brief simple iterfaces to write data
- /// @example
- ///  node << tag << value << tag2 << value2
- ///  first string value is tag, second parameter - value
-	SimpleXML &operator <<(const QString& value);
-	SimpleXML &operator <<(double value);
-	SimpleXML &operator <<(float value);
-	SimpleXML &operator <<(int value);
-	/**
-	 * @brief operator []
-	 * to create tree node
-	 * @param tag
-	 * @return
-	 */
-	SimpleXMLNode operator[] (const QString& tag);
-
-	bool isLoaded() const;
-
-	friend class SimpleXMLNode;
-
-private:
-	QString m_current_tag;
-	State m_state;
-	bool m_is_loaded;
-
-	QString m_fileName;
-	QDomDocument dom;
-	QDomNodeList dom_list;
-	/// \brief parent node tree with tag
-	QDomNode tree_node;
-	QString tree_tag;
-
-protected:
-	/**
-	 * @brief set_tag_value
-	 * set value to node with tag. if node not exists then it created
-	 * @param tag
-	 * @param value
-	 * @param parent
-	 * @param index
-	 */
-	void set_tag_value(const QString& tag, const QString& value, QDomNode* parent = NULL, int index = 0);
 };
 
 #endif

@@ -197,7 +197,7 @@ public:
 
 	const StructMeanSphere& mean_sphere() const { return m_sphere; }
 
-	bool is_show_calibrated_data() const { return m_showing_downloaded_data; }
+	bool is_show_calibrated_data() const { return m_show_calibrated_data; }
 	void set_show_calibrated_data(bool value);
 
 	bool is_write_data() const { return m_write_data; }

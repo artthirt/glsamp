@@ -1109,9 +1109,9 @@ void GyroData::load_from_xml()
 {
 	QString config_file = /*QDir::homePath() + */QApplication::applicationDirPath() + "/" + config_dir + xml_config;
 
-	SimpleXML sxml(config_file);
+	SimpleXML sxml(config_file, SimpleXML::READ);
 
-	if(!sxml.load())
+	if(!sxml.isLoaded())
 		return;
 
 	set_end_pos_downloaded_data((double)sxml["end_position"] * 100.0);
@@ -1219,7 +1219,7 @@ void GyroData::save_calibrate()
 
 	config_file += xml_calibrate;
 
-	SimpleXML sxml(config_file, true);
+	SimpleXML sxml(config_file, SimpleXML::WRITE);
 
 	SimpleXMLNode node = sxml["acceleration"];
 	node << "x_corr" <<  m_sphere.cp.x() << "y_corr" <<  m_sphere.cp.y() << "z_corr" << m_sphere.cp.z();
@@ -1232,8 +1232,6 @@ void GyroData::save_calibrate()
 		"y_corr" << m_offset_gyro.y() <<
 		"z_corr" << m_offset_gyro.z();
 	}
-
-	sxml.save();
 }
 
 void GyroData::draw_text(const Vector3d &v, QString text)
