@@ -43,7 +43,8 @@ SOURCES += main.cpp\
     simplekalmanfilter.cpp \
     writelog.cpp \
     calibrateaccelerometer.cpp \
-    dialogabout.cpp
+    dialogabout.cpp \
+    gyrodatawidget.cpp
 
 HEADERS  += mainwindow.h \
     virtglobject.h \
@@ -58,11 +59,14 @@ HEADERS  += mainwindow.h \
 	writelog.h \
 	submodules/struct_controls/struct_controls.h \
     calibrateaccelerometer.h \
-    dialogabout.h
+    dialogabout.h \
+    gyrodatawidget.h
 
 FORMS    += mainwindow.ui \
     glspace.ui \
-    dialogabout.ui
+    dialogabout.ui \
+    quadmodel.ui \
+    gyrodatawidget.ui
 
 UI_DIR = $$DST_DIR/tmp/ui
 OBJECTS_DIR = $$DST_DIR/obj

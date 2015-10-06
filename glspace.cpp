@@ -31,6 +31,10 @@ GLSpace::GLSpace(QWidget *parent) :
 GLSpace::~GLSpace()
 {
 	delete ui;
+
+	foreach (VirtGLObject* obj, m_objects) {
+		delete obj;
+	}
 }
 
 void GLSpace::add_object(VirtGLObject *obj)
@@ -39,6 +43,15 @@ void GLSpace::add_object(VirtGLObject *obj)
 		obj->setParent(this);
 		m_objects.push_back(obj);
 	}
+}
+
+VirtGLObject *GLSpace::item(int code_enum)
+{
+	foreach (VirtGLObject* obj, m_objects) {
+		if(obj->type() == code_enum)
+			return obj;
+	}
+	return 0;
 }
 
 VirtGLObject *GLSpace::object(int index)

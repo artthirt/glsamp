@@ -9,6 +9,11 @@
 #include <QMatrix4x4>
 #include <QDebug>
 #include <QGLWidget>
+#include <QDir>
+
+#include "ui_quadmodel.h"
+
+#include "simple_xml.hpp"
 
 #include <GL/gl.h>
 
@@ -28,6 +33,8 @@ const QVector3D course_begin(0, 1, 0);
 const int max_trj_pts = 10000;
 
 const QVector3D Z0 = QVector3D();
+
+const QString xml_config("quadmodel.xml");
 
 //*****************************
 
@@ -133,6 +140,41 @@ QuadModel::QuadModel(QObject *parent):
 	generate_engines_rnd();
 
 	reset();
+
+	loadXml();
+}
+
+QuadModel::~QuadModel()
+{
+	saveXml();
+}
+
+void QuadModel::loadXml()
+{
+	QString config_file = /*QDir::homePath() + */QApplication::applicationDirPath() + "/" + config_dir + xml_config;
+
+	SimpleXML sxml(config_file, SimpleXML::READ);
+
+	if(!sxml.isLoaded())
+		return;
+
+	set_draw_lever(sxml["drawlever"]);
+}
+
+void QuadModel::saveXml()
+{
+	QString config_file = /*QDir::homePath() + */QApplication::applicationDirPath() + "/" + config_dir;
+
+	QDir dir(QDir::homePath());
+
+	if(!dir.exists(config_file))
+		dir.mkdir(config_file);
+
+	config_file += xml_config;
+
+	SimpleXML sxml(config_file, SimpleXML::WRITE);
+
+	sxml << "drawlever" << is_draw_lever();
 }
 
 double QuadModel::lever() const
@@ -902,3 +944,211 @@ void QuadModel::draw_lever(QVector3D offset, double angleXY, const QColor col)
 
 	glPopMatrix();
 }
+
+//////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
+
+QuadModelWidget::QuadModelWidget(QWidget *parent):
+	QWidget(parent)
+  , ui(new Ui::quadmodel)
+  , m_model(0)
+{
+	ui->setupUi(this);
+
+	connect(&m_timer, SIGNAL(timeout()), this, SLOT(on_timeout()));
+	m_timer.start(100);
+}
+
+QuadModelWidget::~QuadModelWidget()
+{
+}
+
+void QuadModelWidget::set_model(QuadModel *model)
+{
+	m_model = model;
+
+	if(m_model)
+		ui->chb_draw_lever->setChecked(m_model->is_draw_lever());
+}
+
+/////////////////////////////////////////////
+
+/*	scheme of engines
+ *		0	 2
+ *		 \	/
+ *		  --
+ *		 /  \
+ *		3    1
+*/
+
+void QuadModelWidget::on_pb_left_front_clicked()
+{
+	if(!m_model)
+		return;
+	double val = ui->dsb_power->value();
+	m_model->add_power(0, val);
+}
+
+void QuadModelWidget::on_pb_right_back_clicked()
+{
+	if(!m_model)
+		return;
+	double val = ui->dsb_power->value();
+	m_model->add_power(1, val);
+}
+
+void QuadModelWidget::on_pb_right_front_clicked()
+{
+	if(!m_model)
+		return;
+	double val = ui->dsb_power->value();
+	m_model->add_power(2, val);
+}
+
+void QuadModelWidget::on_pb_left_back_clicked()
+{
+	if(!m_model)
+		return;
+	double val = ui->dsb_power->value();
+	m_model->add_power(3, val);
+}
+
+void QuadModelWidget::on_pb_down_clicked()
+{
+	if(!m_model)
+		return;
+	double val = ui->dsb_power->value();
+	m_model->add_power(-val);
+}
+
+void QuadModelWidget::on_pb_up_clicked()
+{
+	if(!m_model)
+		return;
+	double val = ui->dsb_power->value();
+	m_model->add_power(val);
+}
+
+void QuadModelWidget::on_pb_zero_clicked()
+{
+	if(!m_model)
+		return;
+	m_model->reset();
+}
+
+void QuadModelWidget::on_timeout()
+{
+	if(!m_model)
+		return;
+	ui->label_power->setText(QString::number(m_model->power()));
+
+	QString txt;
+	for(int i = 0; i < 4; i++){
+		txt += QString::number(m_model->engines(i), 'f', 3) + "; ";
+	}
+	ui->label_power_engines->setText(txt);
+
+	txt = "";
+	for(int i = 0; i < 4; i++){
+		txt += QString::number(m_model->engines_noise(i), 'f', 3) + "; ";
+	}
+	ui->label_power_engines_noise->setText(txt);
+}
+
+void QuadModelWidget::on_vs_power_valueChanged(int value)
+{
+	if(!m_model)
+		return;
+	m_model->set_power(value * 0.1);
+}
+
+void QuadModelWidget::on_pb_zero_2_clicked()
+{
+	if(!m_model)
+		return;
+	m_model->reset_power();
+}
+
+void QuadModelWidget::on_cb_watch_clicked(bool checked)
+{
+	if(!m_model)
+		return;
+	m_model->set_is_watchXY(checked);
+}
+
+void QuadModelWidget::on_cb_watch_gl_clicked(bool checked)
+{
+	if(!m_model)
+		return;
+	m_model->set_is_watch(checked);
+}
+
+void QuadModelWidget::on_pushButton_2_clicked()
+{
+	if(!m_model)
+		return;
+	double val = ui->dsb_power->value();
+
+	m_model->add_power(1, val);
+	m_model->add_power(3, val);
+}
+
+void QuadModelWidget::on_pushButton_clicked()
+{
+	if(!m_model)
+		return;
+	double val = ui->dsb_power->value();
+
+	m_model->add_power(0, val);
+	m_model->add_power(2, val);
+}
+
+void QuadModelWidget::on_pushButton_3_clicked()
+{
+	if(!m_model)
+		return;
+	double val = ui->dsb_power->value();
+
+	m_model->add_power(2, val);
+	m_model->add_power(1, val);
+}
+
+void QuadModelWidget::on_pushButton_4_clicked()
+{
+	if(!m_model)
+		return;
+	double val = ui->dsb_power->value();
+
+	m_model->add_power(0, val);
+	m_model->add_power(3, val);
+}
+
+void QuadModelWidget::on_dsb_mean_valueChanged(double arg1)
+{
+	if(!m_model)
+		return;
+	double v1 = arg1;
+	double v2 = ui->dsb_sigma->value();
+
+	m_model->set_distribution_parameters(v1, v2);
+}
+
+void QuadModelWidget::on_dsb_sigma_valueChanged(double arg1)
+{
+	if(!m_model)
+		return;
+	double v1 = ui->dsb_mean->value();
+	double v2 = arg1;
+
+	m_model->set_distribution_parameters(v1, v2);
+}
+
+void QuadModelWidget::on_chb_draw_lever_clicked(bool checked)
+{
+	if(!m_model)
+		return;
+	m_model->set_draw_lever(checked);
+}
+
+/////////////////////////////////////////////
+/////////////////////////////////////////////

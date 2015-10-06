@@ -28,6 +28,13 @@ public:
 	 */
 	void add_object(VirtGLObject* obj);
 	/**
+	 * @brief item
+	 * return object with current type
+	 * @param code_enum - type of object
+	 * @return
+	 */
+	VirtGLObject *item(int code_enum);
+	/**
 	 * @brief object
 	 * @param index
 	 * @return

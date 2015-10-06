@@ -8,12 +8,17 @@
 #include <QTime>
 #include <QQuaternion>
 #include <QColor>
+#include <QWidget>
 
 #include <random>
 
 #include "struct_controls.h"
 
 #include "global.h"
+
+namespace Ui{
+class quadmodel;
+}
 
 class QuadModel : public VirtGLObject
 {
@@ -24,6 +29,7 @@ public:
 	};
 
 	QuadModel(QObject *parent = NULL);
+	~QuadModel();
 	/**
 	 * @brief lever - lever of quadrocopter model
 	 * @return
@@ -174,6 +180,10 @@ public:
 public slots:
 	void on_timeout_noise();
 
+protected:
+	void loadXml();
+	void saveXml();
+
 private:
 	double m_lever;
 	double m_mg;
@@ -235,6 +245,76 @@ private:
 	void calc_trajectory();
 
 	void draw_lever(QVector3D offset, double angleXY, const QColor col = QColor(0, 255, 0));
+};
+
+//////////////////////////////////////////
+
+class QuadModelWidget: public QWidget
+{
+	Q_OBJECT
+public:
+	QuadModelWidget(QWidget* parent = NULL);
+	~QuadModelWidget();
+	/**
+	 * @brief model
+	 * @return
+	 */
+	QuadModel* model() { return m_model; }
+	void set_model(QuadModel* model);
+	/**
+	 * @brief is_enable
+	 * @return
+	 */
+	bool is_enable() { return m_model? m_model->is_enable() : false; }
+	void set_enable(bool value) { if(m_model) m_model->set_enable(value); }
+	/**
+	 * @brief type
+	 * @return
+	 */
+	int type() { return m_model? m_model->type() : 0; }
+public slots:
+	void on_timeout();
+
+	void on_pb_left_front_clicked();
+
+	void on_pb_zero_clicked();
+
+	void on_pb_right_front_clicked();
+
+	void on_pb_left_back_clicked();
+
+	void on_pb_down_clicked();
+
+	void on_pb_up_clicked();
+
+	void on_pb_right_back_clicked();
+
+	void on_vs_power_valueChanged(int value);
+
+	void on_pb_zero_2_clicked();
+
+	void on_cb_watch_clicked(bool checked);
+
+	void on_cb_watch_gl_clicked(bool checked);
+
+	void on_pushButton_2_clicked();
+
+	void on_pushButton_clicked();
+
+	void on_pushButton_3_clicked();
+
+	void on_pushButton_4_clicked();
+
+	void on_dsb_mean_valueChanged(double arg1);
+
+	void on_dsb_sigma_valueChanged(double arg1);
+
+	void on_chb_draw_lever_clicked(bool checked);
+
+private:
+	Ui::quadmodel *ui;
+	QTimer m_timer;
+	QuadModel *m_model;
 };
 
 #endif // QUADMODEL_H

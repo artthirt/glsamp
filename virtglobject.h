@@ -82,7 +82,7 @@ public:
 	 * @brief set_is_enable
 	 * @param value
 	 */
-	void set_is_enable(bool value){
+	void set_enable(bool value){
 		m_is_enable = value;
 	}
 	/**
