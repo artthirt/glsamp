@@ -758,8 +758,10 @@ void GyroData::draw()
 
 
 	if(m_is_calculated){
-		draw_text(m_tmp_axis, "m_tmp_axis. " + QString::number(m_tmp_angle));
-		draw_line(Vector3d(), m_tmp_axis, Qt::yellow);
+//		draw_text(m_tmp_axis, "m_tmp_axis. " + QString::number(m_tmp_angle));
+//		draw_line(Vector3d(), m_tmp_axis, Qt::yellow);
+		draw_line(Vector3d(), m_tmp_accel * div_gyro, Qt::yellow);
+		draw_line(Vector3d(), m_speed_accel * div_gyro, Qt::gray);
 	}
 
 	glPushMatrix();
@@ -1094,6 +1096,14 @@ void GyroData::analyze_telemetry(StructTelemetry &st)
 
 		Quaternion quat_speed = fromAnglesAxes(rotate_speed);
 		m_rotate_quaternion *= quat_speed;
+
+		Vector3d accel_mg = m_rotate_quaternion.conj().rotatedVector(st.accel);
+
+		if(!m_prev_accel.isNull()){
+			m_tmp_accel = accel_mg - m_prev_accel;
+			m_speed_accel += m_tmp_accel;
+		}
+		m_prev_accel = accel_mg;
 
 		Vector3d vga = m_rotate_quaternion.rotatedVector(m_mean_Gaccel).normalized();
 		Vector3d va = m_mean_accel.normalized();
