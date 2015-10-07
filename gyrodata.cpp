@@ -185,6 +185,8 @@ GyroData::GyroData(QObject *parent) :
 
 	m_time_waiting_telemetry.start();
 
+	connect(&m_calibrate, SIGNAL(send_log(QString)), this, SLOT(on_calibrate_log(QString)));
+
 	load_from_xml();
 }
 
@@ -630,6 +632,10 @@ void GyroData::on_readyRead()
 	}
 }
 
+void GyroData::on_calibrate_log(const QString &data)
+{
+	emit add_to_log(data);
+}
 
 void GyroData::init()
 {
@@ -1240,7 +1246,7 @@ void GyroData::save_calibrate()
 	SimpleXMLNode node = sxml["acceleration"];
 	node << "x_corr" <<  m_sphere.cp.x() << "y_corr" <<  m_sphere.cp.y() << "z_corr" << m_sphere.cp.z();
 	node << "mean_radius" << m_sphere.mean_radius;
-	sxml << "deviation" << m_sphere.deviation;
+	node << "deviation" << m_sphere.deviation;
 
 	if(!m_offset_gyro.isNull()){
 		node = sxml["gyroscope"];

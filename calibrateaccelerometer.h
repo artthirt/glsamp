@@ -56,8 +56,18 @@ public:
 	double threshold() const;
 	StructMeanSphere result() const;
 	void evaluate();
-	bool set_parameters(const QVector< sc::StructTelemetry > *sts, int max_pass = 100, double threshold = 1e-6);
+	/**
+	 * @brief set_parameters
+	 * @param sts
+	 * @param max_pass
+	 * @param threshold
+	 * @param percent_deviation - percent deviation calculation and mean radius
+	 * @return
+	 */
+	bool set_parameters(const QVector< sc::StructTelemetry > *sts, int max_pass = 100, double threshold = 1e-6,
+						double percent_deviation = 12.);
 signals:
+	void send_log(const QString& value);
 
 public slots:
 
@@ -68,6 +78,7 @@ private:
 	int m_max_pass;
 	int m_pass;
 	double m_pass_part_evaluate;
+	double m_percent_deviation;
 	STATE_EVALUATE m_state;
 	double m_threshold;
 	StructMeanSphere m_result;
@@ -87,7 +98,7 @@ private:
 	 * @param sp
 	 */
 	void calc_radius(const QVector<sc::Vector3d> &sts, const sc::Vector3d& p, StructMeanSphere& sp);
-	StructMeanSphere circumscribed_sphere_search(const QVector<sc::Vector3d> &sts, const sc::Vector3d& p1, const sc::Vector3d& p2,
+	StructMeanSphere circumscribed_sphere_search(QVector<sc::Vector3d> &sts, const sc::Vector3d& p1, const sc::Vector3d& p2,
 												 double& dx, double& dy, double& dz);
 
 };

@@ -10,6 +10,7 @@ CalibrateAccelerometer::CalibrateAccelerometer(QObject *parent) :
   , m_pass_part_evaluate(0)
   , m_state(none)
   , m_threshold(1e-6)
+  , m_percent_deviation(0.12)
 {
 }
 
@@ -48,7 +49,7 @@ StructMeanSphere CalibrateAccelerometer::result() const
 	return m_result;
 }
 
-bool CalibrateAccelerometer::set_parameters(const QVector<StructTelemetry> *sts, int max_pass, double threshold)
+bool CalibrateAccelerometer::set_parameters(const QVector<StructTelemetry> *sts, int max_pass, double threshold, double percent_deviation)
 {
 	if(is_progress())
 		return false;
@@ -60,6 +61,7 @@ bool CalibrateAccelerometer::set_parameters(const QVector<StructTelemetry> *sts,
 	m_max_pass = max_pass;
 	m_threshold = threshold;
 	m_state = none;
+	m_percent_deviation = percent_deviation / 100.;
 
 	return true;
 }
@@ -102,8 +104,19 @@ void CalibrateAccelerometer::evaluate()
 		p1 = p.cp - Vector3d(dx, dy, dz);
 		p2 = p.cp + Vector3d(dx, dy, dz);
 
-		qDebug() << "pass: " << m_pass++ << "mean radius: " << sphere.mean_radius << "; deviation: " << sphere.deviation << "; params: " << dx << dy << dz;
-		qDebug() << "delta: " << delta;
+		QString debug = QString("calibrate: pass=%1; mean_radius=%2; deviation=%3; x=%4; y=%5; z=%6; delta=%7")
+				.arg(m_pass++)
+				.arg(sphere.mean_radius)
+				.arg(sphere.deviation)
+				.arg(sphere.cp.x())
+				.arg(sphere.cp.y())
+				.arg(sphere.cp.z())
+				.arg(delta);
+		debug += QString("; dx=%1; dy=%2; dz=%3").arg(dx).arg(dy).arg(dz);
+
+		qDebug() << debug;
+		emit send_log(debug);
+
 	}
 
 	m_result = sphere;
@@ -157,11 +170,13 @@ void CalibrateAccelerometer::calc_radius(const QVector< Vector3d >& sts, const V
 	sp.deviation = sqrt(deviation);
 }
 
-StructMeanSphere CalibrateAccelerometer::circumscribed_sphere_search(const QVector< Vector3d >& sts, const Vector3d& p1, const Vector3d& p2,
+StructMeanSphere CalibrateAccelerometer::circumscribed_sphere_search(QVector< Vector3d >& sts, const Vector3d& p1, const Vector3d& p2,
 											 double& dx, double& dy, double& dz)
 {
 	const int count_side = 10;
 	const int count = count_side * count_side * count_side;
+
+	int deviat_great_cnt = 0;
 
 	QVector< StructMeanSphere > pts;
 	StructMeanSphere res;
@@ -172,41 +187,52 @@ StructMeanSphere CalibrateAccelerometer::circumscribed_sphere_search(const QVect
 	dy = (p2.y() - p1.y()) / count_side;
 	dz = (p2.z() - p1.z()) / count_side;
 
-	Vector3d p = p1;
+	do{
 
-	for(int i = 0, l = 0; i < count_side; i++){
-		p.setY(p1.y());
-		for(int j = 0; j < count_side; j++){
-			p.setX(p1.x());
-			for(int k = 0; k < count_side; k++, l++){
-				calc_radius(sts, p, pts[l]);
-				p.setX(p.x() + dx);
+		deviat_great_cnt = 0;
+		Vector3d p = p1;
 
-				m_pass_part_evaluate = (double) l / pts.size();
+		for(int i = 0, l = 0; i < count_side; i++){
+			p.setY(p1.y());
+			for(int j = 0; j < count_side; j++){
+				p.setX(p1.x());
+				for(int k = 0; k < count_side; k++, l++){
+					calc_radius(sts, p, pts[l]);
+					p.setX(p.x() + dx);
+
+					m_pass_part_evaluate = (double) l / pts.size();
+				}
+				p.setY(p.y() + dy);
 			}
-			p.setY(p.y() + dy);
+			p.setZ(p.z() + dz);
 		}
-		p.setZ(p.z() + dz);
-	}
 
-	m_state = search_min_box;
+		m_state = search_min_box;
 
-	int sid = 0;
-	for(int i = 1; i < pts.size(); i++){
-		if(pts[sid].deviation > pts[i].deviation){
-			sid = i;
+		int sid = 0;
+		for(int i = 1; i < pts.size(); i++){
+			if(pts[sid].deviation > pts[i].deviation){
+				sid = i;
+			}
 		}
-	}
 
-	res = pts[sid];
-	double deviat_great_cnt = 0;
-	for(int j = 0; j < sts.size(); j++){
-		Vector3d rd = Vector3d(sts[j]) - pts[sid].cp;
-		if(fabs(rd.length() - pts[sid].mean_radius) > 3.0 * pts[sid].deviation){
-			deviat_great_cnt++;
+		res = pts[sid];
+		int all = sts.size();
+		for(int j = 0; j < sts.size(); j++){
+			Vector3d rd = Vector3d(sts[j]) - pts[sid].cp;
+			if(fabs(rd.length() - pts[sid].mean_radius) > m_percent_deviation * pts[sid].mean_radius){
+				deviat_great_cnt++;
+				sts.remove(j);
+			}
 		}
-	}
-	qDebug() << "outlers =" << deviat_great_cnt << "; all =" << sts.size();
+		QString debug = QString("calibrate: outlers=%1; count=%2; previous_count=%3")
+				.arg(deviat_great_cnt)
+				.arg(sts.size())
+				.arg(all);
+		qDebug() << debug;
+		emit send_log(debug);
+
+	}while( deviat_great_cnt > 0);
 
 	return res;
 }

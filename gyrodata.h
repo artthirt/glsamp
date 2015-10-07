@@ -214,6 +214,7 @@ public slots:
 	void on_timeout_playing();
 	void on_timeout_calibrate();
 	void on_readyRead();
+	void on_calibrate_log(const QString& data);
 
 protected:
 	void tryParseData(const QByteArray& data);
