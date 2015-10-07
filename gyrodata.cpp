@@ -171,6 +171,7 @@ GyroData::GyroData(QObject *parent) :
   , m_write_data(false)
   , m_threshold_correction(3)
   , m_multiply_correction(0.1)
+  , m_threshold_accel(0.07)
 {
 	setType(GYRODATA);
 
@@ -837,7 +838,7 @@ void GyroData::draw()
 		}
 		glEnd();
 
-		tmp = _V(m_telemetries[0].accel);
+		tmp = m_mean_accel;
 		if(!m_show_calibrated_data)		/// there because in analize_telemetry thise operation already made
 			tmp += m_sphere.cp;
 		tmp *= div_accel;
@@ -969,6 +970,11 @@ void GyroData::on_timeout_playing()
 	}
 }
 
+void remove_lowbits(Vector3i& v, int bits)
+{
+	FOREACH(i, Vector3i::count, v.data[i] = (v.data[i] >> bits) << bits);
+}
+
 void GyroData::tryParseData(const QByteArray &data)
 {
 	if(!m_tick_telemetry.isValid() || m_tick_telemetry.hasExpired(max_delay_for_data)){
@@ -980,11 +986,24 @@ void GyroData::tryParseData(const QByteArray &data)
 	QDataStream stream(data);
 	st.read_from(stream);
 
-	qint64 tick_delta = m_tick_telemetry.nsecsElapsed();
-	double part_of_time = tick_delta / 1e+9;
-	m_part_of_time = part_of_time;
+//	remove_lowbits(st.accel, 3);
+//	remove_lowbits(st.gyro, 4);
+//	qint64 tick_delta = m_tick_telemetry.nsecsElapsed();
+//	double part_of_time = tick_delta / 1e+9;
+//	m_part_of_time = part_of_time;
 
-	m_tick_telemetry.restart();
+//	m_tick_telemetry.restart();
+	if(st.tick && m_first_tick){
+		long long tick = st.tick - m_first_tick;
+		qDebug() << m_index << tick - m_past_tick << st.tick << m_first_tick + m_past_tick;
+		m_part_of_time = (double)(tick - m_past_tick) / 1e+3;
+		m_past_tick = tick;
+	}else{
+		if(st.tick){
+			m_first_tick = st.tick;
+			m_past_tick = st.tick - m_first_tick;
+		}
+	}
 
 	analyze_telemetry(st);
 
@@ -1007,11 +1026,16 @@ const int min_threshold_accel = 200;
 
 static inline Quaternion fromAnglesAxes(const Vector3d& angles)
 {
-	Quaternion qX, qY, qZ, qres;
-	qX = Quaternion::fromAxisAndAngle(Vector3d(1, 0, 0), angles.x());
-	qY = Quaternion::fromAxisAndAngle(Vector3d(0, 1, 0), angles.y());
-	qZ = Quaternion::fromAxisAndAngle(Vector3d(0, 0, 1), angles.z());
-	qres = qX * qY * qZ;
+	Quaternion/* qX, qY, qZ*/ qres;
+	double aspeed = angles.length();
+	if(!sc::fIsNull(aspeed)){
+		Vector3d axis = angles.normalized();
+		qres = Quaternion::fromAxisAndAngle(axis, aspeed);
+	}
+//	qX = Quaternion::fromAxisAndAngle(Vector3d(1, 0, 0), angles.x());
+//	qY = Quaternion::fromAxisAndAngle(Vector3d(0, 1, 0), angles.y());
+//	qZ = Quaternion::fromAxisAndAngle(Vector3d(0, 0, 1), angles.z());
+//	qres = qX * qY * qZ;
 	return qres;
 }
 
@@ -1087,6 +1111,8 @@ void GyroData::analyze_telemetry(StructTelemetry &st)
 
 	calc_offsets(st.gyro, st.accel);
 
+	if(m_mean_accel.isNull())
+		m_mean_accel = st.accel;
 	m_mean_accel = m_mean_accel * 0.9 + Vector3d(st.accel) * 0.1;
 
 	if(!m_is_calc_offset_gyro && m_is_calculated){
@@ -1097,7 +1123,7 @@ void GyroData::analyze_telemetry(StructTelemetry &st)
 		Quaternion quat_speed = fromAnglesAxes(rotate_speed);
 		m_rotate_quaternion *= quat_speed;
 
-		Vector3d accel_mg = m_rotate_quaternion.conj().rotatedVector(st.accel);
+		Vector3d accel_mg = m_rotate_quaternion.conj().rotatedVector(m_mean_accel);
 
 		if(!m_prev_accel.isNull()){
 			m_tmp_accel = accel_mg - m_prev_accel;
@@ -1113,7 +1139,7 @@ void GyroData::analyze_telemetry(StructTelemetry &st)
 		m_accel_quat = Quaternion::fromAxisAndAngle(ax, -an) * m_rotate_quaternion;
 		m_accel_quat.normalize();
 
-		if(fabs(an) > m_threshold_correction)
+		if(fabs(an) > m_threshold_correction && m_tmp_accel.length() < m_threshold_accel * m_sphere.mean_radius)
 			m_rotate_quaternion = Quaternion::slerp(m_rotate_quaternion, m_accel_quat, m_multiply_correction);
 	}
 
@@ -1210,6 +1236,8 @@ void GyroData::load_calibrate()
 	m_sphere.cp = v;
 	m_sphere.mean_radius = node["mean_radius"];
 	m_sphere.deviation = node["deviation"];
+	if(!node["threshold"].empty())
+		m_threshold_accel = node["threshold"];
 
 	node = sxml["gyroscope"];
 	v.setX(node["x_corr"]);
@@ -1257,6 +1285,7 @@ void GyroData::save_calibrate()
 	node << "x_corr" <<  m_sphere.cp.x() << "y_corr" <<  m_sphere.cp.y() << "z_corr" << m_sphere.cp.z();
 	node << "mean_radius" << m_sphere.mean_radius;
 	node << "deviation" << m_sphere.deviation;
+	node << "threshold" << m_threshold_accel;
 
 	if(!m_offset_gyro.isNull()){
 		node = sxml["gyroscope"];

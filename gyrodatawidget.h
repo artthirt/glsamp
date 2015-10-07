@@ -79,6 +79,9 @@ public slots:
 signals:
 	void set_status_bar_text(const QString &text);
 
+private slots:
+	void on_pb_save_calibration_clicked();
+
 private:
 	Ui::GyroDataWidget *ui;
 	QTimer m_timer_cfg;

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>764</height>
+    <height>803</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -331,6 +331,33 @@ calc offsets</string>
           </property>
           <property name="checkable">
            <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <spacer name="horizontalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pb_save_calibration">
+          <property name="text">
+           <string>save calibration</string>
           </property>
          </widget>
         </item>

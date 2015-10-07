@@ -69,9 +69,14 @@ void DataChart::on_put_data(const QString &chart, Vector3i value)
 
 void draw_line(QPainter& painter, const Chart& chart, const QRect& rt, double dt, double minv, double maxv, int max_cnt)
 {
+	if(!chart.data.size())
+		return;
+
 	double dy = rt.height() / (maxv - minv);
 
 	QPolygonF poly;
+	QPointF pt_right;
+	double val = 0;
 	if(chart.data.size() * dt > rt.width()){
 		double x = rt.right(), y = rt.height() - 1;
 		double offset = (max_cnt - chart.data.size()) * dt;
@@ -83,6 +88,8 @@ void draw_line(QPainter& painter, const Chart& chart, const QRect& rt, double dt
 				x -= dt;
 			}
 		}
+		pt_right = poly.front();
+		val = chart.data.back();
 	}else{
 		double x = rt.left(), y = rt.height() - 1;
 		int ind_min = (max_cnt * dt - rt.width()) / rt.width();
@@ -93,10 +100,19 @@ void draw_line(QPainter& painter, const Chart& chart, const QRect& rt, double dt
 			poly << QPointF(x, y);
 			x += dt;
 		}
+		pt_right = poly.back();
+		val = chart.data.back();
 	}
 	if(poly.size()){
+		int y = pt_right.y();
+		y = (y / 20) * 20;
+		pt_right.setY(y);
+		pt_right.setX(rt.width() - 20);
+
 		painter.setPen(QPen(QBrush(chart.color), 2));
 		painter.drawPolyline(poly);
+
+		painter.drawText(pt_right, QString::number(val, 'f', 1));
 	}
 }
 

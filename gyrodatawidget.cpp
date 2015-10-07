@@ -51,6 +51,8 @@ void GyroDataWidget::init_model()
 
 void GyroDataWidget::on_timeout_cfg()
 {
+	if(!m_model)
+		return;
 	if(m_model->is_available_telemetry()){
 		emit set_status_bar_text("telemetry received");
 	}else{
@@ -66,6 +68,8 @@ void GyroDataWidget::on_timeout_cfg()
 
 void GyroDataWidget::on_timeout_tmcalib()
 {
+	if(!m_model)
+		return;
 	if(m_model->calibrateAccelerometer().is_done()){
 		m_tmcalib.stop();
 		ui->widget_pass->setVisible(false);
@@ -79,6 +83,8 @@ void GyroDataWidget::on_timeout_tmcalib()
 
 void GyroDataWidget::on_pushButton_5_clicked()
 {
+	if(!m_model)
+		return;
 	QFileDialog dlg;
 
 	dlg.setNameFilter("*.csv");
@@ -92,36 +98,50 @@ void GyroDataWidget::on_pushButton_5_clicked()
 
 void GyroDataWidget::on_pushButton_7_clicked()
 {
+	if(!m_model)
+		return;
 	m_model->send_start_to_net(QHostAddress(ui->le_ip_gyro_data->text()), ui->sb_gyro_data->value());
 }
 
 void GyroDataWidget::on_pushButton_8_clicked()
 {
+	if(!m_model)
+		return;
 	m_model->send_stop_to_net(QHostAddress(ui->le_ip_gyro_data->text()), ui->sb_gyro_data->value());
 }
 
 void GyroDataWidget::on_dsb_div_gyro_valueChanged(double arg1)
 {
+	if(!m_model)
+		return;
 	m_model->set_divider_gyro(arg1);
 }
 
 void GyroDataWidget::on_dsb_accel_data_valueChanged(double arg1)
 {
+	if(!m_model)
+		return;
 	m_model->set_divider_accel(arg1);
 }
 
 void GyroDataWidget::on_hs_set_end_position_sliderMoved(int position)
 {
+	if(!m_model)
+		return;
 	m_model->set_end_pos_downloaded_data(position);
 }
 
 void GyroDataWidget::on_cb_show_loaded_clicked(bool checked)
 {
+	if(!m_model)
+		return;
 	m_model->set_showing_downloaded_data(checked);
 }
 
 void GyroDataWidget::on_dsb_frequency_playing_valueChanged(double arg1)
 {
+	if(!m_model)
+		return;
 	m_model->set_freq_playing(arg1);
 }
 
@@ -132,6 +152,8 @@ void GyroDataWidget::on_hs_playing_data_valueChanged(int value)
 
 void GyroDataWidget::on_pb_play_clicked(bool checked)
 {
+	if(!m_model)
+		return;
 	if(checked){
 		m_model->play();
 		if(!m_model->is_play()){
@@ -144,12 +166,16 @@ void GyroDataWidget::on_pb_play_clicked(bool checked)
 
 void GyroDataWidget::on_pb_stop_clicked()
 {
+	if(!m_model)
+		return;
 	m_model->stop();
 	ui->pb_play->setChecked(false);
 }
 
 void GyroDataWidget::on_pushButton_6_clicked(bool checked)
 {
+	if(!m_model)
+		return;
 	if(checked){
 		m_model->start_calc_offset_gyro();
 		ui->lb_count_value->setStyleSheet("background: lightgreen;");
@@ -161,6 +187,8 @@ void GyroDataWidget::on_pushButton_6_clicked(bool checked)
 
 void GyroDataWidget::on_pb_reset_clicked()
 {
+	if(!m_model)
+		return;
 	m_model->stop();
 	m_model->reset();
 	ui->hs_set_end_position->setValue(m_model->end_pos_downloaded_data());
@@ -173,6 +201,8 @@ void GyroDataWidget::on_pushButton_9_clicked()
 
 void GyroDataWidget::on_pushButton_10_clicked(bool checked)
 {
+	if(!m_model)
+		return;
 	if(m_model->calibrate()){
 		ui->widget_pass->setVisible(true);
 		ui->pb_calibrate->setValue(0);
@@ -183,16 +213,22 @@ void GyroDataWidget::on_pushButton_10_clicked(bool checked)
 
 void GyroDataWidget::on_chb_calibrate_sphere_clicked(bool checked)
 {
+	if(!m_model)
+		return;
 	m_model->set_draw_mean_sphere(checked);
 }
 
 void GyroDataWidget::on_chb_calibratd_data_clicked(bool checked)
 {
+	if(!m_model)
+		return;
 	m_model->set_show_calibrated_data(checked);
 }
 
 void GyroDataWidget::on_pushButton_11_clicked(bool checked)
 {
+	if(!m_model)
+		return;
 	m_model->set_write_data(checked);
 	if(checked){
 		ui->lb_write_data->setText("write data...");
@@ -200,5 +236,12 @@ void GyroDataWidget::on_pushButton_11_clicked(bool checked)
 	}else{
 		ui->lb_write_data->setStyleSheet("");
 
+	}
+}
+
+void GyroDataWidget::on_pb_save_calibration_clicked()
+{
+	if(m_model){
+		m_model->save_calibrate();
 	}
 }

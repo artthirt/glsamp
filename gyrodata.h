@@ -191,18 +191,24 @@ public:
 
 	const CalibrateAccelerometer &calibrateAccelerometer() const;
 
+	/// \brief draw calculation sphere for finded clibration values
 	bool is_draw_mean_sphere() const;
 	void set_draw_mean_sphere(bool value);
 	void reset_mean_sphere();
 
 	const StructMeanSphere& mean_sphere() const { return m_sphere; }
 
+	/// \brief show datat in view with calibration values
 	bool is_show_calibrated_data() const { return m_show_calibrated_data; }
 	void set_show_calibrated_data(bool value);
 
+	/// \brief create array in real time for use in calibration
 	bool is_write_data() const { return m_write_data; }
 	void set_write_data(bool value);
 	int count_write_data() const { return m_writed_telemetries.size(); }
+
+	/// \brief save calibrated data
+	void save_calibrate();
 
 signals:
 	void get_data(const QString& name, const sc::Vector3i);
@@ -274,6 +280,7 @@ private:
 	sc::Vector3d m_mean_Gaccel;
 	double m_len_Gaccel;
 	sc::Vector3i m_past_accel;
+	double m_threshold_accel;
 
 	QHostAddress m_addr;
 	ushort m_port;
@@ -299,7 +306,6 @@ private:
 	void load_from_xml();
 	void save_to_xml();
 	void load_calibrate();
-	void save_calibrate();
 
 	void draw_text(const sc::Vector3d& v, QString text);
 	void draw_sphere();
