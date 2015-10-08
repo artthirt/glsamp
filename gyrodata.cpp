@@ -140,7 +140,7 @@ QMatrix4x4 fromQuaternion(const Quaternion& q_in)
 
 ///////////////////////////////////////////////////
 
-const int max_trajectory_size = 2000;
+const int max_trajectory_size = 200;
 
 ///////////////////////////////
 /// \brief GyroData::GyroData
@@ -768,8 +768,7 @@ void GyroData::draw()
 	if(m_is_calculated){
 //		draw_text(m_tmp_axis, "m_tmp_axis. " + QString::number(m_tmp_angle));
 //		draw_line(Vector3d(), m_tmp_axis, Qt::yellow);
-		draw_line(Vector3d(), m_tmp_accel * div_gyro, Qt::yellow);
-		draw_line(Vector3d(), m_speed_accel * div_gyro, Qt::gray);
+		draw_line(Vector3d(0, 0, -1), Vector3d(0, 0, -1) + m_tmp_accel * div_gyro, Qt::yellow);
 	}
 
 	glPushMatrix();
@@ -899,6 +898,10 @@ void GyroData::draw()
 			glVertex3fv(v.data);
 		}
 		glEnd();
+
+		while(m_trajectory.size() > max_trajectory_size){
+			m_trajectory.pop_front();
+		}
 	}
 }
 
@@ -1133,17 +1136,10 @@ void GyroData::analyze_telemetry(StructTelemetry &st)
 		Vector3d accel_mg = m_rotate_quaternion.conj().rotatedVector(m_mean_accel);
 
 		if(!m_prev_accel.isNull()){
-			m_tmp_accel = accel_mg - m_prev_accel;
-			m_speed_accel += m_tmp_accel;
-			m_speed_accel *= 0.95;
-			Vector3d tt = m_speed_accel * (1.0 / m_divider_accel);
-			if(m_trajectory.size()){
-				Vector3d pt = m_trajectory.back();
-				m_trajectory.push_back(pt + tt);
-			}else
-				m_trajectory.push_back(tt);
+			m_tmp_accel = (accel_mg - m_prev_accel);
 		}
 		m_prev_accel = accel_mg;
+
 
 		Vector3d vga = m_rotate_quaternion.rotatedVector(m_mean_Gaccel).normalized();
 		Vector3d va = m_mean_accel.normalized();
@@ -1322,7 +1318,6 @@ void GyroData::save_calibrate()
 void GyroData::reset_trajectory()
 {
 	m_trajectory.clear();
-	m_speed_accel = Vector3d();
 }
 
 void GyroData::draw_text(const Vector3d &v, QString text)

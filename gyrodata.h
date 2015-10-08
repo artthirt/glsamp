@@ -272,7 +272,6 @@ private:
 	sc::Vector3d m_mean_accel;
 	sc::Vector3d m_tmp_accel;
 	sc::Vector3d m_prev_accel;
-	sc::Vector3d m_speed_accel;
 
 	sc::Quaternion m_rotate_quaternion;
 	sc::Quaternion m_accel_quat;
