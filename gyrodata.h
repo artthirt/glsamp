@@ -210,6 +210,8 @@ public:
 	/// \brief save calibrated data
 	void save_calibrate();
 
+	void reset_trajectory();
+
 signals:
 	void get_data(const QString& name, const sc::Vector3i);
 	void get_data(const QString& name, double value);
@@ -296,7 +298,7 @@ private:
 
 	QVector < sc::Vector3f > m_trajectory;
 
-	double m_threshold_correction;
+	double m_threshold_angle;
 	double m_multiply_correction;
 
 	void init_sphere();

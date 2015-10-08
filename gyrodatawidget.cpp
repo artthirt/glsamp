@@ -245,3 +245,10 @@ void GyroDataWidget::on_pb_save_calibration_clicked()
 		m_model->save_calibrate();
 	}
 }
+
+void GyroDataWidget::on_pushButton_clicked()
+{
+	if(m_model){
+		m_model->reset_trajectory();
+	}
+}

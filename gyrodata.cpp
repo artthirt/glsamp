@@ -169,7 +169,7 @@ GyroData::GyroData(QObject *parent) :
   , m_is_draw_mean_sphere(true)
   , m_show_calibrated_data(true)
   , m_write_data(false)
-  , m_threshold_correction(3)
+  , m_threshold_angle(0)
   , m_multiply_correction(0.1)
   , m_threshold_accel(0.07)
 {
@@ -724,6 +724,13 @@ void draw_process_rotate(const Quaternion& q1, const Quaternion& q2, double mult
 	}
 }
 
+void draw_static_axes()
+{
+	draw_line(Vector3d(-10, 0, 0), Vector3d(10, 0, 0), QColor(255, 128, 128));
+	draw_line(Vector3d(0, -10, 0), Vector3d(0, 10, 0), QColor(128, 255, 128));
+	draw_line(Vector3d(0, 0, -10), Vector3d(0, 0, 10), QColor(128, 128, 255));
+}
+
 void GyroData::draw()
 {
 	double div_gyro = 1.0 / m_divider_gyro;
@@ -795,6 +802,8 @@ void GyroData::draw()
 //////////////////
 
 	glLineWidth(1);
+
+	draw_static_axes();
 
 /// @test code
 //	{
@@ -917,10 +926,8 @@ void GyroData::calc_offsets(Vector3i &gyro, Vector3i &accel)
 
 void GyroData::clear_data()
 {
-	m_is_calculated = false;
 	m_count_gyro_offset_data = 0;
 	m_percent_downloaded_data = 1;
-	m_offset_gyro = Vector3d();
 	m_rotate_pos = Vector3d();
 	m_tmp_axis = Vector3f(1, 0, 0);
 	m_tmp_angle = 0;
@@ -1128,6 +1135,13 @@ void GyroData::analyze_telemetry(StructTelemetry &st)
 		if(!m_prev_accel.isNull()){
 			m_tmp_accel = accel_mg - m_prev_accel;
 			m_speed_accel += m_tmp_accel;
+			m_speed_accel *= 0.95;
+			Vector3d tt = m_speed_accel * (1.0 / m_divider_accel);
+			if(m_trajectory.size()){
+				Vector3d pt = m_trajectory.back();
+				m_trajectory.push_back(pt + tt);
+			}else
+				m_trajectory.push_back(tt);
 		}
 		m_prev_accel = accel_mg;
 
@@ -1139,7 +1153,7 @@ void GyroData::analyze_telemetry(StructTelemetry &st)
 		m_accel_quat = Quaternion::fromAxisAndAngle(ax, -an) * m_rotate_quaternion;
 		m_accel_quat.normalize();
 
-		if(fabs(an) > m_threshold_correction && m_tmp_accel.length() < m_threshold_accel * m_sphere.mean_radius)
+		if(fabs(an) > m_threshold_angle && m_tmp_accel.length() < m_threshold_accel * m_sphere.mean_radius)
 			m_rotate_quaternion = Quaternion::slerp(m_rotate_quaternion, m_accel_quat, m_multiply_correction);
 	}
 
@@ -1180,7 +1194,7 @@ void GyroData::load_from_xml()
 
 	double v1 = sxml["threshold_correction"];
 	if(v1)
-		m_threshold_correction = v1;
+		m_threshold_angle = v1;
 	v1 = sxml["multiply_correction"];
 	if(v1)
 		m_multiply_correction = v1;
@@ -1214,7 +1228,7 @@ void GyroData::save_to_xml()
 	sxml << "freq_playing" << freq;
 	sxml << "draw_mean_sphere" << m_is_draw_mean_sphere;
 
-	sxml << "threshold_correction" << m_threshold_correction;
+	sxml << "threshold_correction" << m_threshold_angle;
 	sxml << "multiply_correction" << m_multiply_correction;
 	sxml << "show_calibrated_data" << m_show_calibrated_data;
 }
@@ -1238,6 +1252,8 @@ void GyroData::load_calibrate()
 	m_sphere.deviation = node["deviation"];
 	if(!node["threshold"].empty())
 		m_threshold_accel = node["threshold"];
+	if(!node["threshold_angle"].empty())
+		m_threshold_angle = node["threshold_angle"];
 
 	node = sxml["gyroscope"];
 	v.setX(node["x_corr"]);
@@ -1286,6 +1302,7 @@ void GyroData::save_calibrate()
 	node << "mean_radius" << m_sphere.mean_radius;
 	node << "deviation" << m_sphere.deviation;
 	node << "threshold" << m_threshold_accel;
+	node << "threshold_angle" << m_threshold_angle;
 
 	if(!m_offset_gyro.isNull()){
 		node = sxml["gyroscope"];
@@ -1300,6 +1317,12 @@ void GyroData::save_calibrate()
 		"y_corr" << m_mean_Gaccel.y() <<
 		"z_corr" << m_mean_Gaccel.z();
 	}
+}
+
+void GyroData::reset_trajectory()
+{
+	m_trajectory.clear();
+	m_speed_accel = Vector3d();
 }
 
 void GyroData::draw_text(const Vector3d &v, QString text)

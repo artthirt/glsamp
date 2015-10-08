@@ -82,6 +82,8 @@ signals:
 private slots:
 	void on_pb_save_calibration_clicked();
 
+	void on_pushButton_clicked();
+
 private:
 	Ui::GyroDataWidget *ui;
 	QTimer m_timer_cfg;
