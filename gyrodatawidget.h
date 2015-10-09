@@ -84,11 +84,26 @@ private slots:
 
 	void on_pushButton_clicked();
 
+	void on_pb_zero_pos_clicked();
+
+	void on_pb_ninety__clicked();
+
+	void on_pb_invert_pos_clicked();
+
+	void on_pb_add_to_pool_clicked(bool checked);
+
+	void on_pb_cancel_clicked();
+
+	void on_pb_load_calibration_clicked();
+
+	void on_chb_recorded_data_clicked(bool checked);
+
+	void on_pb_write_log_clicked();
+
 private:
 	Ui::GyroDataWidget *ui;
 	QTimer m_timer_cfg;
 	QTimer m_tmcalib;
-
 
 	GyroData* m_model;
 

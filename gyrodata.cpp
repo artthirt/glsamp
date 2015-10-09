@@ -199,6 +199,12 @@ GyroData::GyroData(QObject *parent) :
   , m_multiply_correction(0.7)
   , m_threshold_accel(0.07)
   , m_is_visible_text(true)
+  , m_is_calc_pos(false)
+  , m_calccount(100)
+  , m_calcid(0)
+  , m_curcalc_pos(POS_0)
+  , m_add_to_pool(false)
+  , m_show_recorded_data(false)
 {
 	setType(GYRODATA);
 
@@ -605,10 +611,44 @@ void GyroData::set_show_calibrated_data(bool value)
 
 void GyroData::set_write_data(bool value)
 {
+	if(m_add_to_pool)
+		return;
+
 	m_write_data = value;
 	if(value){
 		m_writed_telemetries.clear();
 	}
+}
+
+int GyroData::count_write_data() const
+{
+	return m_writed_telemetries.size() + m_pool_writed_telemetries.size();
+}
+
+void GyroData::add_to_pool(bool value)
+{
+	if(m_write_data)
+		return;
+
+	if(value){
+		m_pool_writed_telemetries.clear();
+		m_add_to_pool = true;
+	}else{
+		m_writed_telemetries += m_pool_writed_telemetries;
+		m_pool_writed_telemetries.clear();
+		m_add_to_pool = false;
+	}
+}
+
+void GyroData::cancel_write()
+{
+	m_add_to_pool = false;
+	m_pool_writed_telemetries.clear();
+}
+
+void GyroData::log_recorded_data()
+{
+	WriteLog::instance()->write_data("recorded_data", m_writed_telemetries);
 }
 
 void GyroData::on_timeout()
@@ -630,7 +670,7 @@ void GyroData::on_timeout_calibrate()
 				   "; R=" + QString::number(m_sphere.mean_radius, 'f', 3) +
 				   "; dev=" + QString::number(m_sphere.deviation, 'f', 3));
 
-		init_sphere();
+		m_sphereGl.generate_sphere(m_sphere.mean_radius, m_divider_accel);
 
 		save_calibrate();
 	}
@@ -672,7 +712,7 @@ void GyroData::init()
 
 	load_calibrate();
 
-	init_sphere();
+	m_sphereGl.generate_sphere(m_sphere.mean_radius, m_divider_accel);
 
 	emit add_to_log("loaded. x=" + QString::number(m_sphere.cp.x(), 'f', 3) +
 			   ", y=" + QString::number(m_sphere.cp.y(), 'f', 3) +
@@ -923,11 +963,15 @@ void GyroData::draw()
 	}
 
 	if(m_is_draw_mean_sphere){
-		draw_sphere();
+		m_sphereGl.draw_sphere(m_sphere.cp, m_divider_accel);
 	}
 
 	if(m_is_visible_text){
 		draw_text();
+	}
+
+	if(m_show_recorded_data){
+		draw_recored_data();
 	}
 
 	glColor3f(1, 0.2, 0);
@@ -947,6 +991,9 @@ void GyroData::draw()
 
 void GyroData::tick()
 {
+	m_drawing_text["sphere_radius"] = QString::number(m_sphere.mean_radius, 'f', 1);
+	m_drawing_text["sphere_cp"] = m_sphere.cp;
+	m_drawing_text["sphere_dev"] = QString::number(m_sphere.deviation, 'f', 1);
 }
 
 QVector3D GyroData::position() const
@@ -1133,37 +1180,20 @@ bool test_data()
 
 void GyroData::analyze_telemetry(StructTelemetry &st)
 {
-	if(m_is_calculated && m_write_data){
-		m_writed_telemetries.push_back(st);
-	}
+	calc_calibrations_params(st);
 
+	/// a subtraction of the offset error of acceleration of the sensor
 	st.accel -= m_sphere.cp;
 
-	Vector3d v = st.accel;
-	v = m_corr_matrix * v;
-	st.accel = v;
+	//Vector3d v = st.accel;
+	//v = m_corr_matrix * v;
+	//st.accel = v;
 
-	emit get_data("gyro", st.gyro);
-	emit get_data("accel", st.accel);
-
-	m_kalman[0].set_zk(st.accel.x());
-	m_kalman[1].set_zk(st.accel.y());
-	m_kalman[2].set_zk(st.accel.z());
-
-	m_kalman[3].set_zk(st.gyro.x());
-	m_kalman[4].set_zk(st.gyro.y());
-	m_kalman[5].set_zk(st.gyro.z());
-
-	Vector3d kav(Vector3d(m_kalman[0].xk, m_kalman[1].xk, m_kalman[2].xk));
-	Vector3d kgv(Vector3d(m_kalman[3].xk, m_kalman[4].xk, m_kalman[5].xk));
-
-	st.accel = kav;
-	st.gyro = kgv;
-
-	emit get_data("kalman_accel", kav);
-	emit get_data("kalman_gyro", kgv);
+	simple_kalman_filter(st);
 
 	calc_offsets(st.gyro, st.accel);
+
+	Vector3d v = st.accel;
 
 	if(m_mean_accel.isNull())
 		m_mean_accel = v;
@@ -1184,21 +1214,14 @@ void GyroData::analyze_telemetry(StructTelemetry &st)
 		}
 		m_prev_accel = accel_mg;
 
+		/////////////////////////////
+
+		calccount(st);
 		calc_parameters();
 
-		Vector3d vga = m_rotate_quaternion.rotatedVector(m_mean_Gaccel).normalized();
-		Vector3d va = m_mean_accel.normalized();
-		Vector3d ax = Vector3d::cross(va, vga).normalized();
-		double an = Vector3d::dot(vga, va);
-		an = rad2angle(acos(an));
-		m_accel_quat = Quaternion::fromAxisAndAngle(ax, -an) * m_rotate_quaternion;
-		m_accel_quat.normalize();
+		/////////////////////////////
 
-		if(fabs(an) > m_threshold_angle && m_tmp_accel.length() < m_threshold_accel * m_sphere.mean_radius){
-			qDebug () << m_rotate_quaternion;
-			m_rotate_quaternion = Quaternion::slerp(m_rotate_quaternion, m_accel_quat, m_multiply_correction);
-			qDebug () << m_rotate_quaternion;
-		}
+		correct_error_gyroscope();
 	}
 
 	m_telemetries.push_front(st);
@@ -1243,6 +1266,8 @@ void GyroData::load_from_xml()
 	if(v1)
 		m_multiply_correction = v1;
 
+	m_show_recorded_data = sxml["show_recorded_data"];
+
 	if(!QFile::exists(m_fileName))
 		m_fileName.clear();
 }
@@ -1275,6 +1300,7 @@ void GyroData::save_to_xml()
 	sxml << "threshold_correction" << m_threshold_angle;
 	sxml << "multiply_correction" << m_multiply_correction;
 	sxml << "show_calibrated_data" << m_show_calibrated_data;
+	sxml << "show_recorded_data" << m_show_recorded_data;
 }
 
 void GyroData::load_calibrate()
@@ -1385,76 +1411,46 @@ bool GyroData::is_visible_text() const
 	return m_is_visible_text;
 }
 
+bool GyroData::is_exists_value(GyroData::POS pos) const
+{
+	return !m_pos_values[pos].isNull();
+}
+
+void GyroData::set_start_calc_pos(GyroData::POS pos)
+{
+	m_curcalc_pos = pos;
+	m_pos_values[pos] = Vector3d();
+	m_calcid = 0;
+	m_is_calc_pos = true;
+}
+
+void GyroData::show_recorded_data(bool value)
+{
+	m_show_recorded_data = value;
+}
+
+void GyroData::calccount(const StructTelemetry &st)
+{
+	if(m_is_calc_pos){
+		m_pos_values[m_curcalc_pos] += Vector3d(st.accel);
+		m_calcid++;
+		if(m_calcid >= m_calccount){
+			m_is_calc_pos = 0;
+			m_pos_values[m_curcalc_pos] *= 1. / m_calcid;
+			m_is_calc_pos = false;
+			emit add_to_log(QString::number(m_curcalc_pos) + ": " + m_pos_values[m_curcalc_pos] +
+							", len: " + QString::number(m_pos_values[m_curcalc_pos].length(), 'f', 1));
+		}
+	}
+}
+
 void GyroData::draw_text(const Vector3d &v, QString text, const QColor& col)
 {
 	QGLWidget *w = dynamic_cast< QGLWidget* >(parent());
 	if(w){
 		glColor3f(col.redF(), col.greenF(), col.blueF());
-		w->renderText(v.x(), v.y(), v.z(), text, QFont("Arial", 14));
+		w->renderText(v.x(), v.y(), v.z(), text, QFont("Helvetica [Cronyx]", 14));
 	}
-}
-
-template < typename T >
-inline T get_pt_sphere(double id, double jd, double R)
-{
-	double x = R * sin(id * 2 * M_PI) * sin(jd * M_PI);
-	double y = R * cos(id * 2 * M_PI) * sin(jd * M_PI);
-	double z = R * cos(jd * M_PI);
-	return T(x, y, z);
-}
-
-
-void GyroData::init_sphere()
-{
-	if(m_sphere.isNull())
-		return;
-
-	const int count = 32;
-	double R = m_sphere.mean_radius / m_divider_accel;
-
-	m_vecs_sphere.clear();
-	m_inds_sphere.clear();
-
-	for(int i = 0; i < count; i++){
-		double id = (double)i / (count - 1);
-		for(int j = 0; j < count; j++){
-			double jd = (double)j / (count - 1);
-			m_vecs_sphere.push_back(get_pt_sphere<Vector3f>(id, jd, R));
-		}
-	}
-
-	for(int i = 0; i < count - 1; i++){
-		for(int j = 0; j < count - 1; j++){
-			int A = i * count + j;
-			int B = (i + 1) * count + j;
-			int C = i * count + j + 1;
-			m_inds_sphere.push_back(Vector3i(A, B, C));
-		}
-	}
-
-	glVertexPointer(3, GL_FLOAT, sizeof(Vector3f), m_vecs_sphere.data()->data);
-}
-
-void GyroData::draw_sphere()
-{
-	if(!m_inds_sphere.size())
-		return;
-
-	glPushMatrix();
-
-	Vector3d cp(m_sphere.cp);
-	cp *= 1.0 / m_divider_accel;
-
-	glTranslated(cp.x(), cp.y(), cp.z());
-
-	glColor3f(1, 1, 1);
-
-	int cnt = m_inds_sphere.size() * 3;
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glDrawElements(GL_LINE_STRIP, cnt, GL_UNSIGNED_INT, m_inds_sphere.data());
-	glDisableClientState(GL_VERTEX_ARRAY);
-
-	glPopMatrix();
 }
 
 void GyroData::draw_text()
@@ -1468,7 +1464,7 @@ void GyroData::draw_text()
 	glGetDoublev(GL_VIEWPORT, params);
 	double ar = -params[2] / params[3] / 2.;
 
-	Vector3d p(ar, 0.55, 0), pv(ar + 0.1, 0.55, 0);
+	Vector3d p(ar, 0.55, 0), pv(ar + 0.2, 0.55, 0);
 	double dy = -0.03;
 	glColor3f(0, 0.7, 0);
 	for(auto it = m_drawing_text.begin(); it != m_drawing_text.end(); it++){
@@ -1481,6 +1477,18 @@ void GyroData::draw_text()
 	}
 
 	glPopMatrix();
+}
+
+void GyroData::draw_recored_data()
+{
+	glColor3f(1, 0.5, 0.3);
+	glBegin(GL_POINTS);
+	foreach (StructTelemetry st, m_writed_telemetries) {
+		Vector3d v = st.accel;
+		v *= 1. / m_divider_accel;
+		glVertex3dv(v.data);
+	}
+	glEnd();
 }
 
 void GyroData::calc_parameters()
@@ -1509,6 +1517,56 @@ void GyroData::calc_correction()
 		m_correct_quaternion = Quaternion::fromAxisAndAngle(v, -angle);
 		m_corr_matrix = fromQuaternionM3(m_correct_quaternion);
 		//m_corr_matrix.ident();
-		m_mean_Gaccel = m_corr_matrix * m_mean_Gaccel;
+		//m_mean_Gaccel = m_corr_matrix * m_mean_Gaccel;
+	}
+}
+
+void GyroData::calc_calibrations_params(const StructTelemetry &st)
+{
+	if(m_is_calculated && m_write_data){
+		m_writed_telemetries.push_back(st);
+	}
+	if(m_is_calculated && m_add_to_pool){
+		m_pool_writed_telemetries.push_back(st);
+	}
+}
+
+void GyroData::simple_kalman_filter(StructTelemetry &st)
+{
+	emit get_data("gyro", st.gyro);
+	emit get_data("accel", st.accel);
+
+	m_kalman[0].set_zk(st.accel.x());
+	m_kalman[1].set_zk(st.accel.y());
+	m_kalman[2].set_zk(st.accel.z());
+
+	m_kalman[3].set_zk(st.gyro.x());
+	m_kalman[4].set_zk(st.gyro.y());
+	m_kalman[5].set_zk(st.gyro.z());
+
+	Vector3d kav(Vector3d(m_kalman[0].xk, m_kalman[1].xk, m_kalman[2].xk));
+	Vector3d kgv(Vector3d(m_kalman[3].xk, m_kalman[4].xk, m_kalman[5].xk));
+
+	st.accel = kav;
+	st.gyro = kgv;
+
+	emit get_data("kalman_accel", kav);
+	emit get_data("kalman_gyro", kgv);
+}
+
+void GyroData::correct_error_gyroscope()
+{
+	Vector3d vga = m_rotate_quaternion.rotatedVector(m_mean_Gaccel).normalized();
+	Vector3d va = m_mean_accel.normalized();
+	Vector3d ax = Vector3d::cross(va, vga).normalized();
+	double an = Vector3d::dot(vga, va);
+	an = rad2angle(acos(an));
+	m_accel_quat = Quaternion::fromAxisAndAngle(ax, -an) * m_rotate_quaternion;
+	m_accel_quat.normalize();
+
+	if(fabs(an) > m_threshold_angle && m_tmp_accel.length() < m_threshold_accel * m_sphere.mean_radius){
+		qDebug () << m_rotate_quaternion;
+		m_rotate_quaternion = Quaternion::slerp(m_rotate_quaternion, m_accel_quat, m_multiply_correction);
+		qDebug () << m_rotate_quaternion;
 	}
 }

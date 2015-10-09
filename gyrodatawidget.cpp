@@ -45,6 +45,7 @@ void GyroDataWidget::init_model()
 	ui->cb_show_loaded->setChecked(m_model->showing_downloaded_data());
 	ui->dsb_frequency_playing->setValue(m_model->freq_playing());
 	ui->chb_calibrate_sphere->setChecked(m_model->is_draw_mean_sphere());
+	ui->chb_recorded_data->setChecked(m_model->is_show_recorded_data());
 
 	ui->widget_pass->setVisible(false);
 }
@@ -64,6 +65,17 @@ void GyroDataWidget::on_timeout_cfg()
 	}
 	ui->lb_count_value->setText("count: " + QString::number(m_model->count_gyro_offset_data()));
 	ui->lb_write_data->setText("count: " + QString::number(m_model->count_write_data()));
+
+	const QString stsh("background: lightgreen;");
+	if(m_model->is_exists_value(GyroData::POS_0)){
+		ui->pb_zero_pos->setStyleSheet(stsh);
+	}
+	if(m_model->is_exists_value(GyroData::POS_90)){
+		ui->pb_ninety_->setStyleSheet(stsh);
+	}
+	if(m_model->is_exists_value(GyroData::POS_180)){
+		ui->pb_invert_pos->setStyleSheet(stsh);
+	}
 }
 
 void GyroDataWidget::on_timeout_tmcalib()
@@ -250,5 +262,64 @@ void GyroDataWidget::on_pushButton_clicked()
 {
 	if(m_model){
 		m_model->reset_trajectory();
+	}
+}
+
+void GyroDataWidget::on_pb_zero_pos_clicked()
+{
+	ui->pb_zero_pos->setStyleSheet("");
+	if(m_model){
+		m_model->set_start_calc_pos(GyroData::POS_0);
+	}
+}
+
+void GyroDataWidget::on_pb_ninety__clicked()
+{
+	ui->pb_ninety_->setStyleSheet("");
+	if(m_model){
+		m_model->set_start_calc_pos(GyroData::POS_90);
+	}
+}
+
+void GyroDataWidget::on_pb_invert_pos_clicked()
+{
+	ui->pb_invert_pos->setStyleSheet("");
+	if(m_model){
+		m_model->set_start_calc_pos(GyroData::POS_180);
+	}
+}
+
+void GyroDataWidget::on_pb_add_to_pool_clicked(bool checked)
+{
+	if(m_model){
+		m_model->add_to_pool(checked);
+	}
+}
+
+void GyroDataWidget::on_pb_cancel_clicked()
+{
+	if(m_model){
+		m_model->cancel_write();
+	}
+}
+
+void GyroDataWidget::on_pb_load_calibration_clicked()
+{
+	if(m_model){
+		m_model->load_calibrate();
+	}
+}
+
+void GyroDataWidget::on_chb_recorded_data_clicked(bool checked)
+{
+	if(m_model){
+		m_model->show_recorded_data(checked);
+	}
+}
+
+void GyroDataWidget::on_pb_write_log_clicked()
+{
+	if(m_model){
+		m_model->log_recorded_data();
 	}
 }

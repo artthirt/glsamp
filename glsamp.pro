@@ -44,7 +44,8 @@ SOURCES += main.cpp\
     writelog.cpp \
     calibrateaccelerometer.cpp \
     dialogabout.cpp \
-    gyrodatawidget.cpp
+    gyrodatawidget.cpp \
+    spheregl.cpp
 
 HEADERS  += mainwindow.h \
     virtglobject.h \
@@ -61,7 +62,8 @@ HEADERS  += mainwindow.h \
     calibrateaccelerometer.h \
     dialogabout.h \
     gyrodatawidget.h \
-    matrix3.h
+    matrix3.h \
+    spheregl.h
 
 FORMS    += mainwindow.ui \
     glspace.ui \

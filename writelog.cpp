@@ -193,6 +193,15 @@ void WriteLog::add_data(const QString &name, const StructTelemetry &data)
 	m_logFiles[name].push_data(name, str);
 }
 
+void WriteLog::write_data(const QString &name, const QVector<StructTelemetry> &data)
+{
+	foreach (StructTelemetry st, data) {
+		add_data(name, st);
+		m_logFiles[name].write_data();
+	}
+	m_logFiles[name].close();
+}
+
 void WriteLog::on_timeout()
 {
 	for(QMap< QString, LogFile >::iterator it = m_logFiles.begin(); it != m_logFiles.end(); it++){
@@ -207,4 +216,9 @@ void WriteLog::run()
 
 		QThread::msleep(300);
 	}
+}
+
+void WriteLog::closeLog(const QString &name)
+{
+	m_logFiles[name].close();
 }

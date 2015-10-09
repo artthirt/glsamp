@@ -14,6 +14,7 @@
 #include "struct_controls.h"
 #include "matrix3.h"
 
+#include "spheregl.h"
 #include "simplekalmanfilter.h"
 #include "calibrateaccelerometer.h"
 
@@ -209,16 +210,44 @@ public:
 	/// \brief create array in real time for use in calibration
 	bool is_write_data() const { return m_write_data; }
 	void set_write_data(bool value);
-	int count_write_data() const { return m_writed_telemetries.size(); }
+	int count_write_data() const;
+	void add_to_pool(bool value);
+	void cancel_write();
+	bool is_add_to_pool() const { return m_add_to_pool; }
+	void log_recorded_data();
 
-	/// \brief save calibrated data
+	/// \brief save & load calibrated data
 	void save_calibrate();
+	void load_calibrate();
 
 	void reset_trajectory();
 
 	void set_text(const QString& key, const QString text);
 	void set_visible_text(bool value);
 	bool is_visible_text() const;
+
+	enum POS{
+		POS_0 = 0,
+		POS_90,
+		POS_180
+	};
+	bool is_exists_value(POS pos) const;
+	void set_start_calc_pos(POS pos);
+	void set_calccount_pos(int cnt) { m_calccount = cnt; }
+	int calccount_pos() const { return m_calccount; }
+
+	void show_recorded_data(bool value);
+	bool is_show_recorded_data() const {return m_show_recorded_data;}
+
+private:
+	QMap< POS, sc::Vector3d > m_pos_values;
+	POS m_curcalc_pos;
+	int m_calcid;
+	int m_calccount;
+	bool m_is_calc_pos;
+	bool m_show_recorded_data;
+
+	void calccount(const sc::StructTelemetry& st);
 
 signals:
 	void get_data(const QString& name, const sc::Vector3i);
@@ -269,6 +298,7 @@ private:
 	bool m_is_calculated;
 
 	QVector< sc::StructTelemetry > m_writed_telemetries;
+	QVector< sc::StructTelemetry > m_pool_writed_telemetries;
 	QVector< sc::StructTelemetry > m_telemetries;
 	QTime m_time_waiting_telemetry;
 	QElapsedTimer m_tick_telemetry;
@@ -276,6 +306,7 @@ private:
 	long long m_past_tick;
 	long long m_first_tick;
 	bool m_write_data;
+	bool m_add_to_pool;
 
 	sc::Vector3d m_offset_gyro;
 	sc::Vector3d m_tmp_axis;
@@ -301,11 +332,10 @@ private:
 
 	SimpleKalmanFilter m_kalman[6];
 
+	SphereGL m_sphereGl;
 	StructMeanSphere m_sphere;
 	CalibrateAccelerometer m_calibrate;
 	bool m_is_draw_mean_sphere;
-	QVector< sc::Vector3f > m_vecs_sphere;
-	QVector< sc::Vector3i > m_inds_sphere;
 	bool m_show_calibrated_data;
 
 	QVector < sc::Vector3f > m_trajectory;
@@ -319,14 +349,17 @@ private:
 	void clear_data();
 	void load_from_xml();
 	void save_to_xml();
-	void load_calibrate();
 
 	void draw_text(const sc::Vector3d& v, QString text, const QColor &col = Qt::white);
 	void draw_sphere();
 	void draw_text();
+	void draw_recored_data();
 
 	void calc_parameters();
 	void calc_correction();
+	void calc_calibrations_params(const sc::StructTelemetry& st);
+	void simple_kalman_filter(sc::StructTelemetry& st);
+	void correct_error_gyroscope();
 };
 
 #endif // GYRODATA_H
