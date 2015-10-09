@@ -1015,11 +1015,11 @@ void GyroData::tryParseData(const QByteArray &data)
 		}
 	}
 
-	analyze_telemetry(st);
-
 	if(m_is_calculated && m_write_data){
 		m_writed_telemetries.push_back(st);
 	}
+
+	analyze_telemetry(st);
 
 	WriteLog::instance()->add_data("gyro", st);
 

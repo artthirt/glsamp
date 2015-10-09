@@ -20,8 +20,6 @@ SimpleXMLNode::SimpleXMLNode(SimpleXMLNode& parent_node, const QString& tag)
 
 SimpleXMLNode &SimpleXMLNode::operator <<(const QString& value)
 {
-	if(value.isEmpty())
-		return *this;
 	if(m_current_tag.isEmpty()){
 		m_current_tag = value;
 	}else{
@@ -386,8 +384,6 @@ QDomNode SimpleXML::get_node(QDomNode &parent_node, const QString &tag)
 
 SimpleXML &SimpleXML::operator <<(const QString &value)
 {
-	if(value.isEmpty())
-		return *this;
 	if(m_current_tag.isEmpty()){
 		m_current_tag = value;
 	}else{
