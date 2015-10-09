@@ -33,6 +33,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
 	m_available_telemetry = new QLabel(this);
+	m_available_telemetry->setMinimumWidth(200);
 	ui->statusBar->addWidget(m_available_telemetry);
 
 	connect(ui->gyrodata->model(), SIGNAL(get_data(QString,sc::Vector3i)), this, SLOT(on_put_data(QString,sc::Vector3i)));

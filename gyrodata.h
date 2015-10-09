@@ -8,8 +8,12 @@
 #include <QHostAddress>
 #include <QTime>
 #include <QElapsedTimer>
+#include <QMap>
+#include <QColor>
 
 #include "struct_controls.h"
+#include "matrix3.h"
+
 #include "simplekalmanfilter.h"
 #include "calibrateaccelerometer.h"
 
@@ -212,6 +216,10 @@ public:
 
 	void reset_trajectory();
 
+	void set_text(const QString& key, const QString text);
+	void set_visible_text(bool value);
+	bool is_visible_text() const;
+
 signals:
 	void get_data(const QString& name, const sc::Vector3i);
 	void get_data(const QString& name, double value);
@@ -244,6 +252,9 @@ private:
 	double m_percent_downloaded_data;
 	long long m_index;
 
+	QMap< QString, QString > m_drawing_text;
+	bool m_is_visible_text;
+
 	bool m_showing_downloaded_data;
 	bool m_is_play;
 	int m_current_playing_pos;
@@ -274,7 +285,9 @@ private:
 	sc::Vector3d m_prev_accel;
 
 	sc::Quaternion m_rotate_quaternion;
+	sc::Quaternion m_correct_quaternion;
 	sc::Quaternion m_accel_quat;
+	matrix::Matrix3d m_corr_matrix;
 	sc::Vector3d m_rotate_pos;
 	sc::Vector3d m_translate_pos;
 	sc::Vector3d m_translate_speed;
@@ -308,8 +321,12 @@ private:
 	void save_to_xml();
 	void load_calibrate();
 
-	void draw_text(const sc::Vector3d& v, QString text);
+	void draw_text(const sc::Vector3d& v, QString text, const QColor &col = Qt::white);
 	void draw_sphere();
+	void draw_text();
+
+	void calc_parameters();
+	void calc_correction();
 };
 
 #endif // GYRODATA_H

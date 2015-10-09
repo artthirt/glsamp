@@ -60,7 +60,8 @@ HEADERS  += mainwindow.h \
 	submodules/struct_controls/struct_controls.h \
     calibrateaccelerometer.h \
     dialogabout.h \
-    gyrodatawidget.h
+    gyrodatawidget.h \
+    matrix3.h
 
 FORMS    += mainwindow.ui \
     glspace.ui \
