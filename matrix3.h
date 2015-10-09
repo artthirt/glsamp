@@ -57,7 +57,7 @@ struct Matrix3_{
 		Matrix3_< T > res;
 		for(int i = 0; i < cols; i++){
 			for(int j = 0; j < rows; j++){
-				res.data[j * rows + j] = data[i * cols + j];
+				res.data[j * rows + i] = data[i * cols + j];
 			}
 		}
 		return res;
