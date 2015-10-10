@@ -1051,7 +1051,7 @@ void GyroData::on_timeout_playing()
 
 		if(st.tick && m_first_tick){
 			long long tick = st.tick - m_first_tick;
-			qDebug() << m_index << tick - m_past_tick << st.tick << m_first_tick + m_past_tick;
+			//qDebug() << m_index << tick - m_past_tick << st.tick << m_first_tick + m_past_tick;
 			m_part_of_time = (double)(tick - m_past_tick) / 1e+3;
 			m_past_tick = tick;
 		}else{

@@ -18,7 +18,7 @@ void SimpleKalmanFilter::init()
 	Kk = 0;
 	H = 1;
 	Q = 1000;
-	R = 100;
+	R = 1000;
 	xk = 0;
 
 	B_k.ident();
@@ -27,11 +27,9 @@ void SimpleKalmanFilter::init()
 	u_k.clear();
 	K_k.clear();
 	H_k.ident();
-	Q_k.diag(100);
-	R_k.diag(100);
+	Q_k.diag(0.1);
+	R_k.diag(0.1);
 	x_k.clear();
-
-	F_k.set(0, 2, 0.01);
 
 	k = 0;
 }

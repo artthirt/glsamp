@@ -91,7 +91,7 @@ int test_matrix()
 
 int main(int argc, char *argv[])
 {
-	test_matrix();
+	//test_matrix();
 
 	QApplication a(argc, argv);
 	MainWindow w;

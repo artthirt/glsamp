@@ -237,7 +237,7 @@ void GLSpace::resizeGL(int w, int h)
 
 void GLSpace::paintGL()
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_ACCUM_BUFFER_BIT);
 	glClearColor(m_backround.redF(), m_backround.greenF(), m_backround.blueF(), m_backround.alphaF());
 
 	glLoadIdentity();
