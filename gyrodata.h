@@ -11,8 +11,10 @@
 #include <QMap>
 #include <QColor>
 
-#include "struct_controls.h"
+#include "vector3_.h"
 #include "matrix3.h"
+#include "quaternions.h"
+#include "struct_controls.h"
 
 #include "spheregl.h"
 #include "simplekalmanfilter.h"
@@ -240,7 +242,7 @@ public:
 	bool is_show_recorded_data() const {return m_show_recorded_data;}
 
 private:
-	QMap< POS, sc::Vector3d > m_pos_values;
+	QMap< POS, vector3_::Vector3d > m_pos_values;
 	POS m_curcalc_pos;
 	int m_calcid;
 	int m_calccount;
@@ -250,7 +252,7 @@ private:
 	void calccount(const sc::StructTelemetry& st);
 
 signals:
-	void get_data(const QString& name, const sc::Vector3i);
+	void get_data(const QString& name, const vector3_::Vector3i);
 	void get_data(const QString& name, double value);
 	void add_to_log(const QString& text);
 
@@ -308,24 +310,25 @@ private:
 	bool m_write_data;
 	bool m_add_to_pool;
 
-	sc::Vector3d m_offset_gyro;
-	sc::Vector3d m_tmp_axis;
+	vector3_::Vector3d m_offset_gyro;
+	vector3_::Vector3d m_tmp_axis;
 	double m_tmp_angle;
-	sc::Vector3d m_mean_accel;
-	sc::Vector3d m_tmp_accel;
-	sc::Vector3d m_prev_accel;
+	vector3_::Vector3d m_mean_accel;
+	vector3_::Vector3d m_tmp_accel;
+	vector3_::Vector3d m_prev_accel;
 
-	sc::Quaternion m_rotate_quaternion;
-	sc::Quaternion m_correct_quaternion;
-	sc::Quaternion m_accel_quat;
+	quaternions::Quaternion m_rotate_quaternion;
+	quaternions::Quaternion m_correct_quaternion;
+	quaternions::Quaternion m_accel_quat;
 	matrix::Matrix3d m_corr_matrix;
-	sc::Vector3d m_rotate_pos;
-	sc::Vector3d m_translate_pos;
-	sc::Vector3d m_translate_speed;
-	sc::Vector3d m_mean_Gaccel;
+	vector3_::Vector3d m_rotate_pos;
+	vector3_::Vector3d m_translate_pos;
+	vector3_::Vector3d m_translate_speed;
+	vector3_::Vector3d m_mean_Gaccel;
 	double m_len_Gaccel;
-	sc::Vector3i m_past_accel;
+	vector3_::Vector3i m_past_accel;
 	double m_threshold_accel;
+	bool m_is_start_correction;
 
 	QHostAddress m_addr;
 	ushort m_port;
@@ -338,19 +341,20 @@ private:
 	bool m_is_draw_mean_sphere;
 	bool m_show_calibrated_data;
 
-	QVector < sc::Vector3f > m_trajectory;
+	QVector < vector3_::Vector3d > m_trajectory;
 
-	double m_threshold_angle;
+	double m_max_threshold_angle;
+	double m_min_threshold_angle;
 	double m_multiply_correction;
 
 	void init_sphere();
 
-	void calc_offsets(sc::Vector3i &gyro, sc::Vector3i &accel);
+	void calc_offsets(vector3_::Vector3i &gyro, vector3_::Vector3i &accel);
 	void clear_data();
 	void load_from_xml();
 	void save_to_xml();
 
-	void draw_text(const sc::Vector3d& v, QString text, const QColor &col = Qt::white);
+	void draw_text(const vector3_::Vector3d& v, QString text, const QColor &col = Qt::white);
 	void draw_sphere();
 	void draw_text();
 	void draw_recored_data();

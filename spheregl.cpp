@@ -1,6 +1,7 @@
 #include "spheregl.h"
 
 using namespace sc;
+using namespace vector3_;
 
 #include <GL/gl.h>
 #include <GL/glu.h>

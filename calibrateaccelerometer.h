@@ -15,16 +15,16 @@ struct StructMeanSphere{
 		deviation = 0;
 	}
 
-	bool isNull() const{
-		return qAbs(mean_radius) < sc::epsilon;
+	bool empty() const{
+		return qAbs(mean_radius) < 1e-11;
 	}
 	void reset(){
-		cp = sc::Vector3d();
+		cp = vector3_::Vector3d();
 		mean_radius = 0;
 		deviation = 0;
 	}
 
-	sc::Vector3d cp;
+	vector3_::Vector3d cp;
 	double mean_radius;
 	double deviation;
 };
@@ -73,7 +73,7 @@ public slots:
 
 
 private:
-	QVector< sc::Vector3d > m_analyze_data;
+	QVector< vector3_::Vector3d > m_analyze_data;
 
 	int m_max_pass;
 	int m_pass;
@@ -90,15 +90,15 @@ private:
 	 * @param max
 	 * @return
 	 */
-	bool search_minmax(const QVector< sc::Vector3d >& data, sc::Vector3d &min, sc::Vector3d &max);
+	bool search_minmax(const QVector< vector3_::Vector3d >& data, vector3_::Vector3d &min, vector3_::Vector3d &max);
 	/**
 	 * @brief calc_radius
 	 * @param sts
 	 * @param p
 	 * @param sp
 	 */
-	void calc_radius(const QVector<sc::Vector3d> &sts, const sc::Vector3d& p, StructMeanSphere& sp);
-	StructMeanSphere circumscribed_sphere_search(QVector<sc::Vector3d> &sts, const sc::Vector3d& p1, const sc::Vector3d& p2,
+	void calc_radius(const QVector<vector3_::Vector3d> &sts, const vector3_::Vector3d& p, StructMeanSphere& sp);
+	StructMeanSphere circumscribed_sphere_search(QVector<vector3_::Vector3d> &sts, const vector3_::Vector3d& p1, const vector3_::Vector3d& p2,
 												 double& dx, double& dy, double& dz);
 
 };

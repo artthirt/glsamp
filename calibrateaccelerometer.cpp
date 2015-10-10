@@ -2,6 +2,7 @@
 #include <QDebug>
 
 using namespace sc;
+using namespace vector3_;
 
 CalibrateAccelerometer::CalibrateAccelerometer(QObject *parent) :
 	QObject(parent)

@@ -34,9 +34,10 @@
 #include "calibrateaccelerometer.h"
 
 using namespace sc;
+using namespace vector3_;
+using namespace quaternions;
 
 ///////////////////////////////
-Q_DECLARE_METATYPE(Vector3i)
 
 const QString xml_config("gyro.xml");
 const QString xml_calibrate("calibrate.xml");
@@ -195,7 +196,8 @@ GyroData::GyroData(QObject *parent) :
   , m_is_draw_mean_sphere(true)
   , m_show_calibrated_data(true)
   , m_write_data(false)
-  , m_threshold_angle(0)
+  , m_max_threshold_angle(3)
+  , m_min_threshold_angle(1e-1)
   , m_multiply_correction(0.7)
   , m_threshold_accel(0.07)
   , m_is_visible_text(true)
@@ -205,6 +207,7 @@ GyroData::GyroData(QObject *parent) :
   , m_curcalc_pos(POS_0)
   , m_add_to_pool(false)
   , m_show_recorded_data(false)
+  , m_is_start_correction(false)
 {
 	setType(GYRODATA);
 
@@ -1031,6 +1034,8 @@ void GyroData::clear_data()
 	m_rotate_quaternion = Quaternion();
 	m_write_data = false;
 	m_writed_telemetries.clear();
+
+	m_is_start_correction = false;
 }
 
 void GyroData::on_timeout_playing()
@@ -1083,7 +1088,7 @@ void GyroData::tryParseData(const QByteArray &data)
 	QDataStream stream(data);
 	st.read_from(stream);
 
-//	remove_lowbits(st.accel, 3);
+	//remove_lowbits(st.accel, 7);
 //	remove_lowbits(st.gyro, 4);
 //	qint64 tick_delta = m_tick_telemetry.nsecsElapsed();
 //	double part_of_time = tick_delta / 1e+9;
@@ -1092,7 +1097,7 @@ void GyroData::tryParseData(const QByteArray &data)
 //	m_tick_telemetry.restart();
 	if(st.tick && m_first_tick){
 		long long tick = st.tick - m_first_tick;
-		qDebug() << m_index << tick - m_past_tick << st.tick << m_first_tick + m_past_tick;
+		//qDebug() << m_index << tick - m_past_tick << st.tick << m_first_tick + m_past_tick;
 		m_part_of_time = (double)(tick - m_past_tick) / 1e+3;
 		m_past_tick = tick;
 	}else{
@@ -1121,7 +1126,7 @@ static inline Quaternion fromAnglesAxes(const Vector3d& angles)
 {
 	Quaternion/* qX, qY, qZ*/ qres;
 	double aspeed = angles.length();
-	if(!sc::fIsNull(aspeed)){
+	if(!common_::fIsNull(aspeed)){
 		Vector3d axis = angles.normalized();
 		qres = Quaternion::fromAxisAndAngle(axis, aspeed);
 	}
@@ -1261,7 +1266,7 @@ void GyroData::load_from_xml()
 
 	double v1 = sxml["threshold_correction"];
 	if(v1)
-		m_threshold_angle = v1;
+		m_max_threshold_angle = v1;
 	v1 = sxml["multiply_correction"];
 	if(v1)
 		m_multiply_correction = v1;
@@ -1297,7 +1302,7 @@ void GyroData::save_to_xml()
 	sxml << "freq_playing" << freq;
 	sxml << "draw_mean_sphere" << m_is_draw_mean_sphere;
 
-	sxml << "threshold_correction" << m_threshold_angle;
+	sxml << "threshold_correction" << m_max_threshold_angle;
 	sxml << "multiply_correction" << m_multiply_correction;
 	sxml << "show_calibrated_data" << m_show_calibrated_data;
 	sxml << "show_recorded_data" << m_show_recorded_data;
@@ -1320,10 +1325,12 @@ void GyroData::load_calibrate()
 	m_sphere.cp = v;
 	m_sphere.mean_radius = node["mean_radius"];
 	m_sphere.deviation = node["deviation"];
-	if(!node["threshold"].empty())
-		m_threshold_accel = node["threshold"];
-	if(!node["threshold_angle"].empty())
-		m_threshold_angle = node["threshold_angle"];
+	if(!node["threshold_delta_accel"].empty())
+		m_threshold_accel = node["threshold_delta_accel"];
+	if(!node["max_threshold_angle"].empty())
+		m_max_threshold_angle = node["max_threshold_angle"];
+	if(!node["min_threshold_angle"].empty())
+		m_max_threshold_angle = node["min_threshold_angle"];
 
 	node = sxml["gyroscope"];
 	v.setX(node["x_corr"]);
@@ -1355,7 +1362,7 @@ void GyroData::load_calibrate()
 
 void GyroData::save_calibrate()
 {
-	if(m_sphere.isNull())
+	if(m_sphere.empty())
 		return;
 
 	QString config_file = /*QDir::homePath() + */QApplication::applicationDirPath() + "/" + config_dir;
@@ -1373,8 +1380,9 @@ void GyroData::save_calibrate()
 	node << "x_corr" <<  m_sphere.cp.x() << "y_corr" <<  m_sphere.cp.y() << "z_corr" << m_sphere.cp.z();
 	node << "mean_radius" << m_sphere.mean_radius;
 	node << "deviation" << m_sphere.deviation;
-	node << "threshold" << m_threshold_accel;
-	node << "threshold_angle" << m_threshold_angle;
+	node << "threshold_delta_accel" << m_threshold_accel;
+	node << "max_threshold_angle" << m_max_threshold_angle;
+	node << "min_threshold_angle" << m_min_threshold_angle;
 
 	if(!m_offset_gyro.isNull()){
 		node = sxml["gyroscope"];
@@ -1495,11 +1503,11 @@ void GyroData::calc_parameters()
 {
 	Vector3d v1(1, 0, 0), v2, v3(0, 1, 0);
 	v2 = m_rotate_quaternion.rotatedVector(v1);
-	double an = rad2angle(atan2(v2.z(), v2.x()));
+	double an = common_::rad2angle(atan2(v2.z(), v2.x()));
 	set_text("tangaj", QString::number(an, 'f', 1));
 
 	v2 = m_rotate_quaternion.rotatedVector(v3);
-	an = rad2angle(atan2(v2.z(), v2.y()));
+	an = common_::rad2angle(atan2(v2.z(), v2.y()));
 	set_text("bank", QString::number(an, 'f', 1));
 
 
@@ -1511,8 +1519,8 @@ void GyroData::calc_correction()
 		return;
 	Vector3d vnorm(0, 0, -1), vmg = m_mean_Gaccel.normalized(), v;
 	double angle = Vector3d::dot(vnorm, vmg);
-	angle = rad2angle(acos(angle));
-	if(!fIsNull(angle)){
+	angle = common_::rad2angle(acos(angle));
+	if(!common_::fIsNull(angle)){
 		v = Vector3d::cross(vnorm, vmg).normalized();
 		m_correct_quaternion = Quaternion::fromAxisAndAngle(v, -angle);
 		m_corr_matrix = fromQuaternionM3(m_correct_quaternion);
@@ -1536,16 +1544,8 @@ void GyroData::simple_kalman_filter(StructTelemetry &st)
 	emit get_data("gyro", st.gyro);
 	emit get_data("accel", st.accel);
 
-	m_kalman[0].set_zk(st.accel.x());
-	m_kalman[1].set_zk(st.accel.y());
-	m_kalman[2].set_zk(st.accel.z());
-
-	m_kalman[3].set_zk(st.gyro.x());
-	m_kalman[4].set_zk(st.gyro.y());
-	m_kalman[5].set_zk(st.gyro.z());
-
-	Vector3d kav(Vector3d(m_kalman[0].xk, m_kalman[1].xk, m_kalman[2].xk));
-	Vector3d kgv(Vector3d(m_kalman[3].xk, m_kalman[4].xk, m_kalman[5].xk));
+	Vector3d kav = m_kalman[0].set_zk(st.accel);
+	Vector3d kgv = m_kalman[1].set_zk(st.gyro);
 
 	st.accel = kav;
 	st.gyro = kgv;
@@ -1556,17 +1556,24 @@ void GyroData::simple_kalman_filter(StructTelemetry &st)
 
 void GyroData::correct_error_gyroscope()
 {
-	Vector3d vga = m_rotate_quaternion.rotatedVector(m_mean_Gaccel).normalized();
+	Vector3d vga = m_rotate_quaternion.rotatedVector(Vector3d(0, 0, -1)).normalized();
 	Vector3d va = m_mean_accel.normalized();
 	Vector3d ax = Vector3d::cross(va, vga).normalized();
 	double an = Vector3d::dot(vga, va);
-	an = rad2angle(acos(an));
+	an = common_::rad2angle(acos(an));
 	m_accel_quat = Quaternion::fromAxisAndAngle(ax, -an) * m_rotate_quaternion;
 	m_accel_quat.normalize();
 
-	if(fabs(an) > m_threshold_angle && m_tmp_accel.length() < m_threshold_accel * m_sphere.mean_radius){
-		qDebug () << m_rotate_quaternion;
+	if(!m_is_start_correction && fabs(an) > m_max_threshold_angle){
+		m_is_start_correction = true;
+	}
+
+	if(m_is_start_correction && m_tmp_accel.length() < m_threshold_accel * m_sphere.mean_radius){
 		m_rotate_quaternion = Quaternion::slerp(m_rotate_quaternion, m_accel_quat, m_multiply_correction);
-		qDebug () << m_rotate_quaternion;
+
+		//qDebug() << an;
+		if(fabs(an) < m_min_threshold_angle){
+			m_is_start_correction = false;
+		}
 	}
 }

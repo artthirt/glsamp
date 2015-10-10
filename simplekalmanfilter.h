@@ -1,6 +1,9 @@
 #ifndef SIMPLEKALMANFILTER_H
 #define SIMPLEKALMANFILTER_H
 
+#include <struct_controls.h>
+#include <matrix3.h>
+
 class SimpleKalmanFilter
 {
 public:
@@ -15,36 +18,30 @@ public:
 	double R;
 	long long k;
 
-	SimpleKalmanFilter(){
-		init();
-	}
-	void init(){
-		B = 0;
-		Pk = 0;
-		F = 1;
-		uk = 0;
-		Kk = 0;
-		H = 1;
-		Q = 1000;
-		R = 100;
-		xk = 0;
-		k = 0;
-	}
-	void correction(double zk){
-		double xk1 = F * xk + B * uk;
-		double Pk1 = F * Pk * F + Q;
+	SimpleKalmanFilter();
+	void init();
+	void correction(double zk);
+	void set_zk(double zk);
 
-		Kk = Pk * H / (H * Pk1 * H + R);
-		xk = xk1 + Kk * (zk - H * xk1);
-		Pk = (1 - Kk * H) * Pk1;
-	}
-	void set_zk(double zk){
-		if(!k){
-			xk = zk;
-		}
-		correction(zk);
-		k++;
-	}
+public:
+	/// @link https://en.wikipedia.org/wiki/Kalman_filter
+	matrix::Matrix3d F_k;
+	matrix::Matrix3d B_k;
+	matrix::Matrix3d P_k;
+	matrix::Matrix3d K_k;
+	matrix::Matrix3d H_k;
+	matrix::Matrix3d Q_k;
+	matrix::Matrix3d R_k;
+	vector3_::Vector3d x_k;
+	vector3_::Vector3d u_k;
+
+	/// @brief may use. didn't set first x_k
+	vector3_::Vector3d correction(const vector3_::Vector3d& zk);
+	/// @brief use it
+	vector3_::Vector3d set_zk(const vector3_::Vector3d& zk);
+
+private:
+
 };
 
 #endif // SIMPLEKALMANFILTER_H

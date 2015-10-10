@@ -17,7 +17,7 @@ CONFIG(debug, debug|release){
 TARGET = glsamp
 TEMPLATE = app
 
-CONFIG += c++11
+CONFIG += c++11 console
 
 DEFINES += _USE_MATH_DEFINES
 
@@ -63,7 +63,10 @@ HEADERS  += mainwindow.h \
     dialogabout.h \
     gyrodatawidget.h \
     matrix3.h \
-    spheregl.h
+    spheregl.h \
+    submodules/struct_controls/vector3_.h \
+    submodules/struct_controls/quaternions.h \
+    submodules/struct_controls/common_.h
 
 FORMS    += mainwindow.ui \
     glspace.ui \

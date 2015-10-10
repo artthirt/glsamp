@@ -7,13 +7,14 @@
 #include <QPointF>
 
 using namespace sc;
+using namespace vector3_;
 
 DataChart::DataChart(QWidget *parent)
 	: QWidget(parent)
 {
 	m_dt = 10;
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(on_timeout()));
-	m_timer.start(32);
+	m_timer.start(60);
 }
 
 void DataChart::clear()
