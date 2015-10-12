@@ -198,14 +198,14 @@ public:
 
 	const CalibrateAccelerometer &calibrateAccelerometer() const;
 
-	/// \brief draw calculation sphere for finded clibration values
+	/// \brief draw calculation sphere for found calibration values
 	bool is_draw_mean_sphere() const;
 	void set_draw_mean_sphere(bool value);
 	void reset_mean_sphere();
 
 	const StructMeanSphere& mean_sphere() const { return m_sphere; }
 
-	/// \brief show datat in view with calibration values
+	/// \brief show data in view with calibration values
 	bool is_show_calibrated_data() const { return m_show_calibrated_data; }
 	void set_show_calibrated_data(bool value);
 
