@@ -1004,7 +1004,7 @@ QVector3D GyroData::position() const
 	return QVector3D();
 }
 
-void GyroData::calc_offsets(Vector3i &gyro, Vector3i &accel)
+void GyroData::calc_offsets(const Vector3i &gyro, const Vector3i &accel)
 {
 	if(m_is_calc_offset_gyro){
 		m_offset_gyro += gyro;
@@ -1061,7 +1061,7 @@ void GyroData::on_timeout_playing()
 			}
 		}
 
-		analyze_telemetry(st);
+		st = analyze_telemetry(st);
 
 		m_current_playing_pos++;
 		m_index++;
@@ -1107,7 +1107,7 @@ void GyroData::tryParseData(const QByteArray &data)
 		}
 	}
 
-	analyze_telemetry(st);
+	st = analyze_telemetry(st);
 
 	WriteLog::instance()->add_data("gyro", st);
 
@@ -1183,9 +1183,11 @@ bool test_data()
 /// @test code
 ///const bool test_fl = test_data();
 
-void GyroData::analyze_telemetry(StructTelemetry &st)
+StructTelemetry GyroData::analyze_telemetry(const StructTelemetry &st_in)
 {
-	calc_calibrations_params(st);
+	StructTelemetry st(st_in);
+
+	fill_data_for_calibration(st);
 
 	/// a subtraction of the offset error of acceleration of the sensor
 	st.accel -= m_sphere.cp;
@@ -1194,7 +1196,7 @@ void GyroData::analyze_telemetry(StructTelemetry &st)
 	//v = m_corr_matrix * v;
 	//st.accel = v;
 
-	simple_kalman_filter(st);
+	simple_kalman_filter(st, st);
 
 	calc_offsets(st.gyro, st.accel);
 
@@ -1230,6 +1232,8 @@ void GyroData::analyze_telemetry(StructTelemetry &st)
 	}
 
 	m_telemetries.push_front(st);
+
+	return st;
 }
 
 void GyroData::load_from_xml()
@@ -1452,7 +1456,7 @@ void GyroData::calccount(const StructTelemetry &st)
 	}
 }
 
-void GyroData::draw_text(const Vector3d &v, QString text, const QColor& col)
+void GyroData::draw_text(const Vector3d &v, const QString &text, const QColor& col)
 {
 	QGLWidget *w = dynamic_cast< QGLWidget* >(parent());
 	if(w){
@@ -1509,8 +1513,6 @@ void GyroData::calc_parameters()
 	v2 = m_rotate_quaternion.rotatedVector(v3);
 	an = common_::rad2angle(atan2(v2.z(), v2.y()));
 	set_text("bank", QString::number(an, 'f', 1));
-
-
 }
 
 void GyroData::calc_correction()
@@ -1529,7 +1531,7 @@ void GyroData::calc_correction()
 	}
 }
 
-void GyroData::calc_calibrations_params(const StructTelemetry &st)
+void GyroData::fill_data_for_calibration(const StructTelemetry &st)
 {
 	if(m_is_calculated && m_write_data){
 		m_writed_telemetries.push_back(st);
@@ -1539,7 +1541,7 @@ void GyroData::calc_calibrations_params(const StructTelemetry &st)
 	}
 }
 
-void GyroData::simple_kalman_filter(StructTelemetry &st)
+void GyroData::simple_kalman_filter(const StructTelemetry &st, StructTelemetry &st_out)
 {
 	emit get_data("gyro", st.gyro);
 	emit get_data("accel", st.accel);
@@ -1547,8 +1549,8 @@ void GyroData::simple_kalman_filter(StructTelemetry &st)
 	Vector3d kav = m_kalman[0].set_zk(st.accel);
 	Vector3d kgv = m_kalman[1].set_zk(st.gyro);
 
-	st.accel = kav;
-	st.gyro = kgv;
+	st_out.accel = kav;
+	st_out.gyro = kgv;
 
 	emit get_data("kalman_accel", kav);
 	emit get_data("kalman_gyro", kgv);

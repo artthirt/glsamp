@@ -265,7 +265,13 @@ public slots:
 
 protected:
 	void tryParseData(const QByteArray& data);
-	void analyze_telemetry(sc::StructTelemetry& st);
+	/**
+	 * @brief analyze_telemetry
+	 * analyze telemetry and apply filters for data
+	 * @param st_in
+	 * @return telemetry with filters
+	 */
+	sc::StructTelemetry analyze_telemetry(const sc::StructTelemetry& st_in);
 
 	// VirtGLObject interface
 public:
@@ -349,20 +355,26 @@ private:
 
 	void init_sphere();
 
-	void calc_offsets(vector3_::Vector3i &gyro, vector3_::Vector3i &accel);
+	void calc_offsets(const vector3_::Vector3i &gyro, const vector3_::Vector3i &accel);
 	void clear_data();
 	void load_from_xml();
 	void save_to_xml();
 
-	void draw_text(const vector3_::Vector3d& v, QString text, const QColor &col = Qt::white);
+	void draw_text(const vector3_::Vector3d& v, const QString& text, const QColor &col = Qt::white);
 	void draw_sphere();
 	void draw_text();
 	void draw_recored_data();
 
 	void calc_parameters();
 	void calc_correction();
-	void calc_calibrations_params(const sc::StructTelemetry& st);
-	void simple_kalman_filter(sc::StructTelemetry& st);
+	void fill_data_for_calibration(const sc::StructTelemetry& st);
+	/**
+	 * @brief simple_kalman_filter
+	 * obtain values for gyroscope and accelerometer and apply the  kalman filter for it
+	 * @param st
+	 * @param st_out
+	 */
+	void simple_kalman_filter(const sc::StructTelemetry& st, sc::StructTelemetry& st_out);
 	void correct_error_gyroscope();
 };
 
