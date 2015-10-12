@@ -3,9 +3,13 @@
 using namespace sc;
 using namespace vector3_;
 
+#if (_MSC_VER >= 1500 && _MSC_VER <= 1600)
+#include <Windows.h>
+#else
+#endif
+
 #include <GL/gl.h>
 #include <GL/glu.h>
-
 
 //////////////////////////////////////////////
 

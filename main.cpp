@@ -3,6 +3,8 @@
 
 #include "matrix3.h"
 
+#include "time.h"
+
 /// @test code
 int test_matrix()
 {

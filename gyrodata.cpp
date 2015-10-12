@@ -1475,7 +1475,7 @@ void GyroData::draw_text()
 	Vector3d p(ar, 0.55, 0), pv(ar + 0.2, 0.55, 0);
 	double dy = -0.03;
 	glColor3f(0, 0.7, 0);
-	for(auto it = m_drawing_text.begin(); it != m_drawing_text.end(); it++){
+	for(QMap< QString, QString >::iterator it = m_drawing_text.begin(); it != m_drawing_text.end(); it++){
 		p.setY(p.y() + dy);
 		pv.setY(p.y());
 		QString key = QString("[%1]:").arg(it.key());
