@@ -342,13 +342,13 @@ void GyroData::openFile(const QString fileName)
 			continue;
 		}
 
-		st.accel = (Vector3i(a1, a2, a3));
-		st.gyro =(Vector3i(g1, g2, g3));
-		st.temp = t;
-		st.afs_sel = afs;
-		st.fs_sel = fs;
-		st.freq = f;
-		st.tick = tm;
+		st.gyroscope.accel = (Vector3i(a1, a2, a3));
+		st.gyroscope.gyro =(Vector3i(g1, g2, g3));
+		st.gyroscope.temp = t;
+		st.gyroscope.afs_sel = afs;
+		st.gyroscope.fs_sel = fs;
+		st.gyroscope.freq = f;
+		st.gyroscope.tick = tm;
 
 		m_downloaded_telemetries.push_back(st);
 
@@ -821,7 +821,7 @@ void GyroData::draw()
 		glColor3f(0, 1, 0);
 		glBegin(GL_POINTS);
 		for (int i = 0; i < count; i++) {
-			Vector3d v = m_downloaded_telemetries[i].accel;
+			Vector3d v = m_downloaded_telemetries[i].gyroscope.accel;
 			if(m_show_calibrated_data)
 				v -= m_sphere.cp;
 
@@ -833,7 +833,7 @@ void GyroData::draw()
 		glColor3f(1, 0, 0);
 		glBegin(GL_POINTS);
 		for (int i = 0; i< count; i++) {
-			Vector3d tmp(_V(m_downloaded_telemetries[i].gyro) * div_gyro);
+			Vector3d tmp(_V(m_downloaded_telemetries[i].gyroscope.gyro) * div_gyro);
 			glVertex3dv(tmp.data);
 		}
 		glEnd();
@@ -902,7 +902,7 @@ void GyroData::draw()
 
 	if(m_telemetries.size()){
 
-		Vector3d tmp(_V(m_telemetries[0].gyro) * div_gyro);
+		Vector3d tmp(_V(m_telemetries[0].gyroscope.gyro) * div_gyro);
 
 		glColor3f(1, 0.5, 0);
 		glBegin(GL_POINTS);
@@ -919,7 +919,7 @@ void GyroData::draw()
 			float dd = (float)(m_telemetries.size() - i) / m_telemetries.size();
 			glColor3f(1 * dd, 0.5 * dd, 0);
 
-			tmp = _V(st.gyro) * div_gyro;
+			tmp = _V(st.gyroscope.gyro) * div_gyro;
 
 			glVertex3dv(tmp.data);
 		}
@@ -933,7 +933,7 @@ void GyroData::draw()
 		glPushMatrix();
 
 		draw_line(Vector3d(), tmp, Qt::green);
-		draw_text(tmp, "accel. " + QString::number(m_telemetries[0].accel.length()));
+		draw_text(tmp, "accel. " + QString::number(m_telemetries[0].gyroscope.accel.length()));
 
 		glLineWidth(1);
 		glBegin(GL_LINE_STRIP);
@@ -944,7 +944,7 @@ void GyroData::draw()
 				float dd = (float)(m_telemetries.size() - i) / m_telemetries.size();
 				glColor3f(0.5 * dd, 1 * dd, 0);
 
-				tmp = _V(st.accel) + m_sphere.cp;
+				tmp = _V(st.gyroscope.accel) + m_sphere.cp;
 				tmp *= div_accel;
 
 				glVertex3dv(tmp.data);
@@ -955,7 +955,7 @@ void GyroData::draw()
 				float dd = (float)(m_telemetries.size() - i) / m_telemetries.size();
 				glColor3f(0.5 * dd, 1 * dd, 0);
 
-				tmp = _V(st.accel) * div_accel;
+				tmp = _V(st.gyroscope.accel) * div_accel;
 
 				glVertex3dv(tmp.data);
 			}
@@ -1049,15 +1049,15 @@ void GyroData::on_timeout_playing()
 
 		StructTelemetry st = m_downloaded_telemetries[m_current_playing_pos];
 
-		if(st.tick && m_first_tick){
-			long long tick = st.tick - m_first_tick;
-			//qDebug() << m_index << tick - m_past_tick << st.tick << m_first_tick + m_past_tick;
+		if(st.gyroscope.tick && m_first_tick){
+			long long tick = st.gyroscope.tick - m_first_tick;
+			//qDebug() << m_index << tick - m_past_tick << st.gyroscope.tick << m_first_tick + m_past_tick;
 			m_part_of_time = (double)(tick - m_past_tick) / 1e+3;
 			m_past_tick = tick;
 		}else{
-			if(st.tick){
-				m_first_tick = st.tick;
-				m_past_tick = st.tick - m_first_tick;
+			if(st.gyroscope.tick){
+				m_first_tick = st.gyroscope.tick;
+				m_past_tick = st.gyroscope.tick - m_first_tick;
 			}
 		}
 
@@ -1086,24 +1086,24 @@ void GyroData::tryParseData(const QByteArray &data)
 	StructTelemetry st;
 
 	QDataStream stream(data);
-	st.read_from(stream);
+	st.gyroscope.read_from(stream);
 
-	//remove_lowbits(st.accel, 7);
-//	remove_lowbits(st.gyro, 4);
+	//remove_lowbits(st.gyroscope.accel, 7);
+//	remove_lowbits(st.gyroscope.gyro, 4);
 //	qint64 tick_delta = m_tick_telemetry.nsecsElapsed();
 //	double part_of_time = tick_delta / 1e+9;
 //	m_part_of_time = part_of_time;
 
 //	m_tick_telemetry.restart();
-	if(st.tick && m_first_tick){
-		long long tick = st.tick - m_first_tick;
-		//qDebug() << m_index << tick - m_past_tick << st.tick << m_first_tick + m_past_tick;
+	if(st.gyroscope.tick && m_first_tick){
+		long long tick = st.gyroscope.tick - m_first_tick;
+		//qDebug() << m_index << tick - m_past_tick << st.gyroscope.tick << m_first_tick + m_past_tick;
 		m_part_of_time = (double)(tick - m_past_tick) / 1e+3;
 		m_past_tick = tick;
 	}else{
-		if(st.tick){
-			m_first_tick = st.tick;
-			m_past_tick = st.tick - m_first_tick;
+		if(st.gyroscope.tick){
+			m_first_tick = st.gyroscope.tick;
+			m_past_tick = st.gyroscope.tick - m_first_tick;
 		}
 	}
 
@@ -1190,25 +1190,25 @@ StructTelemetry GyroData::analyze_telemetry(const StructTelemetry &st_in)
 	fill_data_for_calibration(st);
 
 	/// a subtraction of the offset error of acceleration of the sensor
-	st.accel -= m_sphere.cp;
+	st.gyroscope.accel -= m_sphere.cp;
 
-	//Vector3d v = st.accel;
+	//Vector3d v = st.gyroscope.accel;
 	//v = m_corr_matrix * v;
-	//st.accel = v;
+	//st.gyroscope.accel = v;
 
 	simple_kalman_filter(st, st);
 
-	calc_offsets(st.gyro, st.accel);
+	calc_offsets(st.gyroscope.gyro, st.gyroscope.accel);
 
-	Vector3d v = st.accel;
+	Vector3d v = st.gyroscope.accel;
 
 	if(m_mean_accel.isNull())
 		m_mean_accel = v;
 	m_mean_accel = m_mean_accel * 0.9 + v * 0.1;
 
 	if(!m_is_calc_offset_gyro && m_is_calculated){
-		//m_rotate_pos -= (st.angular_speed(m_offset_gyro) * m_part_of_time);
-		Vector3d rotate_speed = (st.angular_speed(m_offset_gyro) * m_part_of_time);
+		//m_rotate_pos -= (st.gyroscope.angular_speed(m_offset_gyro) * m_part_of_time);
+		Vector3d rotate_speed = (st.gyroscope.angular_speed(m_offset_gyro) * m_part_of_time);
 		rotate_speed = rotate_speed.inv();
 
 		Quaternion quat_speed = fromAnglesAxes(rotate_speed);
@@ -1444,7 +1444,7 @@ void GyroData::show_recorded_data(bool value)
 void GyroData::calccount(const StructTelemetry &st)
 {
 	if(m_is_calc_pos){
-		m_pos_values[m_curcalc_pos] += Vector3d(st.accel);
+		m_pos_values[m_curcalc_pos] += Vector3d(st.gyroscope.accel);
 		m_calcid++;
 		if(m_calcid >= m_calccount){
 			m_is_calc_pos = 0;
@@ -1496,7 +1496,7 @@ void GyroData::draw_recored_data()
 	glColor3f(1, 0.5, 0.3);
 	glBegin(GL_POINTS);
 	foreach (StructTelemetry st, m_writed_telemetries) {
-		Vector3d v = st.accel;
+		Vector3d v = st.gyroscope.accel;
 		v *= 1. / m_divider_accel;
 		glVertex3dv(v.data);
 	}
@@ -1543,14 +1543,14 @@ void GyroData::fill_data_for_calibration(const StructTelemetry &st)
 
 void GyroData::simple_kalman_filter(const StructTelemetry &st, StructTelemetry &st_out)
 {
-	emit get_data("gyro", st.gyro);
-	emit get_data("accel", st.accel);
+	emit get_data("gyro", st.gyroscope.gyro);
+	emit get_data("accel", st.gyroscope.accel);
 
-	Vector3d kav = m_kalman[0].set_zk(st.accel);
-	Vector3d kgv = m_kalman[1].set_zk(st.gyro);
+	Vector3d kav = m_kalman[0].set_zk(st.gyroscope.accel);
+	Vector3d kgv = m_kalman[1].set_zk(st.gyroscope.gyro);
 
-	st_out.accel = kav;
-	st_out.gyro = kgv;
+	st_out.gyroscope.accel = kav;
+	st_out.gyroscope.gyro = kgv;
 
 	emit get_data("kalman_accel", kav);
 	emit get_data("kalman_gyro", kgv);

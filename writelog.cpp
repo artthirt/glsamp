@@ -175,20 +175,20 @@ void WriteLog::add_data(const QString &name, const StructTelemetry &data)
 	ADDVAL(data.course);
 	ADDVAL(data.tangaj);
 	ADDVAL(data.height);
-	ADDVAL(data.temp);
+	ADDVAL(data.gyroscope.temp);
 
-	ADDVAL(data.accel.x());
-	ADDVAL(data.accel.y());
-	ADDVAL(data.accel.z());
+	ADDVAL(data.gyroscope.accel.x());
+	ADDVAL(data.gyroscope.accel.y());
+	ADDVAL(data.gyroscope.accel.z());
 
-	ADDVAL(data.gyro.x());
-	ADDVAL(data.gyro.y());
-	ADDVAL(data.gyro.z());
+	ADDVAL(data.gyroscope.gyro.x());
+	ADDVAL(data.gyroscope.gyro.y());
+	ADDVAL(data.gyroscope.gyro.z());
 
-	ADDVAL(data.afs_sel);
-	ADDVAL(data.fs_sel);
-	ADDVAL(data.freq);
-	ADDVAL(data.tick);
+	ADDVAL(data.gyroscope.afs_sel);
+	ADDVAL(data.gyroscope.fs_sel);
+	ADDVAL(data.gyroscope.freq);
+	ADDVAL(data.gyroscope.tick);
 
 	m_logFiles[name].push_data(name, str);
 }

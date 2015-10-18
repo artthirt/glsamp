@@ -57,7 +57,7 @@ bool CalibrateAccelerometer::set_parameters(const QVector<StructTelemetry> *sts,
 
 	m_analyze_data.clear();
 	foreach (StructTelemetry st, *sts) {
-		m_analyze_data.push_back(st.accel);
+		m_analyze_data.push_back(st.gyroscope.accel);
 	}
 	m_max_pass = max_pass;
 	m_threshold = threshold;

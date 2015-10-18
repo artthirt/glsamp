@@ -45,7 +45,8 @@ SOURCES += main.cpp\
     calibrateaccelerometer.cpp \
     dialogabout.cpp \
     gyrodatawidget.cpp \
-    spheregl.cpp
+    spheregl.cpp \
+    submodules/struct_controls/struct_controls.cpp
 
 HEADERS  += mainwindow.h \
     virtglobject.h \
