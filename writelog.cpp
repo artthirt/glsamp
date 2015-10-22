@@ -190,6 +190,15 @@ void WriteLog::add_data(const QString &name, const StructTelemetry &data)
 	ADDVAL(data.gyroscope.freq);
 	ADDVAL(data.gyroscope.tick);
 
+	ADDVAL(data.compass.data.x());
+	ADDVAL(data.compass.data.y());
+	ADDVAL(data.compass.data.z());
+	ADDVAL(data.compass.tick);
+
+	ADDVAL(data.barometer.data);
+	ADDVAL(data.barometer.temp);
+	ADDVAL(data.barometer.tick);
+
 	m_logFiles[name].push_data(name, str);
 }
 

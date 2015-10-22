@@ -1086,7 +1086,7 @@ void GyroData::tryParseData(const QByteArray &data)
 	StructTelemetry st;
 
 	QDataStream stream(data);
-	st.gyroscope.read_from(stream);
+	st.read_from(stream);
 
 	//remove_lowbits(st.gyroscope.accel, 7);
 //	remove_lowbits(st.gyroscope.gyro, 4);
