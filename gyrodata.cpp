@@ -302,8 +302,10 @@ void GyroData::openFile(const QString fileName)
 
 	m_downloaded_telemetries.clear();
 
-	int ind = 0;
+	int ind = -1;
 	while(!tstream.atEnd()){
+		ind++;
+
 		QString line = tstream.readLine();
 		line = line.trimmed();
 		QStringList sl = line.split(';');
@@ -313,6 +315,10 @@ void GyroData::openFile(const QString fileName)
 		double a1, a2, a3, t, g1, g2, g3, f = 100, afs = 0, fs = 0;
 		long long tm = 0;
 
+		if(!sl.size()){
+			qDebug() << "data in line" << ind << "not enough:" << sl.size();
+			continue;
+		}
 		if(sl.size() == 7){
 			a1	= sl[0].toDouble();
 			a2	= sl[1].toDouble();
@@ -337,9 +343,24 @@ void GyroData::openFile(const QString fileName)
 		if(sl.size() >= 14){
 			tm = sl[14].toLongLong();
 		}
-		if(!sl.size()){
-			qDebug() << "data in line" << ind << "not enough:" << sl.size();
-			continue;
+		if(sl.size() >= 22){
+			int c1, c2, c3, m;
+			long long tick = 0;
+			c1 = sl[15].toInt();
+			c2 = sl[16].toInt();
+			c3 = sl[17].toInt();
+			m = sl[18].toInt();
+			tick = sl[19].toLongLong();
+			st.compass.data = Vector3i(c1, c2, c3);
+			st.compass.mode = m;
+			st.compass.tick = tick;
+
+			c1 = sl[20].toInt();
+			c2 = sl[21].toInt();
+			tick = sl[22].toLongLong();
+			st.barometer.data = c1;
+			st.barometer.temp = c2;
+			st.barometer.tick = tick;
 		}
 
 		st.gyroscope.accel = (Vector3i(a1, a2, a3));
@@ -351,8 +372,6 @@ void GyroData::openFile(const QString fileName)
 		st.gyroscope.tick = tm;
 
 		m_downloaded_telemetries.push_back(st);
-
-		ind++;
 	}
 
 	emit add_to_log("file loaded: \"" + m_fileName + "\"; count data: " + QString::number(m_downloaded_telemetries.size()));
@@ -934,6 +953,12 @@ void GyroData::draw()
 
 		draw_line(Vector3d(), tmp, Qt::green);
 		draw_text(tmp, "accel. " + QString::number(m_telemetries[0].gyroscope.accel.length()));
+
+		tmp = m_telemetries[0].compass.data;
+		tmp *= 0.01;
+		glLineWidth(3);
+		draw_line(Vector3d(), tmp, QColor(128, 100, 64));
+		draw_text(tmp, "compass", QColor(128, 100, 64));
 
 		glLineWidth(1);
 		glBegin(GL_LINE_STRIP);
