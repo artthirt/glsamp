@@ -67,6 +67,21 @@ bool CalibrateAccelerometer::set_parameters(const QVector<StructTelemetry> *sts,
 	return true;
 }
 
+bool CalibrateAccelerometer::set_parameters(const QVector<Vector3d> &sts, int max_pass, double threshold, double percent_deviation)
+{
+	if(is_progress())
+		return false;
+
+	m_analyze_data.clear();
+	m_analyze_data = sts;
+	m_max_pass = max_pass;
+	m_threshold = threshold;
+	m_state = none;
+	m_percent_deviation = percent_deviation / 100.;
+
+	return true;
+}
+
 void CalibrateAccelerometer::evaluate()
 {
 	m_state = none;

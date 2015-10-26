@@ -100,6 +100,10 @@ private slots:
 
 	void on_pb_write_log_clicked();
 
+	void on_pb_calibrate_compass_clicked();
+
+	void on_pb_reset_compass_vcalibrate_clicked();
+
 private:
 	Ui::GyroDataWidget *ui;
 	QTimer m_timer_cfg;

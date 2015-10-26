@@ -208,6 +208,8 @@ GyroData::GyroData(QObject *parent) :
   , m_add_to_pool(false)
   , m_show_recorded_data(false)
   , m_is_start_correction(false)
+  , m_receiver_port(7770)
+  , m_typeOfCalibrate(NONE)
 {
 	setType(GYRODATA);
 
@@ -384,6 +386,7 @@ void GyroData::send_start_to_net(const QHostAddress &host, ushort port)
 	if(!m_socket){
 		m_socket = new QUdpSocket;
 		connect(m_socket, SIGNAL(readyRead()), this, SLOT(on_readyRead()));
+		m_socket->bind(m_receiver_port);
 	}
 	QByteArray data("START");
 	m_socket->writeDatagram(data, host, port);
@@ -398,6 +401,7 @@ void GyroData::send_stop_to_net(const QHostAddress &host, ushort port)
 	if(!m_socket){
 		m_socket = new QUdpSocket;
 		connect(m_socket, SIGNAL(readyRead()), this, SLOT(on_readyRead()));
+		m_socket->bind(m_receiver_port);
 	}
 	QByteArray data("STOP");
 	m_socket->writeDatagram(data, host, port);
@@ -585,7 +589,7 @@ void GyroData::set_init_position()
 	m_writed_telemetries.clear();
 }
 
-bool GyroData::calibrate()
+bool GyroData::calibrate_accelerometer()
 {
 	if(m_calibrate.is_progress())
 		return false;
@@ -599,6 +603,8 @@ bool GyroData::calibrate()
 			return false;
 	}
 
+	m_typeOfCalibrate = Accelerometer;
+
 	m_timer_calibrate.start();
 
 	QThreadPool::globalInstance()->start(new CalibrateAccelerometerRunnable(&m_calibrate));
@@ -606,9 +612,50 @@ bool GyroData::calibrate()
 	return true;
 }
 
-const CalibrateAccelerometer &GyroData::calibrateAccelerometer() const
+bool GyroData::calibrate_compass()
+{
+	if(m_calibrate.is_progress())
+		return false;
+
+	QVector< StructTelemetry > & st = m_writed_telemetries;
+
+	if(!m_writed_telemetries.size()){
+		st = m_downloaded_telemetries;
+
+		if(!m_downloaded_telemetries.size())
+			return false;
+	}
+
+	QVector< Vector3d > data;
+	foreach (StructTelemetry it, st) {
+		data.push_back(it.compass.data);
+	}
+
+	m_calibrate.set_parameters(data);
+
+	m_typeOfCalibrate = Compass;
+
+	m_timer_calibrate.start();
+
+	QThreadPool::globalInstance()->start(new CalibrateAccelerometerRunnable(&m_calibrate));
+
+	return true;
+
+}
+
+void GyroData::reset_calibration_compass()
+{
+	m_sphere_compass.reset();
+}
+
+const CalibrateAccelerometer &GyroData::calibrate_thread() const
 {
 	return m_calibrate;
+}
+
+GyroData::TypeOfCalibrate GyroData::typeOfCalibrate() const
+{
+	return m_typeOfCalibrate;
 }
 
 bool GyroData::is_draw_mean_sphere() const
@@ -683,18 +730,32 @@ void GyroData::on_timeout()
 void GyroData::on_timeout_calibrate()
 {
 	if(m_calibrate.is_done()){
-		m_timer_calibrate.stop();
-		m_sphere = m_calibrate.result();
 
-		emit add_to_log("evaluate. x=" + QString::number(m_sphere.cp.x(), 'f', 3) +
-				   ", y=" + QString::number(m_sphere.cp.y(), 'f', 3) +
-				   ", z=" + QString::number(m_sphere.cp.z(), 'f', 3) +
-				   "; R=" + QString::number(m_sphere.mean_radius, 'f', 3) +
-				   "; dev=" + QString::number(m_sphere.deviation, 'f', 3));
+		switch (m_typeOfCalibrate) {
+			case Accelerometer:
+				m_sphere = m_calibrate.result();
+				emit add_to_log("evaluate accelerometer. x=" + QString::number(m_sphere.cp.x(), 'f', 3) +
+						   ", y=" + QString::number(m_sphere.cp.y(), 'f', 3) +
+						   ", z=" + QString::number(m_sphere.cp.z(), 'f', 3) +
+						   "; R=" + QString::number(m_sphere.mean_radius, 'f', 3) +
+						   "; dev=" + QString::number(m_sphere.deviation, 'f', 3));
 
-		m_sphereGl.generate_sphere(m_sphere.mean_radius, m_divider_accel);
+				m_sphereGl.generate_sphere(m_sphere.mean_radius, m_divider_accel);
+
+				break;
+			case Compass:
+				m_sphere_compass = m_calibrate.result();
+				emit add_to_log("evaluate compass. x=" + QString::number(m_sphere_compass.cp.x(), 'f', 3) +
+						   ", y=" + QString::number(m_sphere_compass.cp.y(), 'f', 3) +
+						   ", z=" + QString::number(m_sphere_compass.cp.z(), 'f', 3) +
+						   "; R=" + QString::number(m_sphere_compass.mean_radius, 'f', 3) +
+						   "; dev=" + QString::number(m_sphere_compass.deviation, 'f', 3));
+			default:
+				break;
+		}
 
 		save_calibrate();
+		m_timer_calibrate.stop();
 	}
 }
 
@@ -827,6 +888,13 @@ void draw_Gaccel(const Vector3d& gaccel)
 	draw_line(Vector3d(), gaccel, Qt::yellow);
 }
 
+Vector3d SHV(const Vector3i& v)
+{
+	return Vector3d(v.x(), v.y(), v.z());
+}
+
+const Vector3d compass_multiply(1./99., 1./110., 1./99.);
+
 void GyroData::draw()
 {
 	double div_gyro = 1.0 / m_divider_gyro;
@@ -853,6 +921,16 @@ void GyroData::draw()
 		glBegin(GL_POINTS);
 		for (int i = 0; i< count; i++) {
 			Vector3d tmp(_V(m_downloaded_telemetries[i].gyroscope.gyro) * div_gyro);
+			glVertex3dv(tmp.data);
+		}
+		glEnd();
+
+		glColor3f(1, 0.8, 0.5);
+		glBegin(GL_POINTS);
+		for (int i = 0; i< count; i++) {
+			Vector3d v = SHV(m_downloaded_telemetries[i].compass.data);
+			v -= m_sphere_compass.cp;
+			Vector3d tmp(v * compass_multiply);
 			glVertex3dv(tmp.data);
 		}
 		glEnd();
@@ -954,11 +1032,14 @@ void GyroData::draw()
 		draw_line(Vector3d(), tmp, Qt::green);
 		draw_text(tmp, "accel. " + QString::number(m_telemetries[0].gyroscope.accel.length()));
 
-		tmp = m_telemetries[0].compass.data;
-		tmp *= 0.01;
-		glLineWidth(3);
-		draw_line(Vector3d(), tmp, QColor(128, 100, 64));
-		draw_text(tmp, "compass", QColor(128, 100, 64));
+		{
+			Vector3d cmp = SHV(m_telemetries[0].compass.data);
+			cmp -= m_sphere_compass.cp;
+			cmp = cmp * compass_multiply;
+			glLineWidth(3);
+			draw_line(cmp, Vector3d(), QColor(128, 100, 64));
+			draw_text(cmp, "compass", QColor(128, 100, 64));
+		}
 
 		glLineWidth(1);
 		glBegin(GL_LINE_STRIP);
@@ -1386,6 +1467,15 @@ void GyroData::load_calibrate()
 		m_is_calc_offset_gyro = false;
 	}
 
+	if(!sxml["compass"].empty()){
+		node = sxml["compass"];
+		m_sphere_compass.cp.setX((double)node["x_corr"]);
+		m_sphere_compass.cp.setY(node["y_corr"]);
+		m_sphere_compass.cp.setZ(node["z_corr"]);
+		m_sphere_compass.mean_radius = node["mean_radius"];
+		m_sphere_compass.deviation = node["deviation"];
+	}
+
 	calc_correction();
 }
 
@@ -1425,6 +1515,13 @@ void GyroData::save_calibrate()
 		node << "x_corr" << m_mean_Gaccel.x() <<
 		"y_corr" << m_mean_Gaccel.y() <<
 		"z_corr" << m_mean_Gaccel.z();
+	}
+
+	if(!m_sphere_compass.empty()){
+		SimpleXMLNode node = sxml["compass"];
+		node << "x_corr" <<  m_sphere_compass.cp.x() << "y_corr" <<  m_sphere_compass.cp.y() << "z_corr" << m_sphere_compass.cp.z();
+		node << "mean_radius" << m_sphere_compass.mean_radius;
+		node << "deviation" << m_sphere_compass.deviation;
 	}
 }
 

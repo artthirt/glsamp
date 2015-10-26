@@ -36,6 +36,12 @@ public:
 		GYRODATA  = TYPE_VGL + 2
 	};
 
+	enum TypeOfCalibrate{
+		NONE,
+		Accelerometer,
+		Compass
+	};
+
 	explicit GyroData(QObject *parent = 0);
 	virtual ~GyroData();
 
@@ -194,9 +200,13 @@ public:
 	/**
 	 * @brief calibrate
 	 */
-	bool calibrate();
+	bool calibrate_accelerometer();
 
-	const CalibrateAccelerometer &calibrateAccelerometer() const;
+	bool calibrate_compass();
+	void reset_calibration_compass();
+
+	const CalibrateAccelerometer &calibrate_thread() const;
+	TypeOfCalibrate typeOfCalibrate() const;
 
 	/// \brief draw calculation sphere for found calibration values
 	bool is_draw_mean_sphere() const;
@@ -204,6 +214,8 @@ public:
 	void reset_mean_sphere();
 
 	const StructMeanSphere& mean_sphere() const { return m_sphere; }
+
+	const StructMeanSphere& mean_sphere_compass() const { return m_sphere_compass; }
 
 	/// \brief show data in view with calibration values
 	bool is_show_calibrated_data() const { return m_show_calibrated_data; }
@@ -284,6 +296,7 @@ private:
 	QString m_fileName;
 	QVector< sc::StructTelemetry > m_downloaded_telemetries;
 	QUdpSocket *m_socket;
+	ushort m_receiver_port;
 	double m_divider_accel;
 	double m_divider_gyro;
 	double m_percent_downloaded_data;
@@ -346,6 +359,9 @@ private:
 	CalibrateAccelerometer m_calibrate;
 	bool m_is_draw_mean_sphere;
 	bool m_show_calibrated_data;
+	TypeOfCalibrate m_typeOfCalibrate;
+
+	StructMeanSphere m_sphere_compass;
 
 	QVector < vector3_::Vector3d > m_trajectory;
 

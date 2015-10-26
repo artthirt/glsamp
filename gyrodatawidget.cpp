@@ -16,6 +16,7 @@ GyroDataWidget::GyroDataWidget(QWidget *parent) :
 	connect(&m_tmcalib, SIGNAL(timeout()), this, SLOT(on_timeout_tmcalib()));
 	m_tmcalib.setInterval(50);
 
+	ui->lb_work_compass->setVisible(false);
 }
 
 GyroDataWidget::~GyroDataWidget()
@@ -82,12 +83,31 @@ void GyroDataWidget::on_timeout_tmcalib()
 {
 	if(!m_model)
 		return;
-	if(m_model->calibrateAccelerometer().is_done()){
+	if(m_model->calibrate_thread().is_done()){
 		m_tmcalib.stop();
 		ui->widget_pass->setVisible(false);
+		ui->lb_work_compass->setVisible(false);
+
+		switch (m_model->typeOfCalibrate()) {
+			case GyroData::Accelerometer:
+
+				break;
+			case GyroData::Compass:
+			{
+				QString val = QString("center: %1; radius: %2; deviation: %3")
+						.arg(m_model->mean_sphere_compass().cp)
+						.arg(m_model->mean_sphere_compass().mean_radius)
+						.arg(m_model->mean_sphere_compass().deviation);
+				ui->lb_values->setText(val);
+			}
+				break;
+			default:
+				break;
+		}
 	}
-	ui->pb_calibrate->setValue(m_model->calibrateAccelerometer().pass_part_evaluate() * 100.0);
-	ui->lb_pass->setText("pass: " + QString::number(m_model->calibrateAccelerometer().pass()));
+
+	ui->pb_calibrate->setValue(m_model->calibrate_thread().pass_part_evaluate() * 100.0);
+	ui->lb_pass->setText("pass: " + QString::number(m_model->calibrate_thread().pass()));
 }
 
 ///////////////////////////////////
@@ -215,10 +235,10 @@ void GyroDataWidget::on_pushButton_10_clicked(bool checked)
 {
 	if(!m_model)
 		return;
-	if(m_model->calibrate()){
+	if(m_model->calibrate_accelerometer()){
 		ui->widget_pass->setVisible(true);
 		ui->pb_calibrate->setValue(0);
-		ui->lb_pass->setText("pass: " + QString::number(m_model->calibrateAccelerometer().pass()));
+		ui->lb_pass->setText("pass: " + QString::number(m_model->calibrate_thread().pass()));
 		m_tmcalib.start();
 	}
 }
@@ -321,5 +341,26 @@ void GyroDataWidget::on_pb_write_log_clicked()
 {
 	if(m_model){
 		m_model->log_recorded_data();
+	}
+}
+
+void GyroDataWidget::on_pb_calibrate_compass_clicked()
+{
+	if(!m_model)
+		return;
+
+	if(m_model->calibrate_compass()){
+		ui->lb_work_compass->setVisible(true);
+		ui->widget_pass->setVisible(true);
+		ui->pb_calibrate->setValue(0);
+		ui->lb_pass->setText("pass: " + QString::number(m_model->calibrate_thread().pass()));
+		m_tmcalib.start();
+	}
+}
+
+void GyroDataWidget::on_pb_reset_compass_vcalibrate_clicked()
+{
+	if(m_model){
+		m_model->reset_calibration_compass();
 	}
 }

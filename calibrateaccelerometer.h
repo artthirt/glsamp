@@ -66,6 +66,8 @@ public:
 	 */
 	bool set_parameters(const QVector< sc::StructTelemetry > *sts, int max_pass = 100, double threshold = 1e-6,
 						double percent_deviation = 12.);
+	bool set_parameters(const QVector< vector3_::Vector3d > &sts, int max_pass = 100, double threshold = 1e-6,
+						double percent_deviation = 12.);
 signals:
 	void send_log(const QString& value);
 
