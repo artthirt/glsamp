@@ -21,8 +21,6 @@ using namespace quaternions;
 
 const QString xml_calibrate("calibrate.xml");
 
-Q_DECLARE_METATYPE(sc::StructTelemetry)
-
 /////////////////////////////////////////////////////
 
 inline Vector3i rshift(const Vector3i& val, int shift)
@@ -113,12 +111,15 @@ SensorsWork::SensorsWork(QObject *parent)
 {
 	connect(this, SIGNAL(bind_address()), this, SLOT(_on_bind_address()), Qt::QueuedConnection);
 	connect(this, SIGNAL(send_to_socket(QByteArray)), this, SLOT(_on_send_to_socket(QByteArray)), Qt::QueuedConnection);
+	connect(this, SIGNAL(start_calibration_watcher()), this, SLOT(_on_start_calibration_watcher()), Qt::QueuedConnection);
 
 	load_calibrate();
 }
 
 SensorsWork::~SensorsWork()
 {
+	QThreadPool::globalInstance()->waitForDone();
+
 	quit();
 	wait();
 
@@ -181,7 +182,7 @@ bool SensorsWork::calibrate_accelerometer(const QVector<Vector3d> &data)
 
 	m_typeOfCalibrate = Accelerometer;
 
-	m_timer_calibrate->start();
+	emit start_calibration_watcher();
 
 	QThreadPool::globalInstance()->start(new CalibrateAccelerometerRunnable(&m_calibrate));
 
@@ -197,7 +198,7 @@ bool SensorsWork::calibrate_compass(const QVector<Vector3d> &data)
 
 	m_typeOfCalibrate = Compass;
 
-	m_timer_calibrate->start();
+	emit start_calibration_watcher();
 
 	QThreadPool::globalInstance()->start(new CalibrateAccelerometerRunnable(&m_calibrate));
 
@@ -260,6 +261,11 @@ void SensorsWork::_on_bind_address()
 void SensorsWork::_on_send_to_socket(const QByteArray &data)
 {
 	m_socket->writeDatagram(data, m_addr, m_port);
+}
+
+void SensorsWork::_on_start_calibration_watcher()
+{
+	m_timer_calibrate->start();
 }
 
 bool SensorsWork::is_exists_value(SensorsWork::POS pos) const
@@ -574,11 +580,11 @@ const int min_threshold_accel = 200;
 
 static inline Quaternion fromAnglesAxes(const Vector3d& angles)
 {
-	Quaternion/* qX, qY, qZ*/ qres;
+	Quaternion qX, qY, qZ, qres;
 	double aspeed = angles.length();
 	if(!common_::fIsNull(aspeed)){
 		Vector3d axis = angles.normalized();
-		qres = Quaternion::fromAxisAndAngle(axis, aspeed);
+		qres = Quaternion::fromAxisAndAngle(axis, -aspeed);
 	}
 //	qX = Quaternion::fromAxisAndAngle(Vector3d(1, 0, 0), angles.x());
 //	qY = Quaternion::fromAxisAndAngle(Vector3d(0, 1, 0), angles.y());
@@ -689,7 +695,7 @@ StructTelemetry SensorsWork::analyze_telemetry(const StructTelemetry &st_in)
 
 		/////////////////////////////
 
-		correct_error_gyroscope();
+		//correct_error_gyroscope();
 	}
 
 	telemetries.push_front(st);

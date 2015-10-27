@@ -113,6 +113,7 @@ signals:
 	void add_to_log(const QString& text);
 	void stop_calibration();
 	void fill_data_for_calibration(const sc::StructTelemetry& st);
+	void start_calibration_watcher();
 
 protected:
 	virtual void run();
@@ -124,6 +125,7 @@ public slots:
 	void _on_timeout();
 	void _on_bind_address();
 	void _on_send_to_socket(const QByteArray& data);
+	void _on_start_calibration_watcher();
 
 private:
 	QUdpSocket *m_socket;

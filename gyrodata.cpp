@@ -39,6 +39,10 @@ using namespace quaternions;
 
 ///////////////////////////////
 
+const int regTelem	= qRegisterMetaType< sc::StructTelemetry >("sc::StructTelemetry");
+const int regVec3d	= qRegisterMetaType< vector3_::Vector3d >("vector3_::Vector3d");
+const int regVec3i	= qRegisterMetaType< vector3_::Vector3i >("vector3_::Vector3i");
+
 const QString xml_config("gyro.xml");
 
 ///////////////////////////////
@@ -139,7 +143,7 @@ GyroData::GyroData(QObject *parent) :
 	m_sensorsWork->moveToThread(m_sensorsWork);
 	m_sensorsWork->start();
 
-	connect(m_sensorsWork, SIGNAL(fill_data_for_calibration(sc::StructTelemetry)), this, SLOT(fill_data_for_calibration(sc::StructTelemetry)));
+	connect(m_sensorsWork, SIGNAL(fill_data_for_calibration(const sc::StructTelemetry&)), this, SLOT(fill_data_for_calibration(const sc::StructTelemetry&)));
 	connect(m_sensorsWork, SIGNAL(stop_calibration()), this, SLOT(_on_stop_calibration()));
 
 	connect(&m_sensorsWork->calibrate_thread(), SIGNAL(send_log(QString)), this, SLOT(_on_calibrate_log(QString)));
@@ -672,7 +676,7 @@ Vector3d SHV(const Vector3i& v)
 	return Vector3d(v.x(), v.y(), v.z());
 }
 
-const Vector3d compass_multiply(1./99., 1./110., 1./99.);
+const Vector3d compass_multiply(1./99., 1./99., 1./99.);
 
 void GyroData::draw()
 {
@@ -955,6 +959,10 @@ void GyroData::load_from_xml()
 
 	if(!QFile::exists(m_fileName))
 		m_fileName.clear();
+
+	if(sensorsWork()){
+		sensorsWork()->set_address(m_addr, m_port);
+	}
 }
 
 void GyroData::save_to_xml()
@@ -1052,12 +1060,25 @@ void GyroData::draw_text()
 }
 
 void GyroData::draw_recored_data()
-{
+{	
 	glColor3f(1, 0.5, 0.3);
 	glBegin(GL_POINTS);
 	foreach (StructTelemetry st, m_writed_telemetries) {
 		Vector3d v = st.gyroscope.accel;
 		v *= 1. / m_divider_accel;
+		glVertex3dv(v.data);
+	}
+	glEnd();
+
+	if(!sensorsWork())
+		return;
+
+	glColor3f(0.5, 1, 0.3);
+	glBegin(GL_POINTS);
+	foreach (StructTelemetry st, m_writed_telemetries) {
+		Vector3d v = st.compass.data;
+		v -= sensorsWork()->mean_sphere_compass().cp;
+		v = v * compass_multiply;
 		glVertex3dv(v.data);
 	}
 	glEnd();
