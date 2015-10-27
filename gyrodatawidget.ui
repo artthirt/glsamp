@@ -338,7 +338,7 @@
       <item>
        <widget class="QTabWidget" name="tw_gyro_params">
         <property name="currentIndex">
-         <number>3</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="tab">
          <attribute name="title">
@@ -751,6 +751,9 @@ calibration</string>
               <widget class="QLabel" name="lb_values">
                <property name="text">
                 <string/>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
