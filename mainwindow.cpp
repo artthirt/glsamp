@@ -41,8 +41,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	m_available_telemetry->setMinimumWidth(200);
 	ui->statusBar->addWidget(m_available_telemetry);
 
-	connect(ui->gyrodata->model()->sensorsWork(), SIGNAL(get_data(QString,vector3_::Vector3i)), this, SLOT(on_put_data(QString,vector3_::Vector3i)));
-	connect(ui->gyrodata->model()->sensorsWork(), SIGNAL(get_data(QString,double)), this, SLOT(on_put_data(QString,double)));
+	connect(ui->gyrodata->model()->sensorsWork(), SIGNAL(get_data(QString,vector3_::Vector3i)), this, SLOT(_on_put_data(QString,vector3_::Vector3i)));
+	connect(ui->gyrodata->model()->sensorsWork(), SIGNAL(get_data(QString,double)), this, SLOT(_on_put_data(QString,double)));
 
 	connect(ui->gyrodata->model(), SIGNAL(add_to_log(QString)), this, SLOT(add_to_log(QString)));
 	connect(ui->gyrodata->model()->sensorsWork(), SIGNAL(add_to_log(QString)), this, SLOT(add_to_log(QString)));
@@ -133,21 +133,21 @@ void MainWindow::on_lw_objects_itemChanged(QListWidgetItem *item)
 	}
 }
 
-void MainWindow::on_put_data(const QString& name , const Vector3i& value)
+void MainWindow::_on_put_data(const QString& name , const Vector3i& value)
 {
 	if(name.contains("accel")){
-		ui->widget_graph_accel->on_put_data(name, value);
+		ui->widget_graph_accel->_on_put_data(name, value);
 	}else{
-		ui->widget_graph_gyro->on_put_data(name, value);
+		ui->widget_graph_gyro->_on_put_data(name, value);
 	}
 }
 
-void MainWindow::on_put_data(const QString &name, double value)
+void MainWindow::_on_put_data(const QString &name, double value)
 {
 	if(name.contains("accel")){
-		ui->widget_graph_accel->on_put_data(name, value);
+		ui->widget_graph_accel->_on_put_data(name, value);
 	}else{
-		ui->widget_graph_gyro->on_put_data(name, value);
+		ui->widget_graph_gyro->_on_put_data(name, value);
 	}
 }
 
@@ -169,7 +169,7 @@ void MainWindow::on_actionAbout_triggered()
 	dlg.exec();
 }
 
-void MainWindow::on_status_bar_text(const QString &text)
+void MainWindow::_on_status_bar_text(const QString &text)
 {
 	if(m_available_telemetry){
 		m_available_telemetry->setText(text);

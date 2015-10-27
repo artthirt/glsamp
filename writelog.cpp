@@ -211,7 +211,7 @@ void WriteLog::write_data(const QString &name, const QVector<StructTelemetry> &d
 	m_logFiles[name].close();
 }
 
-void WriteLog::on_timeout()
+void WriteLog::_on_timeout()
 {
 	for(QMap< QString, LogFile >::iterator it = m_logFiles.begin(); it != m_logFiles.end(); it++){
 		it.value().write_data();
@@ -221,7 +221,7 @@ void WriteLog::on_timeout()
 void WriteLog::run()
 {
 	while(1){
-		on_timeout();
+		_on_timeout();
 
 		QThread::msleep(300);
 	}

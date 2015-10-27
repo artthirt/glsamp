@@ -134,7 +134,7 @@ QuadModel::QuadModel(QObject *parent):
 	m_time_noise.start();
 	m_time_noise_start = m_time_noise.elapsed();
 
-	connect(&m_timer_noise, SIGNAL(timeout()), this, SLOT(on_timeout_noise()));
+	connect(&m_timer_noise, SIGNAL(timeout()), this, SLOT(_on_timeout_noise()));
 	m_timer_noise.start(10);
 
 	generate_engines_rnd();
@@ -451,7 +451,7 @@ QVector3D QuadModel::position() const
 	return m_position;
 }
 
-void QuadModel::on_timeout_noise()
+void QuadModel::_on_timeout_noise()
 {
 	double delta = m_time_noise.elapsed() - m_time_noise_start;
 	if(delta > m_delta_time){

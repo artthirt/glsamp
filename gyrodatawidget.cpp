@@ -10,10 +10,10 @@ GyroDataWidget::GyroDataWidget(QWidget *parent) :
 {
 	ui->setupUi(this);
 
-	connect(&m_timer_cfg, SIGNAL(timeout()), this, SLOT(on_timeout_cfg()));
+	connect(&m_timer_cfg, SIGNAL(timeout()), this, SLOT(_on_timeout_cfg()));
 	m_timer_cfg.start(300);
 
-	connect(&m_tmcalib, SIGNAL(timeout()), this, SLOT(on_timeout_tmcalib()));
+	connect(&m_tmcalib, SIGNAL(timeout()), this, SLOT(_on_timeout_tmcalib()));
 	m_tmcalib.setInterval(50);
 
 	ui->lb_work_compass->setVisible(false);
@@ -51,7 +51,7 @@ void GyroDataWidget::init_model()
 	ui->widget_pass->setVisible(false);
 }
 
-void GyroDataWidget::on_timeout_cfg()
+void GyroDataWidget::_on_timeout_cfg()
 {
 	if(!m_model || !m_model->sensorsWork())
 		return;
@@ -79,7 +79,7 @@ void GyroDataWidget::on_timeout_cfg()
 	}
 }
 
-void GyroDataWidget::on_timeout_tmcalib()
+void GyroDataWidget::_on_timeout_tmcalib()
 {
 	if(!m_model || !m_model->sensorsWork())
 		return;

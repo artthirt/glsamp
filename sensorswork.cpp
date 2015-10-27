@@ -233,8 +233,6 @@ void SensorsWork::run()
 
 	m_time_waiting_telemetry.start();
 
-	connect(&m_calibrate, SIGNAL(send_log(QString)), this, SLOT(on_calibrate_log(QString)));
-
 	m_socket = new QUdpSocket;
 	connect(m_socket, SIGNAL(readyRead()), this, SLOT(_on_readyRead()));
 	m_socket->bind(m_receiver_port);
@@ -559,25 +557,6 @@ void SensorsWork::tryParseData(const QByteArray &data)
 	QDataStream stream(data);
 	st.read_from(stream);
 
-	//remove_lowbits(st.gyroscope.accel, 7);
-//	remove_lowbits(st.gyroscope.gyro, 4);
-//	qint64 tick_delta = m_tick_telemetry.nsecsElapsed();
-//	double part_of_time = tick_delta / 1e+9;
-//	m_part_of_time = part_of_time;
-
-//	m_tick_telemetry.restart();
-	if(st.gyroscope.tick && m_first_tick){
-		long long tick = st.gyroscope.tick - m_first_tick;
-		//qDebug() << m_index << tick - m_past_tick << st.gyroscope.tick << m_first_tick + m_past_tick;
-		m_part_of_time = (double)(tick - m_past_tick) / 1e+3;
-		m_past_tick = tick;
-	}else{
-		if(st.gyroscope.tick){
-			m_first_tick = st.gyroscope.tick;
-			m_past_tick = st.gyroscope.tick - m_first_tick;
-		}
-	}
-
 	st = analyze_telemetry(st);
 
 	WriteLog::instance()->add_data("gyro", st);
@@ -657,6 +636,18 @@ bool test_data()
 StructTelemetry SensorsWork::analyze_telemetry(const StructTelemetry &st_in)
 {
 	StructTelemetry st(st_in);
+
+	if(st.gyroscope.tick && m_first_tick){
+		long long tick = st.gyroscope.tick - m_first_tick;
+		//qDebug() << m_index << tick - m_past_tick << st.gyroscope.tick << m_first_tick + m_past_tick;
+		m_part_of_time = (double)(tick - m_past_tick) / 1e+3;
+		m_past_tick = tick;
+	}else{
+		if(st.gyroscope.tick){
+			m_first_tick = st.gyroscope.tick;
+			m_past_tick = st.gyroscope.tick - m_first_tick;
+		}
+	}
 
 	emit fill_data_for_calibration(st);
 

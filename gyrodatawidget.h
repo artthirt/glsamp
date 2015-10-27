@@ -37,8 +37,8 @@ public:
 	int type() { return m_model? m_model->type() : 0; }
 
 public slots:
-	void on_timeout_cfg();
-	void on_timeout_tmcalib();
+	void _on_timeout_cfg();
+	void _on_timeout_tmcalib();
 
 	void on_pushButton_5_clicked();
 

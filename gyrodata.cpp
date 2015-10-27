@@ -142,6 +142,9 @@ GyroData::GyroData(QObject *parent) :
 	connect(m_sensorsWork, SIGNAL(fill_data_for_calibration(sc::StructTelemetry)), this, SLOT(fill_data_for_calibration(sc::StructTelemetry)));
 	connect(m_sensorsWork, SIGNAL(stop_calibration()), this, SLOT(_on_stop_calibration()));
 
+	connect(&m_sensorsWork->calibrate_thread(), SIGNAL(send_log(QString)), this, SLOT(_on_calibrate_log(QString)));
+
+
 	load_from_xml();
 }
 
@@ -908,18 +911,6 @@ void GyroData::_on_timeout_playing()
 		}
 
 		StructTelemetry st = m_downloaded_telemetries[m_current_playing_pos];
-
-		if(st.gyroscope.tick && m_first_tick){
-			long long tick = st.gyroscope.tick - m_first_tick;
-			//qDebug() << m_index << tick - m_past_tick << st.gyroscope.tick << m_first_tick + m_past_tick;
-			m_part_of_time = (double)(tick - m_past_tick) / 1e+3;
-			m_past_tick = tick;
-		}else{
-			if(st.gyroscope.tick){
-				m_first_tick = st.gyroscope.tick;
-				m_past_tick = st.gyroscope.tick - m_first_tick;
-			}
-		}
 
 		st = sensorsWork()->analyze_telemetry(st);
 

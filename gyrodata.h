@@ -250,11 +250,6 @@ private:
 
 	QTimer m_timer_playing;
 
-	QElapsedTimer m_tick_telemetry;
-	double m_part_of_time;
-	long long m_past_tick;
-	long long m_first_tick;
-
 	QVector< sc::StructTelemetry > m_writed_telemetries;
 	QVector< sc::StructTelemetry > m_pool_writed_telemetries;
 	bool m_write_data;

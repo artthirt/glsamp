@@ -55,9 +55,9 @@ public:
 
 
 public slots:
-	void on_timeout();
-	void on_put_data(const QString& chart, double value);
-	void on_put_data(const QString& chart, vector3_::Vector3i value);
+	void _on_timeout();
+	void _on_put_data(const QString& chart, double value);
+	void _on_put_data(const QString& chart, vector3_::Vector3i value);
 
 signals:
 

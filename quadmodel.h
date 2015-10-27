@@ -178,7 +178,7 @@ public:
 	virtual QVector3D position() const;
 
 public slots:
-	void on_timeout_noise();
+	void _on_timeout_noise();
 
 protected:
 	void loadXml();

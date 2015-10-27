@@ -13,7 +13,7 @@ DataChart::DataChart(QWidget *parent)
 	: QWidget(parent)
 {
 	m_dt = 10;
-	connect(&m_timer, SIGNAL(timeout()), this, SLOT(on_timeout()));
+	connect(&m_timer, SIGNAL(timeout()), this, SLOT(_on_timeout()));
 	m_timer.start(60);
 }
 
@@ -41,12 +41,12 @@ void DataChart::clear_nowatch()
 	m_nowatch.clear();
 }
 
-void DataChart::on_timeout()
+void DataChart::_on_timeout()
 {
 
 }
 
-void DataChart::on_put_data(const QString &chart, double value)
+void DataChart::_on_put_data(const QString &chart, double value)
 {
 	if(m_nowatch.contains(chart))
 		return;
@@ -54,7 +54,7 @@ void DataChart::on_put_data(const QString &chart, double value)
 	m_charts[chart].add_value(value);
 }
 
-void DataChart::on_put_data(const QString &chart, Vector3i value)
+void DataChart::_on_put_data(const QString &chart, Vector3i value)
 {
 	if(m_nowatch.contains(chart))
 		return;

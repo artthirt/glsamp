@@ -58,7 +58,7 @@ public:
 signals:
 
 public slots:
-	void on_timeout();
+	void _on_timeout();
 
 protected:
 	virtual void run();
