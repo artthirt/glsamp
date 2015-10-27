@@ -104,6 +104,10 @@ private slots:
 
 	void on_pb_reset_compass_vcalibrate_clicked();
 
+	void on_le_ip_gyro_data_returnPressed();
+
+	void on_sb_gyro_data_valueChanged(int arg1);
+
 private:
 	Ui::GyroDataWidget *ui;
 	QTimer m_timer_cfg;

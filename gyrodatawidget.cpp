@@ -53,9 +53,9 @@ void GyroDataWidget::init_model()
 
 void GyroDataWidget::on_timeout_cfg()
 {
-	if(!m_model)
+	if(!m_model || !m_model->sensorsWork())
 		return;
-	if(m_model->is_available_telemetry()){
+	if(m_model->sensorsWork()->is_available_telemetry()){
 		emit set_status_bar_text("telemetry received");
 	}else{
 		emit set_status_bar_text("telemetry not received");
@@ -64,40 +64,40 @@ void GyroDataWidget::on_timeout_cfg()
 	if(m_model->is_play()){
 		ui->hs_playing_data->setValue(m_model->percent_position());
 	}
-	ui->lb_count_value->setText("count: " + QString::number(m_model->count_gyro_offset_data()));
+	ui->lb_count_value->setText("count: " + QString::number(m_model->sensorsWork()->count_gyro_offset_data()));
 	ui->lb_write_data->setText("count: " + QString::number(m_model->count_write_data()));
 
 	const QString stsh("background: lightgreen;");
-	if(m_model->is_exists_value(GyroData::POS_0)){
+	if(m_model->sensorsWork()->is_exists_value(SensorsWork::POS_0)){
 		ui->pb_zero_pos->setStyleSheet(stsh);
 	}
-	if(m_model->is_exists_value(GyroData::POS_90)){
+	if(m_model->sensorsWork()->is_exists_value(SensorsWork::POS_90)){
 		ui->pb_ninety_->setStyleSheet(stsh);
 	}
-	if(m_model->is_exists_value(GyroData::POS_180)){
+	if(m_model->sensorsWork()->is_exists_value(SensorsWork::POS_180)){
 		ui->pb_invert_pos->setStyleSheet(stsh);
 	}
 }
 
 void GyroDataWidget::on_timeout_tmcalib()
 {
-	if(!m_model)
+	if(!m_model || !m_model->sensorsWork())
 		return;
-	if(m_model->calibrate_thread().is_done()){
+	if(m_model->sensorsWork()->calibrate_thread().is_done()){
 		m_tmcalib.stop();
 		ui->widget_pass->setVisible(false);
 		ui->lb_work_compass->setVisible(false);
 
-		switch (m_model->typeOfCalibrate()) {
-			case GyroData::Accelerometer:
+		switch (m_model->sensorsWork()->typeOfCalibrate()) {
+			case SensorsWork::Accelerometer:
 
 				break;
-			case GyroData::Compass:
+			case SensorsWork::Compass:
 			{
 				QString val = QString("center: %1; radius: %2; deviation: %3")
-						.arg(m_model->mean_sphere_compass().cp)
-						.arg(m_model->mean_sphere_compass().mean_radius)
-						.arg(m_model->mean_sphere_compass().deviation);
+						.arg(m_model->sensorsWork()->mean_sphere_compass().cp)
+						.arg(m_model->sensorsWork()->mean_sphere_compass().mean_radius)
+						.arg(m_model->sensorsWork()->mean_sphere_compass().deviation);
 				ui->lb_values->setText(val);
 			}
 				break;
@@ -106,8 +106,8 @@ void GyroDataWidget::on_timeout_tmcalib()
 		}
 	}
 
-	ui->pb_calibrate->setValue(m_model->calibrate_thread().pass_part_evaluate() * 100.0);
-	ui->lb_pass->setText("pass: " + QString::number(m_model->calibrate_thread().pass()));
+	ui->pb_calibrate->setValue(m_model->sensorsWork()->calibrate_thread().pass_part_evaluate() * 100.0);
+	ui->lb_pass->setText("pass: " + QString::number(m_model->sensorsWork()->calibrate_thread().pass()));
 }
 
 ///////////////////////////////////
@@ -132,14 +132,15 @@ void GyroDataWidget::on_pushButton_7_clicked()
 {
 	if(!m_model)
 		return;
-	m_model->send_start_to_net(QHostAddress(ui->le_ip_gyro_data->text()), ui->sb_gyro_data->value());
+
+	m_model->send_start_to_net();
 }
 
 void GyroDataWidget::on_pushButton_8_clicked()
 {
 	if(!m_model)
 		return;
-	m_model->send_stop_to_net(QHostAddress(ui->le_ip_gyro_data->text()), ui->sb_gyro_data->value());
+	m_model->send_stop_to_net();
 }
 
 void GyroDataWidget::on_dsb_div_gyro_valueChanged(double arg1)
@@ -209,10 +210,10 @@ void GyroDataWidget::on_pushButton_6_clicked(bool checked)
 	if(!m_model)
 		return;
 	if(checked){
-		m_model->start_calc_offset_gyro();
+		m_model->sensorsWork()->start_calc_offset_gyro();
 		ui->lb_count_value->setStyleSheet("background: lightgreen;");
 	}else{
-		m_model->stop_calc_offset_gyro();
+		m_model->sensorsWork()->stop_calc_offset_gyro();
 		ui->lb_count_value->setStyleSheet("");
 	}
 }
@@ -238,7 +239,7 @@ void GyroDataWidget::on_pushButton_10_clicked(bool checked)
 	if(m_model->calibrate_accelerometer()){
 		ui->widget_pass->setVisible(true);
 		ui->pb_calibrate->setValue(0);
-		ui->lb_pass->setText("pass: " + QString::number(m_model->calibrate_thread().pass()));
+		ui->lb_pass->setText("pass: " + QString::number(m_model->sensorsWork()->calibrate_thread().pass()));
 		m_tmcalib.start();
 	}
 }
@@ -274,7 +275,7 @@ void GyroDataWidget::on_pushButton_11_clicked(bool checked)
 void GyroDataWidget::on_pb_save_calibration_clicked()
 {
 	if(m_model){
-		m_model->save_calibrate();
+		m_model->sensorsWork()->save_calibrate();
 	}
 }
 
@@ -289,7 +290,7 @@ void GyroDataWidget::on_pb_zero_pos_clicked()
 {
 	ui->pb_zero_pos->setStyleSheet("");
 	if(m_model){
-		m_model->set_start_calc_pos(GyroData::POS_0);
+		m_model->sensorsWork()->set_start_calc_pos(SensorsWork::POS_0);
 	}
 }
 
@@ -297,7 +298,7 @@ void GyroDataWidget::on_pb_ninety__clicked()
 {
 	ui->pb_ninety_->setStyleSheet("");
 	if(m_model){
-		m_model->set_start_calc_pos(GyroData::POS_90);
+		m_model->sensorsWork()->set_start_calc_pos(SensorsWork::POS_90);
 	}
 }
 
@@ -305,7 +306,7 @@ void GyroDataWidget::on_pb_invert_pos_clicked()
 {
 	ui->pb_invert_pos->setStyleSheet("");
 	if(m_model){
-		m_model->set_start_calc_pos(GyroData::POS_180);
+		m_model->sensorsWork()->set_start_calc_pos(SensorsWork::POS_180);
 	}
 }
 
@@ -326,7 +327,7 @@ void GyroDataWidget::on_pb_cancel_clicked()
 void GyroDataWidget::on_pb_load_calibration_clicked()
 {
 	if(m_model){
-		m_model->load_calibrate();
+		m_model->sensorsWork()->load_calibrate();
 	}
 }
 
@@ -353,7 +354,7 @@ void GyroDataWidget::on_pb_calibrate_compass_clicked()
 		ui->lb_work_compass->setVisible(true);
 		ui->widget_pass->setVisible(true);
 		ui->pb_calibrate->setValue(0);
-		ui->lb_pass->setText("pass: " + QString::number(m_model->calibrate_thread().pass()));
+		ui->lb_pass->setText("pass: " + QString::number(m_model->sensorsWork()->calibrate_thread().pass()));
 		m_tmcalib.start();
 	}
 }
@@ -361,6 +362,20 @@ void GyroDataWidget::on_pb_calibrate_compass_clicked()
 void GyroDataWidget::on_pb_reset_compass_vcalibrate_clicked()
 {
 	if(m_model){
-		m_model->reset_calibration_compass();
+		m_model->sensorsWork()->reset_calibration_compass();
 	}
+}
+
+void GyroDataWidget::on_le_ip_gyro_data_returnPressed()
+{
+	if(!m_model)
+		return;
+	m_model->set_address(QHostAddress(ui->le_ip_gyro_data->text()), ui->sb_gyro_data->value());
+}
+
+void GyroDataWidget::on_sb_gyro_data_valueChanged(int arg1)
+{
+	if(!m_model)
+		return;
+	m_model->set_address(QHostAddress(ui->le_ip_gyro_data->text()), ui->sb_gyro_data->value());
 }

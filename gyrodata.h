@@ -27,6 +27,8 @@ public:
 	explicit GyroData(QObject *parent = 0);
 	virtual ~GyroData();
 
+	QHostAddress addr() const;
+	ushort port() const;
 	/**
 	 * @brief fileName
 	 * @return
@@ -209,15 +211,13 @@ private:
 	bool m_show_recorded_data;
 
 signals:
-	void get_data(const QString& name, const vector3_::Vector3i);
-	void get_data(const QString& name, double value);
 	void add_to_log(const QString& text);
 
 public slots:
-	void on_timeout();
-	void on_timeout_playing();
-	void on_timeout_calibrate();
-	void on_calibrate_log(const QString& data);
+	void _on_timeout_playing();
+	void _on_calibrate_log(const QString& data);
+	void _on_stop_calibration();
+	void fill_data_for_calibration(const sc::StructTelemetry& st);
 
 protected:
 
@@ -230,6 +230,9 @@ public:
 
 private:
 	SensorsWork* m_sensorsWork;
+
+	QHostAddress m_addr;
+	ushort m_port;
 
 	QString m_fileName;
 	QVector< sc::StructTelemetry > m_downloaded_telemetries;
@@ -247,6 +250,11 @@ private:
 
 	QTimer m_timer_playing;
 
+	QElapsedTimer m_tick_telemetry;
+	double m_part_of_time;
+	long long m_past_tick;
+	long long m_first_tick;
+
 	QVector< sc::StructTelemetry > m_writed_telemetries;
 	QVector< sc::StructTelemetry > m_pool_writed_telemetries;
 	bool m_write_data;
@@ -259,10 +267,6 @@ private:
 
 	SphereGL m_sphereGl;
 
-	double m_max_threshold_angle;
-	double m_min_threshold_angle;
-	double m_multiply_correction;
-
 	void init_sphere();
 
 	void clear_data();
@@ -274,7 +278,7 @@ private:
 	void draw_text();
 	void draw_recored_data();
 
-	void fill_data_for_calibration(const sc::StructTelemetry& st);
+	void calc_parameters();
 };
 
 #endif // GYRODATA_H

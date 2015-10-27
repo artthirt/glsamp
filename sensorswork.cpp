@@ -1,7 +1,16 @@
 #include "sensorswork.h"
 #include <QThreadPool>
 
+#include <QQuaternion>
+#include <QMatrix4x4>
+#include <QApplication>
+#include <QDir>
+#include <QFile>
+
 #include "simple_xml.hpp"
+
+#include "global.h"
+#include "writelog.h"
 
 using namespace vector3_;
 using namespace matrix;
@@ -9,6 +18,73 @@ using namespace sc;
 using namespace std;
 using namespace sc;
 using namespace quaternions;
+
+const QString xml_calibrate("calibrate.xml");
+
+Q_DECLARE_METATYPE(sc::StructTelemetry)
+
+/////////////////////////////////////////////////////
+
+inline Vector3i rshift(const Vector3i& val, int shift)
+{
+	Vector3i res;
+	FOREACH(i, 3, res.data[i] = val.data[i] >> shift);
+	return res;
+}
+
+void parse_quaternsion(const QQuaternion& qa, QVector3D& axes, double& angle)
+{
+	QQuaternion q = qa.normalized();
+
+	double qw = q.scalar();
+	if(qFuzzyCompare(fabs(qw), 1)){
+		angle = 0;
+		axes = QVector3D(0, 0, 1);
+		return;
+	}
+
+	double div = 1.0 / sqrt(1 - qw * qw);
+	/*
+	 *  angle = 2 * acos(qw)
+	 *	x = qx / sqrt(1-qw*qw)
+	 *	y = qy / sqrt(1-qw*qw)
+	 *	z = qz / sqrt(1-qw*qw)
+	 */
+
+	angle = 2 * acos(q.scalar());
+	angle *= 180.0 / M_PI;
+	axes.setX(q.x() * div);
+	axes.setX(q.y() * div);
+	axes.setX(q.z() * div);
+}
+
+matrix::Matrix3d fromQuaternionM3(const Quaternion &q_in)
+{
+	Quaternion q = q_in.normalized();
+	double qi2 = q.x() * q.x();
+	double qj2 = q.y() * q.y();
+	double qk2 = q.z() * q.z();
+
+	double qij = q.x() * q.y();
+	double qik = q.x() * q.z();
+	double qjk = q.y() * q.z();
+
+	double qir = q.w * q.x();
+	double qjr = q.w * q.y();
+	double qkr = q.w * q.z();
+
+	double data[] = {
+		1.0 - 2.0 * (qj2 + qk2), 2.0 * (qij - qkr), 2.0 * (qik + qjr),
+		2.0 * (qij + qkr), 1.0 - 2.0 * (qi2 + qk2), 2.0 * (qjk - qir),
+		2.0 * (qik - qjr), 2.0 * (qjk + qir), 1.0 - 2.0 * (qi2 + qj2),
+	};
+
+	matrix::Matrix3d m(data);
+
+	return m;
+}
+
+/////////////////////////////////////////////////////
 
 SensorsWork::SensorsWork(QObject *parent)
 	: QThread(parent)
@@ -30,6 +106,10 @@ SensorsWork::SensorsWork(QObject *parent)
 	, m_is_start_correction(false)
 	, m_receiver_port(7770)
 	, m_typeOfCalibrate(NONE)
+	, m_max_threshold_angle(3)
+	, m_min_threshold_angle(1e-1)
+	, m_multiply_correction(0.7)
+	, m_index(0)
 {
 	connect(this, SIGNAL(bind_address()), this, SLOT(_on_bind_address()), Qt::QueuedConnection);
 	connect(this, SIGNAL(send_to_socket(QByteArray)), this, SLOT(_on_send_to_socket(QByteArray)), Qt::QueuedConnection);
@@ -43,9 +123,15 @@ SensorsWork::~SensorsWork()
 	wait();
 
 	if(m_socket){
-		m_socket->abort();
+		delete m_socket;
 	}
-	delete m_socket;
+
+	if(m_timer){
+		delete m_timer;
+	}
+	if(m_timer_calibrate){
+		delete m_timer_calibrate;
+	}
 }
 
 int SensorsWork::count_gyro_offset_data() const
@@ -91,11 +177,11 @@ bool SensorsWork::calibrate_accelerometer(const QVector<Vector3d> &data)
 	if(m_calibrate.is_progress() || !data.size())
 		return false;
 
-	m_calibrate.set_parameters(&data);
+	m_calibrate.set_parameters(data);
 
 	m_typeOfCalibrate = Accelerometer;
 
-	m_timer_calibrate.start();
+	m_timer_calibrate->start();
 
 	QThreadPool::globalInstance()->start(new CalibrateAccelerometerRunnable(&m_calibrate));
 
@@ -111,7 +197,7 @@ bool SensorsWork::calibrate_compass(const QVector<Vector3d> &data)
 
 	m_typeOfCalibrate = Compass;
 
-	m_timer_calibrate.start();
+	m_timer_calibrate->start();
 
 	QThreadPool::globalInstance()->start(new CalibrateAccelerometerRunnable(&m_calibrate));
 
@@ -129,7 +215,7 @@ const CalibrateAccelerometer &SensorsWork::calibrate_thread() const
 	return m_calibrate;
 }
 
-SensorsWork::TypeOfCalibrate GyroData::typeOfCalibrate() const
+SensorsWork::TypeOfCalibrate SensorsWork::typeOfCalibrate() const
 {
 	return m_typeOfCalibrate;
 }
@@ -140,12 +226,12 @@ void SensorsWork::run()
 	m_timer_calibrate = new QTimer;
 
 	connect(m_timer, SIGNAL(timeout()), this, SLOT(_on_timeout()));
-	m_timer.start(300);
+	m_timer->start(300);
 
 	connect(m_timer_calibrate, SIGNAL(timeout()), this, SLOT(_on_timeout_calibrate()));
 	m_timer_calibrate->setInterval(300);
 
-	m_time_waiting_telemetry->start();
+	m_time_waiting_telemetry.start();
 
 	connect(&m_calibrate, SIGNAL(send_log(QString)), this, SLOT(on_calibrate_log(QString)));
 
@@ -163,8 +249,8 @@ void SensorsWork::reset_mean_sphere()
 
 void SensorsWork::_on_timeout()
 {
-	if(m_telemetries.size() > 3){
-		m_telemetries.pop_back();
+	if(telemetries.size() > 3){
+		telemetries.pop_back();
 	}
 }
 
@@ -178,12 +264,12 @@ void SensorsWork::_on_send_to_socket(const QByteArray &data)
 	m_socket->writeDatagram(data, m_addr, m_port);
 }
 
-bool SensorsWork::is_exists_value(GyroData::POS pos) const
+bool SensorsWork::is_exists_value(SensorsWork::POS pos) const
 {
 	return !m_pos_values[pos].isNull();
 }
 
-void SensorsWork::set_start_calc_pos(GyroData::POS pos)
+void SensorsWork::set_start_calc_pos(SensorsWork::POS pos)
 {
 	m_curcalc_pos = pos;
 	m_pos_values[pos] = Vector3d();
@@ -191,17 +277,17 @@ void SensorsWork::set_start_calc_pos(GyroData::POS pos)
 	m_is_calc_pos = true;
 }
 
-void SensorsWork::set__position()
+void SensorsWork::set_position()
 {
 	m_rotate_pos = Vector3d();
 	m_translate_pos = Vector3d();
 	m_translate_speed = Vector3d();
 	m_tmp_axis = Vector3f(1, 0, 0);
 	m_tmp_angle = 0;
-	m_mean_accel = Vector3d();
+	mean_accel = Vector3d();
 	m_past_tick = 0;
 	m_first_tick = 0;
-	m_rotate_quaternion = Quaternion();
+	rotate_quaternion = Quaternion();
 }
 
 void SensorsWork::start_calc_offset_gyro()
@@ -213,8 +299,8 @@ void SensorsWork::start_calc_offset_gyro()
 	m_rotate_pos = Vector3d();
 	m_translate_pos = Vector3d();
 	m_translate_speed = Vector3f();
-	m_mean_Gaccel = Vector3d();
-	m_rotate_quaternion = Quaternion();
+	meanGaccel = Vector3d();
+	rotate_quaternion = Quaternion();
 	m_len_Gaccel = 0;
 }
 
@@ -223,18 +309,18 @@ void SensorsWork::stop_calc_offset_gyro()
 	m_is_calc_offset_gyro = false;
 	if(m_count_gyro_offset_data){
 		m_offset_gyro *= 1.0/m_count_gyro_offset_data;
-		m_mean_Gaccel *= 1.0/m_count_gyro_offset_data;
+		meanGaccel *= 1.0/m_count_gyro_offset_data;
 
-		m_len_Gaccel = m_mean_Gaccel.length();
+		m_len_Gaccel = meanGaccel.length();
 
-		m_tmp_accel = m_mean_Gaccel;
+		tmp_accel = meanGaccel;
 
 		m_rotate_pos = Vector3d();
-		m_rotate_quaternion = Quaternion();
+		rotate_quaternion = Quaternion();
 		m_translate_pos = Vector3d();
 		m_is_calculated = true;
 
-		Vector3d v = m_mean_Gaccel;
+		Vector3d v = meanGaccel;
 		emit add_to_log("offset values.  gyroscope: " + QString::number(m_offset_gyro.x(), 'f', 3) + ", " +
 						QString::number(m_offset_gyro.y(), 'f', 3) + ", " +
 						QString::number(m_offset_gyro.z(), 'f', 3) + "; accelerometer: " +
@@ -245,23 +331,11 @@ void SensorsWork::stop_calc_offset_gyro()
 	}
 }
 
-void SensorsWork::calc_parameters()
-{
-	Vector3d v1(1, 0, 0), v2, v3(0, 1, 0);
-	v2 = m_rotate_quaternion.rotatedVector(v1);
-	double an = common_::rad2angle(atan2(v2.z(), v2.x()));
-	set_text("tangaj", QString::number(an, 'f', 1));
-
-	v2 = m_rotate_quaternion.rotatedVector(v3);
-	an = common_::rad2angle(atan2(v2.z(), v2.y()));
-	set_text("bank", QString::number(an, 'f', 1));
-}
-
 void SensorsWork::calc_correction()
 {
-	if(m_mean_Gaccel.isNull())
+	if(meanGaccel.isNull())
 		return;
-	Vector3d vnorm(0, 0, -1), vmg = m_mean_Gaccel.normalized(), v;
+	Vector3d vnorm(0, 0, -1), vmg = meanGaccel.normalized(), v;
 	double angle = Vector3d::dot(vnorm, vmg);
 	angle = common_::rad2angle(acos(angle));
 	if(!common_::fIsNull(angle)){
@@ -275,20 +349,20 @@ void SensorsWork::calc_correction()
 
 void SensorsWork::correct_error_gyroscope()
 {
-	Vector3d vga = m_rotate_quaternion.rotatedVector(Vector3d(0, 0, -1)).normalized();
-	Vector3d va = m_mean_accel.normalized();
+	Vector3d vga = rotate_quaternion.rotatedVector(Vector3d(0, 0, -1)).normalized();
+	Vector3d va = mean_accel.normalized();
 	Vector3d ax = Vector3d::cross(va, vga).normalized();
 	double an = Vector3d::dot(vga, va);
 	an = common_::rad2angle(acos(an));
-	m_accel_quat = Quaternion::fromAxisAndAngle(ax, -an) * m_rotate_quaternion;
-	m_accel_quat.normalize();
+	accel_quat = Quaternion::fromAxisAndAngle(ax, -an) * rotate_quaternion;
+	accel_quat.normalize();
 
 	if(!m_is_start_correction && fabs(an) > m_max_threshold_angle){
 		m_is_start_correction = true;
 	}
 
-	if(m_is_start_correction && m_tmp_accel.length() < m_threshold_accel * m_sphere.mean_radius){
-		m_rotate_quaternion = Quaternion::slerp(m_rotate_quaternion, m_accel_quat, m_multiply_correction);
+	if(m_is_start_correction && tmp_accel.length() < m_threshold_accel * m_sphere.mean_radius){
+		rotate_quaternion = Quaternion::slerp(rotate_quaternion, accel_quat, m_multiply_correction);
 
 		//qDebug() << an;
 		if(fabs(an) < m_min_threshold_angle){
@@ -334,7 +408,9 @@ void SensorsWork::load_calibrate()
 	if(!node["max_threshold_angle"].empty())
 		m_max_threshold_angle = node["max_threshold_angle"];
 	if(!node["min_threshold_angle"].empty())
-		m_max_threshold_angle = node["min_threshold_angle"];
+		m_min_threshold_angle = node["min_threshold_angle"];
+	if(!node["multiply_correction"].empty())
+		m_multiply_correction = node["multiply_correction"];
 
 	node = sxml["gyroscope"];
 	v.setX(node["x_corr"]);
@@ -352,7 +428,7 @@ void SensorsWork::load_calibrate()
 		v.setX(node["x_corr"]);
 		v.setY(node["y_corr"]);
 		v.setZ(node["z_corr"]);
-		m_mean_Gaccel = v;
+		meanGaccel = v;
 	}else
 		fl = false;
 
@@ -396,6 +472,7 @@ void SensorsWork::save_calibrate()
 	node << "threshold_delta_accel" << m_threshold_accel;
 	node << "max_threshold_angle" << m_max_threshold_angle;
 	node << "min_threshold_angle" << m_min_threshold_angle;
+	node << "multiply_correction" << m_multiply_correction;
 
 	if(!m_offset_gyro.isNull()){
 		node = sxml["gyroscope"];
@@ -404,11 +481,11 @@ void SensorsWork::save_calibrate()
 		"z_corr" << m_offset_gyro.z();
 	}
 
-	if(!m_mean_Gaccel.isNull()){
+	if(!meanGaccel.isNull()){
 		node = sxml["mean_g_accel"];
-		node << "x_corr" << m_mean_Gaccel.x() <<
-		"y_corr" << m_mean_Gaccel.y() <<
-		"z_corr" << m_mean_Gaccel.z();
+		node << "x_corr" << meanGaccel.x() <<
+		"y_corr" << meanGaccel.y() <<
+		"z_corr" << meanGaccel.z();
 	}
 
 	if(!m_sphere_compass.empty()){
@@ -432,8 +509,6 @@ void SensorsWork::_on_timeout_calibrate()
 						   "; R=" + QString::number(m_sphere.mean_radius, 'f', 3) +
 						   "; dev=" + QString::number(m_sphere.deviation, 'f', 3));
 
-				m_sphereGl.generate_sphere(m_sphere.mean_radius, m_divider_accel);
-
 				break;
 			case Compass:
 				m_sphere_compass = m_calibrate.result();
@@ -447,7 +522,9 @@ void SensorsWork::_on_timeout_calibrate()
 		}
 
 		save_calibrate();
-		m_timer_calibrate.stop();
+		m_timer_calibrate->stop();
+
+		emit stop_calibration();
 	}
 }
 
@@ -509,8 +586,8 @@ void SensorsWork::tryParseData(const QByteArray &data)
 
 	m_index++;
 
-	while(m_telemetries.size() >= max_count_telemetry){
-		m_telemetries.pop_back();
+	while(telemetries.size() >= max_count_telemetry){
+		telemetries.pop_back();
 	}
 }
 
@@ -581,7 +658,7 @@ StructTelemetry SensorsWork::analyze_telemetry(const StructTelemetry &st_in)
 {
 	StructTelemetry st(st_in);
 
-	fill_data_for_calibration(st);
+	emit fill_data_for_calibration(st);
 
 	/// a subtraction of the offset error of acceleration of the sensor
 	st.gyroscope.accel -= m_sphere.cp;
@@ -596,9 +673,9 @@ StructTelemetry SensorsWork::analyze_telemetry(const StructTelemetry &st_in)
 
 	Vector3d v = st.gyroscope.accel;
 
-	if(m_mean_accel.isNull())
-		m_mean_accel = v;
-	m_mean_accel = m_mean_accel * 0.9 + v * 0.1;
+	if(mean_accel.isNull())
+		mean_accel = v;
+	mean_accel = mean_accel * 0.9 + v * 0.1;
 
 	if(!m_is_calc_offset_gyro && m_is_calculated){
 		//m_rotate_pos -= (st.gyroscope.angular_speed(m_offset_gyro) * m_part_of_time);
@@ -606,26 +683,29 @@ StructTelemetry SensorsWork::analyze_telemetry(const StructTelemetry &st_in)
 		rotate_speed = rotate_speed.inv();
 
 		Quaternion quat_speed = fromAnglesAxes(rotate_speed);
-		m_rotate_quaternion *= quat_speed;
+		rotate_quaternion *= quat_speed;
 
-		Vector3d accel_mg = m_rotate_quaternion.conj().rotatedVector(m_mean_accel);
+		Vector3d accel_mg = rotate_quaternion.conj().rotatedVector(mean_accel);
 
 		if(!m_prev_accel.isNull()){
-			m_tmp_accel = (accel_mg - m_prev_accel);
+			tmp_accel = (accel_mg - m_prev_accel);
 		}
 		m_prev_accel = accel_mg;
 
 		/////////////////////////////
 
 		calccount(st);
-		calc_parameters();
 
 		/////////////////////////////
 
 		correct_error_gyroscope();
 	}
 
-	m_telemetries.push_front(st);
+	telemetries.push_front(st);
+
+	while(telemetries.size() >= max_count_telemetry){
+		telemetries.pop_back();
+	}
 
 	return st;
 }
@@ -636,12 +716,12 @@ void SensorsWork::clear_data()
 	m_rotate_pos = Vector3d();
 	m_tmp_axis = Vector3f(1, 0, 0);
 	m_tmp_angle = 0;
-	m_mean_accel = Vector3d();
+	mean_accel = Vector3d();
 	m_past_tick = 0;
 	m_first_tick = 0;
 	m_translate_pos = Vector3d();
 	m_translate_speed = Vector3d();
-	m_rotate_quaternion = Quaternion();
+	rotate_quaternion = Quaternion();
 
 	m_is_start_correction = false;
 }
@@ -650,11 +730,26 @@ void SensorsWork::calc_offsets(const Vector3i &gyro, const Vector3i &accel)
 {
 	if(m_is_calc_offset_gyro){
 		m_offset_gyro += gyro;
-		m_mean_Gaccel += accel;
+		meanGaccel += accel;
 
 		m_count_gyro_offset_data++;
 	}else{
 //		gyro -= m_offset_gyro;
 //		accel -= m_offset_accel;
 	}
+}
+
+void SensorsWork::simple_kalman_filter(const StructTelemetry &st, StructTelemetry &st_out)
+{
+	emit get_data("gyro", st.gyroscope.gyro);
+	emit get_data("accel", st.gyroscope.accel);
+
+	Vector3d kav = m_kalman[0].set_zk(st.gyroscope.accel);
+	Vector3d kgv = m_kalman[1].set_zk(st.gyroscope.gyro);
+
+	st_out.gyroscope.accel = kav;
+	st_out.gyroscope.gyro = kgv;
+
+	emit get_data("kalman_accel", kav);
+	emit get_data("kalman_gyro", kgv);
 }

@@ -41,10 +41,11 @@ MainWindow::MainWindow(QWidget *parent) :
 	m_available_telemetry->setMinimumWidth(200);
 	ui->statusBar->addWidget(m_available_telemetry);
 
-	connect(ui->gyrodata->model(), SIGNAL(get_data(QString,vector3_::Vector3i)), this, SLOT(on_put_data(QString,vector3_::Vector3i)));
-	connect(ui->gyrodata->model(), SIGNAL(get_data(QString,double)), this, SLOT(on_put_data(QString,double)));
+	connect(ui->gyrodata->model()->sensorsWork(), SIGNAL(get_data(QString,vector3_::Vector3i)), this, SLOT(on_put_data(QString,vector3_::Vector3i)));
+	connect(ui->gyrodata->model()->sensorsWork(), SIGNAL(get_data(QString,double)), this, SLOT(on_put_data(QString,double)));
 
 	connect(ui->gyrodata->model(), SIGNAL(add_to_log(QString)), this, SLOT(add_to_log(QString)));
+	connect(ui->gyrodata->model()->sensorsWork(), SIGNAL(add_to_log(QString)), this, SLOT(add_to_log(QString)));
 
 	load_from_xml();
 	init_list_objects();
