@@ -46,7 +46,8 @@ SOURCES += main.cpp\
     dialogabout.cpp \
     gyrodatawidget.cpp \
     spheregl.cpp \
-    submodules/struct_controls/struct_controls.cpp
+    submodules/struct_controls/struct_controls.cpp \
+    sensorswork.cpp
 
 HEADERS  += mainwindow.h \
     virtglobject.h \
@@ -67,7 +68,8 @@ HEADERS  += mainwindow.h \
     spheregl.h \
     submodules/struct_controls/vector3_.h \
     submodules/struct_controls/quaternions.h \
-    submodules/struct_controls/common_.h
+    submodules/struct_controls/common_.h \
+    sensorswork.h
 
 FORMS    += mainwindow.ui \
     glspace.ui \
