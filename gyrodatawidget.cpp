@@ -49,6 +49,19 @@ void GyroDataWidget::init_model()
 	ui->chb_recorded_data->setChecked(m_model->is_show_recorded_data());
 
 	ui->widget_pass->setVisible(false);
+
+	QString val = QString("center: %1; radius: %2; deviation: %3")
+			.arg(m_model->sensorsWork()->mean_sphere().cp)
+			.arg(m_model->sensorsWork()->mean_sphere().mean_radius)
+			.arg(m_model->sensorsWork()->mean_sphere().deviation);
+	ui->lb_values_accel->setText(val);
+
+	val = QString("center: %1; radius: %2; deviation: %3")
+			.arg(m_model->sensorsWork()->mean_sphere_compass().cp)
+			.arg(m_model->sensorsWork()->mean_sphere_compass().mean_radius)
+			.arg(m_model->sensorsWork()->mean_sphere_compass().deviation);
+	ui->lb_values->setText(val);
+
 }
 
 void GyroDataWidget::_on_timeout_cfg()
@@ -90,16 +103,22 @@ void GyroDataWidget::_on_timeout_tmcalib()
 
 		switch (m_model->sensorsWork()->typeOfCalibrate()) {
 			case SensorsWork::Accelerometer:
-
+				{
+					QString val = QString("center: %1; radius: %2; deviation: %3")
+							.arg(m_model->sensorsWork()->mean_sphere().cp)
+							.arg(m_model->sensorsWork()->mean_sphere().mean_radius)
+							.arg(m_model->sensorsWork()->mean_sphere().deviation);
+					ui->lb_values_accel->setText(val);
+				}
 				break;
 			case SensorsWork::Compass:
-			{
-				QString val = QString("center: %1; radius: %2; deviation: %3")
-						.arg(m_model->sensorsWork()->mean_sphere_compass().cp)
-						.arg(m_model->sensorsWork()->mean_sphere_compass().mean_radius)
-						.arg(m_model->sensorsWork()->mean_sphere_compass().deviation);
-				ui->lb_values->setText(val);
-			}
+				{
+					QString val = QString("center: %1; radius: %2; deviation: %3")
+							.arg(m_model->sensorsWork()->mean_sphere_compass().cp)
+							.arg(m_model->sensorsWork()->mean_sphere_compass().mean_radius)
+							.arg(m_model->sensorsWork()->mean_sphere_compass().deviation);
+					ui->lb_values->setText(val);
+				}
 				break;
 			default:
 				break;
