@@ -123,10 +123,6 @@ SensorsWork::~SensorsWork()
 	quit();
 	wait();
 
-	if(m_socket){
-		delete m_socket;
-	}
-
 	if(m_timer){
 		delete m_timer;
 	}
@@ -239,6 +235,11 @@ void SensorsWork::run()
 	m_socket->bind(m_receiver_port);
 
 	exec();
+
+	if(m_socket){
+		m_socket->abort();
+		delete m_socket;
+	}
 }
 
 void SensorsWork::reset_mean_sphere()

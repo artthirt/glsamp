@@ -32,6 +32,10 @@ GLSpace::~GLSpace()
 {
 	delete ui;
 
+	disconnect(&m_timer);
+
+	m_timer.stop();
+
 	foreach (VirtGLObject* obj, m_objects) {
 		delete obj;
 	}

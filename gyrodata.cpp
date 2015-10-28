@@ -818,6 +818,10 @@ void GyroData::draw()
 		draw_line(Vector3d(), tmp, Qt::green);
 		draw_text(tmp, "accel. " + QString::number(sensorsWork()->telemetries[0].gyroscope.accel.length()));
 
+//		glLineWidth(2);
+//		tmp = Vector3d(-tmp.x(), -tmp.y(), tmp.z());
+//		draw_line(Vector3d(), tmp, QColor(230, 155, 64));
+
 		{
 			Vector3d cmp = SHV(sensorsWork()->telemetries[0].compass.data);
 			cmp -= sensorsWork()->mean_sphere_compass().cp;
@@ -882,6 +886,8 @@ void GyroData::draw()
 			m_trajectory.pop_front();
 		}
 	}
+
+	calc_parameters();
 }
 
 void GyroData::tick()
