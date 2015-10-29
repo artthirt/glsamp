@@ -660,9 +660,11 @@ void draw_process_rotate(const Quaternion& q1, const Quaternion& q2, double mult
 
 void draw_static_axes()
 {
+	glLineWidth(4);
 	draw_line(Vector3d(-10, 0, 0), Vector3d(10, 0, 0), QColor(255, 128, 128));
 	draw_line(Vector3d(0, -10, 0), Vector3d(0, 10, 0), QColor(128, 255, 128));
 	draw_line(Vector3d(0, 0, -10), Vector3d(0, 0, 10), QColor(128, 128, 255));
+	glLineWidth(1);
 }
 
 void draw_Gaccel(const Vector3d& gaccel)
@@ -818,6 +820,9 @@ void GyroData::draw()
 		draw_line(Vector3d(), tmp, Qt::green);
 		draw_text(tmp, "accel. " + QString::number(sensorsWork()->telemetries[0].gyroscope.accel.length()));
 
+		tmp = sensorsWork()->rotate_quaternion.rotatedVector(tmp);
+		draw_line(Vector3d(), tmp, QColor(200, 255, 100));
+
 //		glLineWidth(2);
 //		tmp = Vector3d(-tmp.x(), -tmp.y(), tmp.z());
 //		draw_line(Vector3d(), tmp, QColor(230, 155, 64));
@@ -829,12 +834,15 @@ void GyroData::draw()
 			glLineWidth(3);
 			draw_line(cmp, Vector3d(), QColor(128, 100, 64));
 			draw_text(cmp, "compass", QColor(128, 100, 64));
+
+			cmp = sensorsWork()->rotate_quaternion.rotatedVector(cmp);
+			draw_line(cmp, Vector3d(), QColor(128, 100, 255));
 		}
 
 		glLineWidth(1);
-		glBegin(GL_LINE_STRIP);
 
 		if(!m_show_calibrated_data){
+			glBegin(GL_LINE_STRIP);
 			for (int i = 0; i < sensorsWork()->telemetries.size(); i++){
 				StructTelemetry& st = sensorsWork()->telemetries[i];
 				float dd = (float)(sensorsWork()->telemetries.size() - i) / sensorsWork()->telemetries.size();
@@ -845,7 +853,22 @@ void GyroData::draw()
 
 				glVertex3dv(tmp.data);
 			}
+			glEnd();
+
+			glBegin(GL_LINE_STRIP);
+			for (int i = 0; i < sensorsWork()->telemetries.size(); i++){
+				StructTelemetry& st = sensorsWork()->telemetries[i];
+				float dd = (float)(sensorsWork()->telemetries.size() - i) / sensorsWork()->telemetries.size();
+				glColor3f(0.3f, 1 * dd, 0.5f * dd);
+
+				tmp = _V(st.compass.data);
+				tmp = tmp * compass_multiply;
+
+				glVertex3dv(tmp.data);
+			}
+			glEnd();
 		}else{
+			glBegin(GL_LINE_STRIP);
 			for (int i = 0; i < sensorsWork()->telemetries.size(); i++){
 				StructTelemetry& st = sensorsWork()->telemetries[i];
 				float dd = (float)(sensorsWork()->telemetries.size() - i) / sensorsWork()->telemetries.size();
@@ -855,8 +878,21 @@ void GyroData::draw()
 
 				glVertex3dv(tmp.data);
 			}
+			glEnd();
+
+			glBegin(GL_LINE_STRIP);
+			for (int i = 0; i < sensorsWork()->telemetries.size(); i++){
+				StructTelemetry& st = sensorsWork()->telemetries[i];
+				float dd = (float)(sensorsWork()->telemetries.size() - i) / sensorsWork()->telemetries.size();
+				glColor3f(0.3f, 1 * dd, 0.5f * dd);
+
+				tmp = _V(st.compass.data) - sensorsWork()->mean_sphere_compass().cp;
+				tmp = tmp * compass_multiply;
+
+				glVertex3dv(tmp.data);
+			}
+			glEnd();
 		}
-		glEnd();
 
 		glPopMatrix();
 	}

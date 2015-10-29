@@ -69,7 +69,7 @@ void MainWindow::init_list_objects()
 	it->setCheckState(ui->quadmodel->is_enable()? Qt::Checked : Qt::Unchecked);
 	it->setData(Qt::UserRole, ui->quadmodel->type());
 
-	it = new QListWidgetItem("gyro data", ui->lw_objects);
+	it = new QListWidgetItem("sensors data", ui->lw_objects);
 	it->setFlags(Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
 	it->setCheckState(ui->gyrodata->is_enable()? Qt::Checked : Qt::Unchecked);
 	it->setData(Qt::UserRole, ui->gyrodata->type());
@@ -138,7 +138,10 @@ void MainWindow::_on_put_data(const QString& name , const Vector3i& value)
 	if(name.contains("accel")){
 		ui->widget_graph_accel->_on_put_data(name, value);
 	}else{
-		ui->widget_graph_gyro->_on_put_data(name, value);
+		if(name.contains("compass"))
+			ui->widget_graph_compass->_on_put_data(name, value);
+		else
+			ui->widget_graph_gyro->_on_put_data(name, value);
 	}
 }
 
@@ -147,7 +150,10 @@ void MainWindow::_on_put_data(const QString &name, double value)
 	if(name.contains("accel")){
 		ui->widget_graph_accel->_on_put_data(name, value);
 	}else{
-		ui->widget_graph_gyro->_on_put_data(name, value);
+		if(name.contains("compass"))
+			ui->widget_graph_compass->_on_put_data(name, value);
+		else
+			ui->widget_graph_gyro->_on_put_data(name, value);
 	}
 }
 

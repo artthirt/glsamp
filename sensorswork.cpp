@@ -741,13 +741,17 @@ void SensorsWork::simple_kalman_filter(const StructTelemetry &st, StructTelemetr
 {
 	emit get_data("gyro", st.gyroscope.gyro);
 	emit get_data("accel", st.gyroscope.accel);
+	emit get_data("compass", st.compass.data);
 
 	Vector3d kav = m_kalman[0].set_zk(st.gyroscope.accel);
 	Vector3d kgv = m_kalman[1].set_zk(st.gyroscope.gyro);
+	Vector3d kcv = m_kalman[2].set_zk(st.compass.data);
 
 	st_out.gyroscope.accel = kav;
 	st_out.gyroscope.gyro = kgv;
+	st_out.compass.data = kcv;
 
 	emit get_data("kalman_accel", kav);
 	emit get_data("kalman_gyro", kgv);
+	emit get_data("kalman_compass", kcv);
 }

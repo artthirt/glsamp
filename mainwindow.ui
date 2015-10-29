@@ -17,6 +17,9 @@
    <layout class="QHBoxLayout" name="horizontalLayout_2">
     <item>
      <widget class="QTabWidget" name="tabWidget">
+      <property name="acceptDrops">
+       <bool>false</bool>
+      </property>
       <property name="currentIndex">
        <number>0</number>
       </property>
@@ -36,21 +39,17 @@
       </widget>
       <widget class="QWidget" name="Graph">
        <attribute name="title">
-        <string>gyroscope</string>
+        <string>charts</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
+         <widget class="DataChart" name="widget_graph_accel" native="true"/>
+        </item>
+        <item>
          <widget class="DataChart" name="widget_graph_gyro" native="true"/>
         </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tab_5">
-       <attribute name="title">
-        <string>accelerometer</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_11">
         <item>
-         <widget class="DataChart" name="widget_graph_accel" native="true"/>
+         <widget class="DataChart" name="widget_graph_compass" native="true"/>
         </item>
        </layout>
       </widget>
@@ -64,7 +63,7 @@
      <x>0</x>
      <y>0</y>
      <width>1453</width>
-     <height>25</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -134,8 +133,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>326</width>
-              <height>779</height>
+              <width>254</width>
+              <height>789</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -163,8 +162,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>458</width>
-              <height>779</height>
+              <width>254</width>
+              <height>789</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout">
