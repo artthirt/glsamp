@@ -47,12 +47,54 @@ public:
 
 	static WriteLog *instance();
 
+	/**
+	 * @brief clearLogs
+	 * clear and close log
+	 */
 	void clearLogs();
+	/**
+	 * @brief newLogs
+	 * close current log and begin new log
+	 */
 	void newLogs();
-
+	/**
+	 * @brief set_write_log
+	 * set a write state to the log
+	 * @param value
+	 */
+	void set_write_log(bool value);
+	/**
+	 * @brief is_write_log
+	 * returning the current state of a write to the log
+	 * @return
+	 */
+	bool is_write_log() const;
+	/**
+	 * @brief createLog
+	 * create new log with name
+	 * @param name
+	 */
 	void createLog(const QString& name);
+	/**
+	 * @brief add_data
+	 * add data to log with name
+	 * @param name
+	 * @param data
+	 */
 	void add_data(const QString & name, const QString &data);
+	/**
+	 * @brief add_data
+	 * add telemetry to log with name
+	 * @param name
+	 * @param data
+	 */
 	void add_data(const QString & name, const sc::StructTelemetry &data);
+	/**
+	 * @brief write_data
+	 * write vector of telemetry to log with name
+	 * @param name
+	 * @param data
+	 */
 	void write_data(const QString & name, const QVector< sc::StructTelemetry > &data);
 	void closeLog(const QString& name);
 signals:
@@ -65,6 +107,7 @@ protected:
 
 private:
 	QMap< QString, LogFile > m_logFiles;
+	bool m_write_log;
 
 	static WriteLog *m_instance;
 };

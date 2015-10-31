@@ -63,7 +63,7 @@
      <x>0</x>
      <y>0</y>
      <width>1453</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -90,6 +90,8 @@
    </attribute>
    <addaction name="actionShow_settings"/>
    <addaction name="actionShow_log"/>
+   <addaction name="actionSave_to_Log"/>
+   <addaction name="actionShow_data_window"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QDockWidget" name="dw_settings">
@@ -105,6 +107,9 @@
      <height>524287</height>
     </size>
    </property>
+   <property name="acceptDrops">
+    <bool>true</bool>
+   </property>
    <property name="windowTitle">
     <string>&amp;Settings</string>
    </property>
@@ -115,8 +120,14 @@
     <layout class="QVBoxLayout" name="verticalLayout_7">
      <item>
       <widget class="QTabWidget" name="tw_settings">
+       <property name="tabPosition">
+        <enum>QTabWidget::West</enum>
+       </property>
        <property name="currentIndex">
         <number>0</number>
+       </property>
+       <property name="documentMode">
+        <bool>false</bool>
        </property>
        <widget class="QWidget" name="tab_2">
         <attribute name="title">
@@ -133,8 +144,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>254</width>
-              <height>789</height>
+              <width>255</width>
+              <height>808</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -163,7 +174,7 @@
               <x>0</x>
               <y>0</y>
               <width>254</width>
-              <height>789</height>
+              <height>779</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout">
@@ -280,6 +291,22 @@
    </property>
    <property name="text">
     <string>Show settings</string>
+   </property>
+  </action>
+  <action name="actionShow_data_window">
+   <property name="text">
+    <string>Show data window</string>
+   </property>
+  </action>
+  <action name="actionSave_to_Log">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Save to Log</string>
    </property>
   </action>
  </widget>

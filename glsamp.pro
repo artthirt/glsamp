@@ -47,7 +47,8 @@ SOURCES += main.cpp\
     gyrodatawidget.cpp \
     spheregl.cpp \
     submodules/struct_controls/struct_controls.cpp \
-    sensorswork.cpp
+    sensorswork.cpp \
+    wnddatashow.cpp
 
 HEADERS  += mainwindow.h \
     virtglobject.h \
@@ -69,13 +70,15 @@ HEADERS  += mainwindow.h \
     submodules/struct_controls/vector3_.h \
     submodules/struct_controls/quaternions.h \
     submodules/struct_controls/common_.h \
-    sensorswork.h
+    sensorswork.h \
+    wnddatashow.h
 
 FORMS    += mainwindow.ui \
     glspace.ui \
     dialogabout.ui \
     quadmodel.ui \
-    gyrodatawidget.ui
+    gyrodatawidget.ui \
+    wnddatashow.ui
 
 UI_DIR = $$DST_DIR/tmp/ui
 OBJECTS_DIR = $$DST_DIR/obj

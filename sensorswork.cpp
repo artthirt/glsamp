@@ -21,6 +21,56 @@ using namespace quaternions;
 
 const QString xml_calibrate("calibrate.xml");
 
+static inline Quaternion fromAnglesAxes(const Vector3d& angles);
+
+/////////////////////////////////////////////////////
+
+static inline QQuaternion fromAnglesAxesTst(const Vector3d& angles)
+{
+	QQuaternion qX, qY, qZ, qres;
+	qX = QQuaternion::fromAxisAndAngle(QVector3D(1, 0, 0), angles.x());
+	qY = QQuaternion::fromAxisAndAngle(QVector3D(0, 1, 0), angles.y());
+	qZ = QQuaternion::fromAxisAndAngle(QVector3D(0, 0, 1), angles.z());
+	qres = qX * qY * qZ;
+	return qres;
+}
+
+double rnd_a(){
+	return -360.0 + (double)(rand()) / RAND_MAX * 720.0;
+}
+
+/// @test code
+bool test_data()
+{
+	srand(QDateTime::currentMSecsSinceEpoch());
+	double ll = 0;
+	for(int i = 0; i < 1000; i++){
+		Vector3d v(rnd_a(), rnd_a(), rnd_a());
+		Quaternion q1 = fromAnglesAxes(v);
+		QQuaternion qq1 = fromAnglesAxesTst(v);
+		double l = qq1.lengthSquared() - q1.lengthSquared();
+		ll += l * l;
+		qDebug() << qq1 << q1 << ll;
+	}
+
+	Quaternion q1 = Quaternion::fromAxisAndAngle(rnd_a(), rnd_a(), rnd_a(), rnd_a());
+	Quaternion q2 = Quaternion::fromAxisAndAngle(rnd_a(), rnd_a(), rnd_a(), rnd_a());
+
+	qDebug() << "slerp";
+	qDebug() << q1 << q2;
+
+	for(int i = 0; i < 1000; i++){
+		Quaternion q = Quaternion::slerp(q1, q2, (double)i / 1000.0);
+		qDebug() << (double)i / 1000.0 << "q=" << q;
+	}
+	qDebug() << q1 << q2;
+
+	return true;
+}
+
+/// @test code
+///const bool test_fl = test_data();
+
 /////////////////////////////////////////////////////
 
 inline Vector3i rshift(const Vector3i& val, int shift)
@@ -108,6 +158,7 @@ SensorsWork::SensorsWork(QObject *parent)
 	, m_min_threshold_angle(1e-1)
 	, m_multiply_correction(0.7)
 	, m_index(0)
+	, m_coeff_deltaAngle(0.1)
 {
 	connect(this, SIGNAL(bind_address()), this, SLOT(_on_bind_address()), Qt::QueuedConnection);
 	connect(this, SIGNAL(send_to_socket(QByteArray)), this, SLOT(_on_send_to_socket(QByteArray)), Qt::QueuedConnection);
@@ -164,7 +215,7 @@ void SensorsWork::send_stop()
 void SensorsWork::set_address(const QHostAddress &address, ushort port)
 {
 	m_addr = address;
-	m_receiver_port = port;
+	m_port = port;
 
 	emit bind_address();
 }
@@ -352,30 +403,6 @@ void SensorsWork::calc_correction()
 	}
 }
 
-void SensorsWork::correct_error_gyroscope()
-{
-	Vector3d vga = rotate_quaternion.rotatedVector(Vector3d(0, 0, -1)).normalized();
-	Vector3d va = mean_accel.normalized();
-	Vector3d ax = Vector3d::cross(va, vga).normalized();
-	double an = Vector3d::dot(vga, va);
-	an = common_::rad2angle(acos(an));
-	accel_quat = Quaternion::fromAxisAndAngle(ax, -an) * rotate_quaternion;
-	accel_quat.normalize();
-
-	if(!m_is_start_correction && fabs(an) > m_max_threshold_angle){
-		m_is_start_correction = true;
-	}
-
-	if(m_is_start_correction && tmp_accel.length() < m_threshold_accel * m_sphere.mean_radius){
-		rotate_quaternion = Quaternion::slerp(rotate_quaternion, accel_quat, m_multiply_correction);
-
-		//qDebug() << an;
-		if(fabs(an) < m_min_threshold_angle){
-			m_is_start_correction = false;
-		}
-	}
-}
-
 void SensorsWork::calccount(const StructTelemetry &st)
 {
 	if(m_is_calc_pos){
@@ -416,6 +443,9 @@ void SensorsWork::load_calibrate()
 		m_min_threshold_angle = node["min_threshold_angle"];
 	if(!node["multiply_correction"].empty())
 		m_multiply_correction = node["multiply_correction"];
+	if(!node["coeff_deltaAngle"].empty()){
+		m_coeff_deltaAngle = node["coeff_deltaAngle"];
+	}
 
 	node = sxml["gyroscope"];
 	v.setX(node["x_corr"]);
@@ -478,6 +508,7 @@ void SensorsWork::save_calibrate()
 	node << "max_threshold_angle" << m_max_threshold_angle;
 	node << "min_threshold_angle" << m_min_threshold_angle;
 	node << "multiply_correction" << m_multiply_correction;
+	node << "coeff_deltaAngle" << m_coeff_deltaAngle;
 
 	if(!m_offset_gyro.isNull()){
 		node = sxml["gyroscope"];
@@ -594,52 +625,6 @@ static inline Quaternion fromAnglesAxes(const Vector3d& angles)
 	return qres;
 }
 
-static inline QQuaternion fromAnglesAxesTst(const Vector3d& angles)
-{
-	QQuaternion qX, qY, qZ, qres;
-	qX = QQuaternion::fromAxisAndAngle(QVector3D(1, 0, 0), angles.x());
-	qY = QQuaternion::fromAxisAndAngle(QVector3D(0, 1, 0), angles.y());
-	qZ = QQuaternion::fromAxisAndAngle(QVector3D(0, 0, 1), angles.z());
-	qres = qX * qY * qZ;
-	return qres;
-}
-
-double rnd_a(){
-	return -360.0 + (double)(rand()) / RAND_MAX * 720.0;
-}
-
-/// @test code
-bool test_data()
-{
-	srand(QDateTime::currentMSecsSinceEpoch());
-	double ll = 0;
-	for(int i = 0; i < 1000; i++){
-		Vector3d v(rnd_a(), rnd_a(), rnd_a());
-		Quaternion q1 = fromAnglesAxes(v);
-		QQuaternion qq1 = fromAnglesAxesTst(v);
-		double l = qq1.lengthSquared() - q1.lengthSquared();
-		ll += l * l;
-		qDebug() << qq1 << q1 << ll;
-	}
-
-	Quaternion q1 = Quaternion::fromAxisAndAngle(rnd_a(), rnd_a(), rnd_a(), rnd_a());
-	Quaternion q2 = Quaternion::fromAxisAndAngle(rnd_a(), rnd_a(), rnd_a(), rnd_a());
-
-	qDebug() << "slerp";
-	qDebug() << q1 << q2;
-
-	for(int i = 0; i < 1000; i++){
-		Quaternion q = Quaternion::slerp(q1, q2, (double)i / 1000.0);
-		qDebug() << (double)i / 1000.0 << "q=" << q;
-	}
-	qDebug() << q1 << q2;
-
-	return true;
-}
-
-/// @test code
-///const bool test_fl = test_data();
-
 StructTelemetry SensorsWork::analyze_telemetry(const StructTelemetry &st_in)
 {
 	StructTelemetry st(st_in);
@@ -696,7 +681,7 @@ StructTelemetry SensorsWork::analyze_telemetry(const StructTelemetry &st_in)
 
 		/////////////////////////////
 
-		//correct_error_gyroscope();
+		correct_error_gyroscope();
 	}
 
 	telemetries.push_front(st);
@@ -706,6 +691,59 @@ StructTelemetry SensorsWork::analyze_telemetry(const StructTelemetry &st_in)
 	}
 
 	return st;
+}
+
+void SensorsWork::correct_error_gyroscope()
+{
+	/// vector Z of inner a coordinate system in  outer a coordinate system
+	Vector3d vga = rotate_quaternion.rotatedVector(Vector3d(0, 0, -1)).normalized();
+	/// his projection on plane XY
+	Vector3d vgaXY = vga;
+	vgaXY.setZ(0);
+	vgaXY.normalize();
+
+	/// vector of acceleration
+	Vector3d va = mean_accel.normalized();
+	/// his projection in plane XY
+	Vector3d vaXY = va;
+	vaXY.setZ(0);
+	vaXY.normalize();
+//	va.setX( -va.x() );
+//	va.setY( -va.y() );
+//	Vector3d ax = Vector3d::cross(vgaXY, vga).normalized();
+	/// angle between acceleration and his projection
+	double an = Vector3d::dot(va, vaXY);
+	an = common_::rad2angle(asin(an));
+
+	/// angle between vector Z and his projection
+	double an2 = Vector3d::dot(vga, vgaXY);
+	an2 = common_::rad2angle(asin(an2));
+
+	emit set_text("angles_pXY", QString("a1=%1, a2=%2").arg(an).arg(an2));
+//	accel_quat = Quaternion::fromAxisAndAngle(ax, -an) * rotate_quaternion;
+//	accel_quat.normalize();
+
+	if(!m_is_start_correction && fabs(an - an2) > m_max_threshold_angle){
+		m_is_start_correction = true;
+	}
+
+	if(m_is_start_correction && tmp_accel.length() < m_threshold_accel * m_sphere.mean_radius){
+		/// axe between vector Z and his projection
+		Vector3d ax = Vector3d::cross(vga, vgaXY).normalized();
+		emit set_text("axes_pXY", ax);
+		/// get quaternion for rotate to delta angle between an and an2
+		Quaternion qZ = Quaternion::fromAxisAndAngle(ax, m_coeff_deltaAngle * (an - an2));
+		accel_quat = qZ * rotate_quaternion;
+
+		/// correction for main quaternion
+		rotate_quaternion = Quaternion::slerp(rotate_quaternion, accel_quat, m_multiply_correction);
+
+
+		//qDebug() << an;
+		if(fabs(an) < m_min_threshold_angle){
+			m_is_start_correction = false;
+		}
+	}
 }
 
 void SensorsWork::clear_data()

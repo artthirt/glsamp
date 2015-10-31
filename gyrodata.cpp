@@ -130,7 +130,6 @@ GyroData::GyroData(QObject *parent) :
   , m_is_draw_mean_sphere(true)
   , m_show_calibrated_data(true)
   , m_write_data(false)
-  , m_is_visible_text(true)
   , m_add_to_pool(false)
   , m_show_recorded_data(false)
 {
@@ -820,8 +819,8 @@ void GyroData::draw()
 		draw_line(Vector3d(), tmp, Qt::green);
 		draw_text(tmp, "accel. " + QString::number(sensorsWork()->telemetries[0].gyroscope.accel.length()));
 
-		tmp = sensorsWork()->rotate_quaternion.rotatedVector(tmp);
-		draw_line(Vector3d(), tmp, QColor(200, 255, 100));
+//		tmp = sensorsWork()->rotate_quaternion.rotatedVector(tmp);
+//		draw_line(Vector3d(), tmp, QColor(200, 255, 100));
 
 //		glLineWidth(2);
 //		tmp = Vector3d(-tmp.x(), -tmp.y(), tmp.z());
@@ -835,7 +834,7 @@ void GyroData::draw()
 			draw_line(cmp, Vector3d(), QColor(128, 100, 64));
 			draw_text(cmp, "compass", QColor(128, 100, 64));
 
-			cmp = sensorsWork()->rotate_quaternion.rotatedVector(cmp);
+			cmp = Vector3d::cross(sensorsWork()->mean_accel, cmp).normalized();
 			draw_line(cmp, Vector3d(), QColor(128, 100, 255));
 		}
 
@@ -901,10 +900,6 @@ void GyroData::draw()
 		m_sphereGl.draw_sphere(sensorsWork()->mean_sphere().cp, m_divider_accel);
 	}
 
-	if(m_is_visible_text){
-		draw_text();
-	}
-
 	if(m_show_recorded_data){
 		draw_recored_data();
 	}
@@ -928,9 +923,9 @@ void GyroData::draw()
 
 void GyroData::tick()
 {
-	m_drawing_text["sphere_radius"] = QString::number(sensorsWork()->mean_sphere().mean_radius, 'f', 1);
-	m_drawing_text["sphere_cp"] = sensorsWork()->mean_sphere().cp;
-	m_drawing_text["sphere_dev"] = QString::number(sensorsWork()->mean_sphere().deviation, 'f', 1);
+	emit set_text("sphere_radius", QString::number(sensorsWork()->mean_sphere().mean_radius, 'f', 1));
+	emit set_text("sphere_cp", sensorsWork()->mean_sphere().cp);
+	emit set_text("sphere_dev", QString::number(sensorsWork()->mean_sphere().deviation, 'f', 1));
 }
 
 QVector3D GyroData::position() const
@@ -1041,21 +1036,6 @@ void GyroData::reset_trajectory()
 	m_trajectory.clear();
 }
 
-void GyroData::set_text(const QString &key, const QString text)
-{
-	m_drawing_text[key] = text;
-}
-
-void GyroData::set_visible_text(bool value)
-{
-	m_is_visible_text = value;
-}
-
-bool GyroData::is_visible_text() const
-{
-	return m_is_visible_text;
-}
-
 void GyroData::show_recorded_data(bool value)
 {
 	m_show_recorded_data = value;
@@ -1073,32 +1053,6 @@ void GyroData::draw_text(const Vector3d &v, const QString &text, const QColor& c
 		glColor3f(col.redF(), col.greenF(), col.blueF());
 		w->renderText(v.x(), v.y(), v.z(), text, QFont("Helvetica [Cronyx]", 14));
 	}
-}
-
-void GyroData::draw_text()
-{
-	glPushMatrix();
-
-	glLoadIdentity();
-	glTranslatef(0, 0, -1.1);
-
-	double params[4];
-	glGetDoublev(GL_VIEWPORT, params);
-	double ar = -params[2] / params[3] / 2.;
-
-	Vector3d p(ar, 0.55, 0), pv(ar + 0.2, 0.55, 0);
-	double dy = -0.03;
-	glColor3f(0, 0.7, 0);
-	for(QMap< QString, QString >::iterator it = m_drawing_text.begin(); it != m_drawing_text.end(); it++){
-		p.setY(p.y() + dy);
-		pv.setY(p.y());
-		QString key = QString("[%1]:").arg(it.key());
-		QString value = QString("%1").arg(it.value());
-		draw_text(p, key, Qt::green);
-		draw_text(pv, value, Qt::green);
-	}
-
-	glPopMatrix();
 }
 
 void GyroData::draw_recored_data()

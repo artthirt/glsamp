@@ -50,7 +50,7 @@ void LogFile::openFile(const QString &name)
 		dir.mkdir(log_path);
 	}
 
-	QString fn = log_path + name + "_" + QDateTime::currentDateTime().toString() + ".csv";
+	QString fn = log_path + name + "_" + QDateTime::currentDateTime().toString("yyyy_MMMM_dd_hh_mm_ss") + ".csv";
 
 	if(QFile::exists(fn)){
 		QFile::remove(fn);
@@ -121,6 +121,7 @@ WriteLog *WriteLog::m_instance = 0;
 
 WriteLog::WriteLog(QObject *parent):
 	QThread(parent)
+  , m_write_log(true)
 {
 
 }
@@ -155,6 +156,19 @@ void WriteLog::newLogs()
 	}
 }
 
+void WriteLog::set_write_log(bool value)
+{
+	m_write_log = value;
+	if(!m_write_log){
+		clearLogs();
+	}
+}
+
+bool WriteLog::is_write_log() const
+{
+	return m_write_log;
+}
+
 void WriteLog::createLog(const QString &name)
 {
 	m_logFiles[name].openFile(name);
@@ -162,11 +176,16 @@ void WriteLog::createLog(const QString &name)
 
 void WriteLog::add_data(const QString &name, const QString &data)
 {
+	if(!m_write_log)
+		return;
 	m_logFiles[name].push_data(name, data);
 }
 
 void WriteLog::add_data(const QString &name, const StructTelemetry &data)
 {
+	if(!m_write_log)
+		return;
+
 	QString str;
 
 #define ADDVAL(val) str += QString::number(val) + ";"
@@ -204,6 +223,9 @@ void WriteLog::add_data(const QString &name, const StructTelemetry &data)
 
 void WriteLog::write_data(const QString &name, const QVector<StructTelemetry> &data)
 {
+	if(!m_write_log)
+		return;
+
 	foreach (StructTelemetry st, data) {
 		add_data(name, st);
 		m_logFiles[name].write_data();
@@ -213,6 +235,9 @@ void WriteLog::write_data(const QString &name, const QVector<StructTelemetry> &d
 
 void WriteLog::_on_timeout()
 {
+	if(!m_write_log)
+		return;
+
 	for(QMap< QString, LogFile >::iterator it = m_logFiles.begin(); it != m_logFiles.end(); it++){
 		it.value().write_data();
 	}

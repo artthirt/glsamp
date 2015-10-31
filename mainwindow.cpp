@@ -9,6 +9,7 @@
 
 #include <global.h>
 #include <simple_xml.hpp>
+#include <writelog.h>
 
 using namespace sc;
 using namespace vector3_;
@@ -27,6 +28,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::MainWindow)
   , m_available_telemetry(0)
+  , m_dataShow(0)
 {
 	ui->setupUi(this);
 
@@ -36,6 +38,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->quadmodel->set_model(qobject_cast<QuadModel*>(ui->widget->item(QuadModel::QUADMODEL)));
 	ui->gyrodata->set_model(qobject_cast<GyroData*>(ui->widget->item(GyroData::GYRODATA)));
 
+	m_dataShow = new WndDataShow();
 
 	m_available_telemetry = new QLabel(this);
 	m_available_telemetry->setMinimumWidth(200);
@@ -46,9 +49,13 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	connect(ui->gyrodata->model(), SIGNAL(add_to_log(QString)), this, SLOT(add_to_log(QString)));
 	connect(ui->gyrodata->model()->sensorsWork(), SIGNAL(add_to_log(QString)), this, SLOT(add_to_log(QString)));
+	connect(ui->gyrodata->model(), SIGNAL(set_text(QString,QString)), m_dataShow, SLOT(set_text(QString,QString)));
+	connect(ui->gyrodata->model()->sensorsWork(), SIGNAL(set_text(QString,QString)), m_dataShow, SLOT(set_text(QString,QString)));
 
 	load_from_xml();
 	init_list_objects();
+
+	ui->pte_log->setMaximumBlockCount(1000);
 
 	setWindowState( Qt::WindowMaximized );
 }
@@ -56,6 +63,9 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
 	save_to_xml();
+
+	if(m_dataShow)
+		delete m_dataShow;
 
 	delete ui;
 }
@@ -118,6 +128,13 @@ void MainWindow::save_to_xml()
 
 }
 
+void MainWindow::closeEvent(QCloseEvent *)
+{
+	if(m_dataShow){
+		m_dataShow->close();
+	}
+}
+
 void MainWindow::on_lw_objects_itemChanged(QListWidgetItem *item)
 {
 	QVariant vr = item->data(Qt::UserRole);
@@ -164,9 +181,10 @@ void MainWindow::on_pb_clear_log_clicked()
 
 void MainWindow::add_to_log(const QString &text)
 {
-	QString line = "[" + QTime::currentTime().toString() + "]  " + text + "\r\n";
-	ui->pte_log->moveCursor(QTextCursor::Start);
-	ui->pte_log->insertPlainText(line);
+	QString line = "[" + QTime::currentTime().toString() + "]  " + text;// + "\r\n";
+	//ui->pte_log->moveCursor(QTextCursor::Start);
+	//ui->pte_log->insertPlainText(line);
+	ui->pte_log->appendPlainText(line);
 }
 
 void MainWindow::on_actionAbout_triggered()
@@ -180,4 +198,16 @@ void MainWindow::_on_status_bar_text(const QString &text)
 	if(m_available_telemetry){
 		m_available_telemetry->setText(text);
 	}
+}
+
+void MainWindow::on_actionShow_data_window_triggered()
+{
+	if(m_dataShow){
+		m_dataShow->show();
+	}
+}
+
+void MainWindow::on_actionSave_to_Log_triggered(bool checked)
+{
+	WriteLog::instance()->set_write_log(checked);
 }

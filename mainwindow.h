@@ -6,6 +6,7 @@
 
 #include "quadmodel.h"
 #include "gyrodata.h"
+#include "wnddatashow.h"
 
 namespace Ui {
 class MainWindow;
@@ -36,6 +37,10 @@ private slots:
 
 	void _on_status_bar_text(const QString& text);
 
+	void on_actionShow_data_window_triggered();
+
+	void on_actionSave_to_Log_triggered(bool checked);
+
 protected:
 	void init_list_objects();
 
@@ -43,9 +48,14 @@ private:
 	Ui::MainWindow *ui;
 
 	QLabel *m_available_telemetry;
+	WndDataShow* m_dataShow;
 
 	void load_from_xml();
 	void save_to_xml();
+
+	// QWidget interface
+protected:
+	void closeEvent(QCloseEvent *);
 };
 
 #endif // MAINWINDOW_H

@@ -193,10 +193,6 @@ public:
 
 	void reset_trajectory();
 
-	void set_text(const QString& key, const QString text);
-	void set_visible_text(bool value);
-	bool is_visible_text() const;
-
 	void show_recorded_data(bool value);
 	bool is_show_recorded_data() const {return m_show_recorded_data;}
 
@@ -212,6 +208,7 @@ private:
 
 signals:
 	void add_to_log(const QString& text);
+	void set_text(const QString& key, const QString text);
 
 public slots:
 	void _on_timeout_playing();
@@ -241,9 +238,6 @@ private:
 	double m_percent_downloaded_data;
 	long long m_index;
 
-	QMap< QString, QString > m_drawing_text;
-	bool m_is_visible_text;
-
 	bool m_showing_downloaded_data;
 	bool m_is_play;
 	int m_current_playing_pos;
@@ -270,7 +264,6 @@ private:
 
 	void draw_text(const vector3_::Vector3d& v, const QString& text, const QColor &col = Qt::white);
 	void draw_sphere();
-	void draw_text();
 	void draw_recored_data();
 
 	void calc_parameters();

@@ -111,6 +111,7 @@ signals:
 	void bind_address();
 	void send_to_socket(const QByteArray& data);
 	void add_to_log(const QString& text);
+	void set_text(const QString& key, const QString text);
 	void stop_calibration();
 	void fill_data_for_calibration(const sc::StructTelemetry& st);
 	void start_calibration_watcher();
@@ -178,6 +179,7 @@ private:
 	double m_max_threshold_angle;
 	double m_min_threshold_angle;
 	double m_multiply_correction;
+	double m_coeff_deltaAngle;
 
 	void calccount(const sc::StructTelemetry& st);
 	void calc_offsets(const vector3_::Vector3i &gyro, const vector3_::Vector3i &accel);
