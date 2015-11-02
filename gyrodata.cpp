@@ -276,20 +276,18 @@ void GyroData::openFile(const QString fileName)
 			tm = sl[14].toLongLong();
 		}
 		if(sl.size() >= 22){
-			int c1, c2, c3, m;
+			int c1, c2, c3;
 			long long tick = 0;
 			c1 = sl[15].toInt();
 			c2 = sl[16].toInt();
 			c3 = sl[17].toInt();
-			m = sl[18].toInt();
-			tick = sl[19].toLongLong();
+			tick = sl[18].toLongLong();
 			st.compass.data = Vector3i(c1, c2, c3);
-			st.compass.mode = m;
 			st.compass.tick = tick;
 
-			c1 = sl[20].toInt();
-			c2 = sl[21].toInt();
-			tick = sl[22].toLongLong();
+			c1 = sl[19].toInt();
+			c2 = sl[20].toInt();
+			tick = sl[21].toLongLong();
 			st.barometer.data = c1;
 			st.barometer.temp = c2;
 			st.barometer.tick = tick;
