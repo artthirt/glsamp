@@ -192,6 +192,7 @@ private:
 	 */
 	void simple_kalman_filter(const sc::StructTelemetry& st, sc::StructTelemetry& st_out);
 	void correct_error_gyroscope();
+	void represente_data(const sc::StructTelemetry& st);
 };
 
 #endif // SENSORSWORK_H

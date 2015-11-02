@@ -682,6 +682,8 @@ StructTelemetry SensorsWork::analyze_telemetry(const StructTelemetry &st_in)
 		/////////////////////////////
 
 		correct_error_gyroscope();
+
+		represente_data(st);
 	}
 
 	telemetries.push_front(st);
@@ -744,6 +746,12 @@ void SensorsWork::correct_error_gyroscope()
 			m_is_start_correction = false;
 		}
 	}
+}
+
+void SensorsWork::represente_data(const StructTelemetry &st)
+{
+	emit set_text("temp", QString::number(st.barometer.temp));
+	emit set_text("pressure", QString::number(st.barometer.data));
 }
 
 void SensorsWork::clear_data()
