@@ -832,8 +832,15 @@ void GyroData::draw()
 			draw_line(cmp, Vector3d(), QColor(128, 100, 64));
 			draw_text(cmp, "compass", QColor(128, 100, 64));
 
-			cmp = Vector3d::cross(sensorsWork()->mean_accel, cmp).normalized();
+			Vector3d cmpXY = cmp;
+			cmpXY.setZ(0);
+
+			cmp = sensorsWork()->rotate_quaternion.rotatedVector(cmp);
 			draw_line(cmp, Vector3d(), QColor(128, 100, 255));
+			draw_text(cmp, "compass2", QColor(128, 100, 64));
+
+			cmpXY.normalize();
+			draw_line(cmpXY, Vector3d(), QColor(228, 100, 100));
 		}
 
 		glLineWidth(1);
