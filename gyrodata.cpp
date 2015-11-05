@@ -841,6 +841,9 @@ void GyroData::draw()
 
 			cmpXY.normalize();
 			draw_line(cmpXY, Vector3d(), QColor(228, 100, 100));
+
+			cmpXY = sensorsWork()->rotate_quaternion.rotatedVector(cmpXY);
+			draw_line(cmpXY, Vector3d(), QColor(100, 228, 100));
 		}
 
 		glLineWidth(1);
