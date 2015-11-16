@@ -63,7 +63,7 @@
      <x>0</x>
      <y>0</y>
      <width>1453</width>
-     <height>25</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -111,7 +111,7 @@
     <bool>true</bool>
    </property>
    <property name="windowTitle">
-    <string>&amp;Settings</string>
+    <string>Settings</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
@@ -145,7 +145,7 @@
               <x>0</x>
               <y>0</y>
               <width>255</width>
-              <height>808</height>
+              <height>809</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -173,8 +173,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>254</width>
-              <height>779</height>
+              <width>255</width>
+              <height>809</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout">
@@ -217,7 +217,7 @@
   </widget>
   <widget class="QDockWidget" name="dw_log">
    <property name="windowTitle">
-    <string>&amp;Log</string>
+    <string>Log</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>8</number>
@@ -278,6 +278,10 @@
    <property name="checked">
     <bool>true</bool>
    </property>
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/Resources/Resources/insert-text.png</normaloff>:/Resources/Resources/insert-text.png</iconset>
+   </property>
    <property name="text">
     <string>Show log</string>
    </property>
@@ -289,11 +293,19 @@
    <property name="checked">
     <bool>true</bool>
    </property>
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/Resources/Resources/preferences-system.png</normaloff>:/Resources/Resources/preferences-system.png</iconset>
+   </property>
    <property name="text">
     <string>Show settings</string>
    </property>
   </action>
   <action name="actionShow_data_window">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/Resources/Resources/x-office-document-template.png</normaloff>:/Resources/Resources/x-office-document-template.png</iconset>
+   </property>
    <property name="text">
     <string>Show data window</string>
    </property>
@@ -304,6 +316,10 @@
    </property>
    <property name="checked">
     <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/Resources/Resources/media-record.png</normaloff>:/Resources/Resources/media-record.png</iconset>
    </property>
    <property name="text">
     <string>Save to Log</string>
@@ -337,7 +353,9 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>actionExit</sender>

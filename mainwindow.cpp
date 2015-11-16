@@ -57,6 +57,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	ui->pte_log->setMaximumBlockCount(1000);
 
+	ui->tw_settings->setAcceptDrops(true);
+
 	setWindowState( Qt::WindowMaximized );
 }
 
@@ -204,6 +206,7 @@ void MainWindow::on_actionShow_data_window_triggered()
 {
 	if(m_dataShow){
 		m_dataShow->show();
+		m_dataShow->raise();
 	}
 }
 

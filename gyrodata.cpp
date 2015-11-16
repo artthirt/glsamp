@@ -835,15 +835,24 @@ void GyroData::draw()
 			Vector3d cmpXY = cmp;
 			cmpXY.setZ(0);
 
-			cmp = sensorsWork()->rotate_quaternion.rotatedVector(cmp);
-			draw_line(cmp, Vector3d(), QColor(128, 100, 255));
-			draw_text(cmp, "compass2", QColor(128, 100, 64));
+//			cmp = sensorsWork()->rotate_quaternion.rotatedVector(cmp);
+//			draw_line(cmp, Vector3d(), QColor(128, 100, 255));
+//			draw_text(cmp, "compass2", QColor(128, 100, 64));
 
 			cmpXY.normalize();
 			draw_line(cmpXY, Vector3d(), QColor(228, 100, 100));
+//			Vector3d nY(0, 1, 0);
+//			double a1 = Vector3d::dot(cmpXY.normalized(), nY);
 
-			cmpXY = sensorsWork()->rotate_quaternion.rotatedVector(cmpXY);
-			draw_line(cmpXY, Vector3d(), QColor(100, 228, 100));
+//			cmpXY = sensorsWork()->rotate_quaternion.rotatedVector(cmpXY);
+//			draw_line(cmpXY, Vector3d(), QColor(100, 228, 100));
+//			nY = sensorsWork()->rotate_quaternion.rotatedVector(nY);
+//			double a2 = Vector3d::dot(cmpXY.normalized(), nY);
+
+//			set_text("ang_cmps", QString("a1[%1], a2[%2], Δ[%3]")
+//					 .arg(a1, 0, 'f', 3)
+//					 .arg(a2, 0, 'f', 3)
+//					 .arg(a2 - a1, 0, 'f', 3));
 		}
 
 		glLineWidth(1);

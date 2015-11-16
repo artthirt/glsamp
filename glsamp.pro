@@ -84,3 +84,6 @@ UI_DIR = $$DST_DIR/tmp/ui
 OBJECTS_DIR = $$DST_DIR/obj
 MOC_DIR = $$DST_DIR/moc
 RCC_DIR = $$DST_DIR/rcc
+
+RESOURCES += \
+    resources.qrc

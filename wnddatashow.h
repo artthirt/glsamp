@@ -25,12 +25,19 @@ public slots:
 	void set_text(const QString &key, const QString text);
 	void timeout();
 
+private slots:
+	void on_checkBox_clicked(bool checked);
+
 private:
 	Ui::WndDataShow *ui;
 	QTimer m_timer;
 	QStandardItemModel m_model;
 
 	QMap< QString, QString > m_drawing_text;
+
+	// QWidget interface
+protected:
+	virtual void mousePressEvent(QMouseEvent *event);
 };
 
 #endif // WNDDATASHOW_H

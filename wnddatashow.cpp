@@ -2,6 +2,7 @@
 #include "ui_wnddatashow.h"
 
 #include <QMapIterator>
+#include <QMouseEvent>
 
 WndDataShow::WndDataShow(QWidget *parent) :
 	QWidget(parent),
@@ -10,7 +11,7 @@ WndDataShow::WndDataShow(QWidget *parent) :
 	ui->setupUi(this);
 
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(timeout()));
-	m_timer.start(300);
+	m_timer.start(100);
 
 	ui->tw_dataShow->setModel(&m_model);
 
@@ -53,4 +54,21 @@ void WndDataShow::timeout()
 		it.next();
 		setKeyValue(it.key(), it.value());
 	}
+}
+
+void WndDataShow::on_checkBox_clicked(bool checked)
+{
+	int flags = windowFlags();
+	if(checked){
+		flags |= Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint;
+	}else{
+		flags &= (~Qt::WindowStaysOnTopHint) & (~Qt::FramelessWindowHint);
+	}
+	setWindowFlags((Qt::WindowFlags)flags);
+	show();
+}
+
+
+void WndDataShow::mousePressEvent(QMouseEvent *event)
+{
 }
