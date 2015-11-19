@@ -60,9 +60,9 @@ void WndDataShow::on_checkBox_clicked(bool checked)
 {
 	int flags = windowFlags();
 	if(checked){
-		flags |= Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint;
+		flags |= Qt::WindowStaysOnTopHint;
 	}else{
-		flags &= (~Qt::WindowStaysOnTopHint) & (~Qt::FramelessWindowHint);
+		flags &= (~Qt::WindowStaysOnTopHint);
 	}
 	setWindowFlags((Qt::WindowFlags)flags);
 	show();
