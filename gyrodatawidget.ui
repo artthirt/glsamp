@@ -338,7 +338,7 @@
       <item>
        <widget class="QTabWidget" name="tw_gyro_params">
         <property name="currentIndex">
-         <number>3</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="tab">
          <attribute name="title">
@@ -503,103 +503,129 @@
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_8">
-            <property name="spacing">
-             <number>0</number>
+           <widget class="QGroupBox" name="groupBox_6">
+            <property name="title">
+             <string>analyze data</string>
             </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <item>
-             <widget class="QPushButton" name="pb_write_log">
-              <property name="maximumSize">
-               <size>
-                <width>70</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>write real time telemetry for calibrate</string>
-              </property>
-              <property name="text">
-               <string>write
- log</string>
-              </property>
-              <property name="checkable">
-               <bool>true</bool>
-              </property>
-              <property name="flat">
-               <bool>false</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="pushButton_11">
-              <property name="maximumSize">
-               <size>
-                <width>70</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>write real time telemetry for calibrate</string>
-              </property>
-              <property name="text">
-               <string>new 
-pool</string>
-              </property>
-              <property name="checkable">
-               <bool>true</bool>
-              </property>
-              <property name="flat">
-               <bool>false</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="pb_add_to_pool">
-              <property name="maximumSize">
-               <size>
-                <width>70</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>add 
-to pool</string>
-              </property>
-              <property name="checkable">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="pb_cancel">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>44</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>70</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>cancel</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="lb_write_data">
-              <property name="text">
-               <string/>
-              </property>
-             </widget>
-            </item>
-           </layout>
+            <layout class="QVBoxLayout" name="verticalLayout_11">
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_8">
+               <property name="spacing">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QPushButton" name="pb_write_log">
+                 <property name="maximumSize">
+                  <size>
+                   <width>9999999</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>write real time telemetry for calibrate</string>
+                 </property>
+                 <property name="text">
+                  <string>write log</string>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="flat">
+                  <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="pushButton_11">
+                 <property name="maximumSize">
+                  <size>
+                   <width>9999999</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>write real time telemetry for calibrate</string>
+                 </property>
+                 <property name="text">
+                  <string>new pool</string>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="flat">
+                  <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="pb_add_to_pool">
+                 <property name="maximumSize">
+                  <size>
+                   <width>999999</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>add to pool</string>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="lb_write_data">
+                 <property name="text">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_14">
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <spacer name="horizontalSpacer">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QPushButton" name="pb_cancel">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>70</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>cancel</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
           </item>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_11">
@@ -611,18 +637,17 @@ to pool</string>
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>35</height>
+                <height>0</height>
                </size>
               </property>
               <property name="maximumSize">
                <size>
-                <width>100</width>
+                <width>16777215</width>
                 <height>50</height>
                </size>
               </property>
               <property name="text">
-               <string>start/stop
-calc offsets</string>
+               <string>start/stop calc offsets</string>
               </property>
               <property name="checkable">
                <bool>true</bool>
@@ -674,7 +699,7 @@ calc offsets</string>
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>44</height>
+                <height>0</height>
                </size>
               </property>
               <property name="toolTip">
@@ -691,8 +716,7 @@ calc offsets</string>
                <string>reset calibration sphere</string>
               </property>
               <property name="text">
-               <string>reset 
-sphere</string>
+               <string>reset sphere</string>
               </property>
              </widget>
             </item>
@@ -827,12 +851,11 @@ sphere</string>
           <property name="minimumSize">
            <size>
             <width>0</width>
-            <height>44</height>
+            <height>0</height>
            </size>
           </property>
           <property name="text">
-           <string>load 
-calibration</string>
+           <string>load calibration</string>
           </property>
          </widget>
         </item>
@@ -842,8 +865,7 @@ calibration</string>
            <string>rewrite calibration data with current values</string>
           </property>
           <property name="text">
-           <string>save 
-calibration</string>
+           <string>save calibration</string>
           </property>
          </widget>
         </item>
@@ -891,7 +913,6 @@ calibration</string>
      <zorder>hs_set_end_position</zorder>
      <zorder>widget_pass</zorder>
      <zorder>verticalSpacer_2</zorder>
-     <zorder>horizontalLayoutWidget</zorder>
     </widget>
    </item>
   </layout>
