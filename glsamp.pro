@@ -21,9 +21,6 @@ CONFIG += c++11 console
 
 DEFINES += _USE_MATH_DEFINES
 
-INCLUDEPATH += . \
-				$$PWD/submodules/struct_controls
-
 VERSION_BUILD = $$system("git rev-parse HEAD")
 isEmpty(VERSION_BUILD){
 	VERSION_BUILD = 1
@@ -34,56 +31,29 @@ DEFINES += VERBUILD=\\\"$$VERBUILDSTR\\\"
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    glspace.cpp \
-    quadmodel.cpp \
-    controlmodel.cpp \
-    gyrodata.cpp \
-    simple_xml.cpp \
-    datachart.cpp \
-    simplekalmanfilter.cpp \
-    writelog.cpp \
-    calibrateaccelerometer.cpp \
-    dialogabout.cpp \
-    gyrodatawidget.cpp \
-    spheregl.cpp \
-    submodules/struct_controls/struct_controls.cpp \
-    sensorswork.cpp \
-    wnddatashow.cpp
+		simple_xml.cpp
 
 HEADERS  += mainwindow.h \
-    virtglobject.h \
-    glspace.h \
-    quadmodel.h \
-    controlmodel.h \
-    gyrodata.h \
     simple_xml.hpp \
-    datachart.h \
-    global.h \
-    simplekalmanfilter.h \
-	writelog.h \
-	submodules/struct_controls/struct_controls.h \
-    calibrateaccelerometer.h \
-    dialogabout.h \
-    gyrodatawidget.h \
-    matrix3.h \
-    spheregl.h \
-    submodules/struct_controls/vector3_.h \
-    submodules/struct_controls/quaternions.h \
-    submodules/struct_controls/common_.h \
-    sensorswork.h \
-    wnddatashow.h
+	global.h
 
 FORMS    += mainwindow.ui \
-    glspace.ui \
-    dialogabout.ui \
-    quadmodel.ui \
-    gyrodatawidget.ui \
-    wnddatashow.ui
 
 UI_DIR = $$DST_DIR/tmp/ui
 OBJECTS_DIR = $$DST_DIR/obj
 MOC_DIR = $$DST_DIR/moc
 RCC_DIR = $$DST_DIR/rcc
+
+include(about/about.pri)
+include(controlmodel/controlmodel.pri)
+include(glutils/glutils.pri)
+include(graphics/graphics.pri)
+include(log/log.pri)
+include(quadmodel/quadmodel.pri)
+include(sensors/sensors.pri)
+include(utils/utils.pri)
+include(wnd/wnd.pri)
+include(submodules/struct_controls/struct_controls.pri)
 
 RESOURCES += \
     resources.qrc
