@@ -340,6 +340,25 @@ void GyroData::send_stop_to_net()
 	emit add_to_log("send stop signal");
 }
 
+void GyroData::send_servo(const StructServo &servo)
+{
+	if(!sensorsWork())
+		return;
+
+	const char* sctrl = "CTRL";
+
+	QByteArray data;
+	QDataStream stream(&data, QIODevice::WriteOnly);
+	stream.writeRawData(sctrl, 4);
+
+	sc::StructControls ctrl;
+	ctrl.servo_ctrl = servo;
+
+	ctrl.write_to(stream);
+
+	sensorsWork()->send_servo(data);
+}
+
 double GyroData::divider_gyro() const
 {
 	return m_divider_gyro;

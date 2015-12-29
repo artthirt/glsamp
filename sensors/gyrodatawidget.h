@@ -108,6 +108,8 @@ private slots:
 
 	void on_sb_gyro_data_valueChanged(int arg1);
 
+	void on_pb_gpio_send_clicked();
+
 private:
 	Ui::GyroDataWidget *ui;
 	QTimer m_timer_cfg;

@@ -42,6 +42,7 @@ public:
 
 	void send_start();
 	void send_stop();
+	void send_servo(const QByteArray& data);
 	void set_address(const QHostAddress& address, ushort port);
 
 	void set_init_position();

@@ -398,3 +398,16 @@ void GyroDataWidget::on_sb_gyro_data_valueChanged(int arg1)
 		return;
 	m_model->set_address(QHostAddress(ui->le_ip_gyro_data->text()), ui->sb_gyro_data->value());
 }
+
+void GyroDataWidget::on_pb_gpio_send_clicked()
+{
+	if(!m_model)
+		return;
+
+	sc::StructServo servo;
+	servo.angle = ui->dsb_gpio_angle->value();
+	servo.freq_meandr = ui->dsb_gpio_freq->value();
+	servo.timework_ms = ui->dsb_gpio_delay->value();
+	servo.pin = ui->sb_gpio_pin->value();
+	m_model->send_servo(servo);
+}

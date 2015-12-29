@@ -212,6 +212,11 @@ void SensorsWork::send_stop()
 	emit send_to_socket(QByteArray("STOP"));
 }
 
+void SensorsWork::send_servo(const QByteArray &data)
+{
+	emit send_to_socket(data);
+}
+
 void SensorsWork::set_address(const QHostAddress &address, ushort port)
 {
 	m_addr = address;

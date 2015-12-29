@@ -54,6 +54,11 @@ public:
 	 * @param port
 	 */
 	void send_stop_to_net();
+	/**
+	 * @brief send_servo
+	 * @param servo
+	 */
+	void send_servo(const sc::StructServo& servo);
 
 	/**
 	 * @brief divider_gyro
