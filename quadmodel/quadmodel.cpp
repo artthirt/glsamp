@@ -15,7 +15,7 @@
 
 #include "simple_xml.hpp"
 
-#include <GL/gl.h>
+//#include <GL/gl.h>
 
 #include "math.h"
 

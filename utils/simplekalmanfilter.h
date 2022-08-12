@@ -20,8 +20,8 @@ public:
 
 	SimpleKalmanFilter();
 	void init();
-	void correction(double zk);
-	void set_zk(double zk);
+    double correction(double zk);
+    double set_zk(double zk);
 
 public:
 	/// @link https://en.wikipedia.org/wiki/Kalman_filter

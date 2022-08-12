@@ -3,7 +3,7 @@
 using namespace sc;
 using namespace vector3_;
 
-#if (_MSC_VER >= 1500 && _MSC_VER <= 1600)
+#ifdef _MSC_VER
 #include <Windows.h>
 #else
 #endif
@@ -58,7 +58,7 @@ void SphereGL::generate_sphere(double radius, double divider)
 		}
 	}
 
-	glVertexPointer(3, GL_FLOAT, sizeof(Vector3f), m_vecs_sphere.data()->data);
+    glVertexPointer(3, GL_FLOAT, sizeof(Vector3f), m_vecs_sphere.data()->data);
 }
 
 

@@ -44,6 +44,10 @@ OBJECTS_DIR = $$DST_DIR/obj
 MOC_DIR = $$DST_DIR/moc
 RCC_DIR = $$DST_DIR/rcc
 
+win32{
+    LIBS += -lopengl32
+}
+
 include(about/about.pri)
 include(controlmodel/controlmodel.pri)
 include(glutils/glutils.pri)

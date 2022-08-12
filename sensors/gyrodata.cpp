@@ -26,7 +26,7 @@
 #include <chrono>
 #endif
 
-#include <GL/gl.h>
+//#include <GL/gl.h>
 
 #include <global.h>
 #include <simple_xml.hpp>

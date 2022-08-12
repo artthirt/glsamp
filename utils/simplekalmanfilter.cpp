@@ -34,7 +34,7 @@ void SimpleKalmanFilter::init()
 	k = 0;
 }
 
-void SimpleKalmanFilter::correction(double zk)
+double SimpleKalmanFilter::correction(double zk)
 {
 	double xk1 = F * xk + B * uk;
 	double Pk1 = F * Pk * F + Q;
@@ -42,15 +42,17 @@ void SimpleKalmanFilter::correction(double zk)
 	Kk = Pk * H / (H * Pk1 * H + R);
 	xk = xk1 + Kk * (zk - H * xk1);
 	Pk = (1 - Kk * H) * Pk1;
+
+    return xk;
 }
 
-void SimpleKalmanFilter::set_zk(double zk)
+double SimpleKalmanFilter::set_zk(double zk)
 {
 	if(!k){
 		xk = zk;
 	}
-	correction(zk);
-	k++;
+    k++;
+    return correction(zk);
 }
 
 vector3_::Vector3d SimpleKalmanFilter::correction(const vector3_::Vector3d &zk)

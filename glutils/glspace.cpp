@@ -9,8 +9,8 @@
 #else
 #endif
 
-#include <GL/gl.h>
-#include <GL/glu.h>
+//#include <GL/gl.h>
+//#include <GL/glu.h>
 
 GLSpace::GLSpace(QWidget *parent) :
 	QGLWidget(parent),
